@@ -73,3 +73,16 @@
 - Unit tests for all backend procedures using vitest
 - Integration tests for photo upload, edge detection, and pricing flows
 - End-to-end tests for complete project creation and sharing workflow
+
+
+## Phase 6: Mobile Conversion & GitHub
+- [ ] Install and configure Capacitor
+- [ ] Configure iOS native app
+- [ ] Configure Android native app
+- [ ] Set up camera permissions for mobile
+- [ ] Test mobile app on iOS simulator
+- [ ] Test mobile app on Android emulator
+- [ ] Create GitHub repository
+- [ ] Push code to GitHub
+- [ ] Create build scripts for internal distribution
+- [ ] Document mobile setup and build instructions
