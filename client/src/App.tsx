@@ -10,7 +10,6 @@ import Estimator from "./pages/Estimator";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import SharedProject from "./pages/SharedProject";
-import { Analytics } from "@vercel/analytics/react";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
