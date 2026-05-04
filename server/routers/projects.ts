@@ -12,9 +12,19 @@ import {
   getProjectShareByToken,
 } from "../db";
 import { storagePut } from "../storage";
-import { detectDrivewayEdges, calculateSquareFeetFromCorners } from "../services/edgeDetection";
-import { getMaterialPricingForZip, calculateMaterialQuantity, calculateTotalCost } from "../services/pricing";
-import { sendEstimateNotification, sendContractorNotification } from "../services/email";
+import {
+  detectDrivewayEdges,
+  calculateSquareFeetFromCorners,
+} from "../services/edgeDetection";
+import {
+  getMaterialPricingForZip,
+  calculateMaterialQuantity,
+  calculateTotalCost,
+} from "../services/pricing";
+import {
+  sendEstimateNotification,
+  sendContractorNotification,
+} from "../services/email";
 import { generateImage } from "../_core/imageGeneration";
 
 export const projectsRouter = router({
@@ -23,7 +33,7 @@ export const projectsRouter = router({
    */
   list: protectedProcedure.query(async ({ ctx }) => {
     const projects = await getUserProjects(ctx.user.id);
-    return projects.map((p) => ({
+    return projects.map(p => ({
       ...p,
       cornerPoints: p.cornerPoints ? JSON.parse(p.cornerPoints) : null,
     }));
@@ -32,16 +42,23 @@ export const projectsRouter = router({
   /**
    * Get a single project by ID
    */
-  getById: protectedProcedure.input(z.object({ projectId: z.number() })).query(async ({ ctx, input }) => {
-    const project = await getProjectById(input.projectId);
-    if (!project || project.userId !== ctx.user.id) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
-    }
-    return {
-      ...project,
-      cornerPoints: project.cornerPoints ? JSON.parse(project.cornerPoints) : null,
-    };
-  }),
+  getById: protectedProcedure
+    .input(z.object({ projectId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const project = await getProjectById(input.projectId);
+      if (!project || project.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+      return {
+        ...project,
+        cornerPoints: project.cornerPoints
+          ? JSON.parse(project.cornerPoints)
+          : null,
+      };
+    }),
 
   /**
    * Upload photo and detect driveway edges
@@ -62,7 +79,11 @@ export const projectsRouter = router({
 
         // Upload to S3
         const photoKey = `projects/${ctx.user.id}/${nanoid()}-${input.photoName}`;
-        const { url: photoUrl } = await storagePut(photoKey, buffer, "image/jpeg");
+        const { url: photoUrl } = await storagePut(
+          photoKey,
+          buffer,
+          "image/jpeg"
+        );
 
         // Detect driveway edges using LLM vision
         const edgeDetection = await detectDrivewayEdges(photoUrl);
@@ -105,9 +126,19 @@ export const projectsRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const pricing = await getMaterialPricingForZip(input.zipCode, input.material);
-        const quantity = calculateMaterialQuantity(input.squareFeet, input.depthInches, input.material);
-        const totalCost = calculateTotalCost(quantity.quantity, pricing.pricePerTon);
+        const pricing = await getMaterialPricingForZip(
+          input.zipCode,
+          input.material
+        );
+        const quantity = calculateMaterialQuantity(
+          input.squareFeet,
+          input.depthInches,
+          input.material
+        );
+        const totalCost = calculateTotalCost(
+          quantity.quantity,
+          pricing.pricePerTon
+        );
 
         return {
           pricePerTon: pricing.pricePerTon,
@@ -168,7 +199,11 @@ export const projectsRouter = router({
         const response = await fetch(previewUrl);
         const arrayBuffer = await response.arrayBuffer();
         const previewBuffer = Buffer.from(arrayBuffer);
-        const { url: storedPreviewUrl } = await storagePut(previewKey, previewBuffer, "image/jpeg");
+        const { url: storedPreviewUrl } = await storagePut(
+          previewKey,
+          previewBuffer,
+          "image/jpeg"
+        );
 
         return {
           previewUrl: storedPreviewUrl,
@@ -195,7 +230,12 @@ export const projectsRouter = router({
         squareFeet: z.number(),
         depthInches: z.number(),
         cornerPoints: z.array(z.object({ x: z.number(), y: z.number() })),
-        selectedMaterial: z.enum(["hotmix", "millings", "tar_and_chip", "gravel"]),
+        selectedMaterial: z.enum([
+          "hotmix",
+          "millings",
+          "tar_and_chip",
+          "gravel",
+        ]),
         quantityNeeded: z.string(),
         pricePerUnit: z.string(),
         totalCost: z.string(),
@@ -286,7 +326,10 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const project = await getProjectById(input.projectId);
       if (!project || project.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       await updateProject(input.projectId, input.updates);
@@ -301,7 +344,10 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const project = await getProjectById(input.projectId);
       if (!project || project.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       await deleteProject(input.projectId);
@@ -321,11 +367,15 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const project = await getProjectById(input.projectId);
       if (!project || project.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       const shareToken = nanoid(32);
-      const baseUrl = process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000";
+      const baseUrl =
+        process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000";
       const shareLink = `${baseUrl}/share/${shareToken}`;
 
       await createProjectShare({
@@ -363,12 +413,17 @@ export const projectsRouter = router({
 
       const project = await getProjectById(share.projectId);
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       return {
         ...project,
-        cornerPoints: project.cornerPoints ? JSON.parse(project.cornerPoints) : null,
+        cornerPoints: project.cornerPoints
+          ? JSON.parse(project.cornerPoints)
+          : null,
       };
     }),
 
@@ -380,7 +435,10 @@ export const projectsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const project = await getProjectById(input.projectId);
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
       if (project.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });

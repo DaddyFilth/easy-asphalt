@@ -16,7 +16,9 @@ const mockUser = {
 };
 
 // Mock context
-function createMockContext(user: typeof mockUser | null = mockUser): TrpcContext {
+function createMockContext(
+  user: typeof mockUser | null = mockUser
+): TrpcContext {
   return {
     user,
     req: {
@@ -84,7 +86,12 @@ describe("Projects Router", () => {
       const ctx = createMockContext();
       const caller = projectsRouter.createCaller(ctx);
 
-      const materials = ["hotmix", "millings", "tar_and_chip", "gravel"] as const;
+      const materials = [
+        "hotmix",
+        "millings",
+        "tar_and_chip",
+        "gravel",
+      ] as const;
 
       for (const material of materials) {
         try {

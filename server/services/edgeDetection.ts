@@ -112,7 +112,7 @@ export function calculateSquareFeetFromCorners(
   pixelsPerFoot: number = 0.1 // Calibration factor - adjust based on real-world reference
 ): number {
   // Convert percentage coordinates to pixel coordinates
-  const pixelCorners = corners.map((corner) => ({
+  const pixelCorners = corners.map(corner => ({
     x: (corner.x / 100) * imageWidth,
     y: (corner.y / 100) * imageHeight,
   }));

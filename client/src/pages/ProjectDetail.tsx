@@ -1,10 +1,23 @@
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, Share2, Download, ArrowLeft } from "lucide-react";
@@ -23,13 +36,13 @@ export default function ProjectDetail() {
   );
 
   const createShareLinkMutation = trpc.projects.createShareLink.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("Share link created! Copied to clipboard.");
       navigator.clipboard.writeText(data.shareLink);
       setIsShareDialogOpen(false);
       setContractorEmail("");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to create share link");
     },
   });
@@ -47,7 +60,7 @@ export default function ProjectDetail() {
   };
 
   const downloadPDFMutation = trpc.projects.downloadPDF.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       const binaryString = atob(data.pdfBase64);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -104,7 +117,10 @@ export default function ProjectDetail() {
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="pt-12 pb-12 text-center">
               <p className="text-slate-400 mb-4">Project not found</p>
-              <p className="text-slate-500 text-sm">The project you're looking for doesn't exist or has been deleted.</p>
+              <p className="text-slate-500 text-sm">
+                The project you're looking for doesn't exist or has been
+                deleted.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -113,7 +129,9 @@ export default function ProjectDetail() {
   }
 
   const project = projectQuery.data;
-  const materialInfo = project.selectedMaterial ? materials[project.selectedMaterial] : null;
+  const materialInfo = project.selectedMaterial
+    ? materials[project.selectedMaterial]
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
@@ -129,11 +147,18 @@ export default function ProjectDetail() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-4xl font-bold text-white mb-2">{project.projectName}</h1>
-            <p className="text-slate-300">Created on {new Date(project.createdAt).toLocaleDateString()}</p>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              {project.projectName}
+            </h1>
+            <p className="text-slate-300">
+              Created on {new Date(project.createdAt).toLocaleDateString()}
+            </p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <Dialog
+              open={isShareDialogOpen}
+              onOpenChange={setIsShareDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Share2 className="w-4 h-4 mr-2" />
@@ -142,18 +167,23 @@ export default function ProjectDetail() {
               </DialogTrigger>
               <DialogContent className="bg-slate-800 border-slate-700">
                 <DialogHeader>
-                  <DialogTitle className="text-white">Share Project</DialogTitle>
+                  <DialogTitle className="text-white">
+                    Share Project
+                  </DialogTitle>
                   <DialogDescription className="text-slate-400">
-                    Generate a shareable link and optionally send it to a contractor
+                    Generate a shareable link and optionally send it to a
+                    contractor
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-slate-300">Contractor Email (Optional)</Label>
+                    <Label className="text-slate-300">
+                      Contractor Email (Optional)
+                    </Label>
                     <Input
                       type="email"
                       value={contractorEmail}
-                      onChange={(e) => setContractorEmail(e.target.value)}
+                      onChange={e => setContractorEmail(e.target.value)}
                       placeholder="contractor@example.com"
                       className="bg-slate-700 border-slate-600 text-white"
                     />
@@ -163,13 +193,19 @@ export default function ProjectDetail() {
                     disabled={createShareLinkMutation.isPending}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    {createShareLinkMutation.isPending ? "Creating..." : "Create & Copy Link"}
+                    {createShareLinkMutation.isPending
+                      ? "Creating..."
+                      : "Create & Copy Link"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
 
-            <Button onClick={handleDownloadPDF} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+            <Button
+              onClick={handleDownloadPDF}
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
               <Download className="w-4 h-4 mr-2" />
               PDF
             </Button>
@@ -184,8 +220,15 @@ export default function ProjectDetail() {
                 <CardTitle className="text-white">Original Photo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                  <img src={project.photoUrl} alt="Original" className="w-full h-full object-cover" />
+                <div
+                  className="relative w-full bg-black rounded-lg overflow-hidden"
+                  style={{ aspectRatio: "16/9" }}
+                >
+                  <img
+                    src={project.photoUrl}
+                    alt="Original"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -197,8 +240,15 @@ export default function ProjectDetail() {
                 <CardTitle className="text-white">Material Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                  <img src={project.previewImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <div
+                  className="relative w-full bg-black rounded-lg overflow-hidden"
+                  style={{ aspectRatio: "16/9" }}
+                >
+                  <img
+                    src={project.previewImageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -215,15 +265,21 @@ export default function ProjectDetail() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-slate-400 text-sm">Area</p>
-                <p className="text-2xl font-bold text-white">{project.squareFeet} sq ft</p>
+                <p className="text-2xl font-bold text-white">
+                  {project.squareFeet} sq ft
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Depth</p>
-                <p className="text-lg font-semibold text-white">{project.depthInches} inches</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.depthInches} inches
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Location</p>
-                <p className="text-lg font-semibold text-white">{project.zipCode}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.zipCode}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -237,11 +293,15 @@ export default function ProjectDetail() {
               <div className="text-4xl mb-2">{materialInfo?.icon}</div>
               <div>
                 <p className="text-slate-400 text-sm">Type</p>
-                <p className="text-lg font-semibold text-white">{materialInfo?.name}</p>
+                <p className="text-lg font-semibold text-white">
+                  {materialInfo?.name}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Quantity</p>
-                <p className="text-lg font-semibold text-white">{project.quantityNeeded}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.quantityNeeded}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -254,11 +314,15 @@ export default function ProjectDetail() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-slate-400 text-sm">Price per Unit</p>
-                <p className="text-lg font-semibold text-white">{project.pricePerUnit}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.pricePerUnit}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Total Cost</p>
-                <p className="text-3xl font-bold text-green-400">{project.totalCost}</p>
+                <p className="text-3xl font-bold text-green-400">
+                  {project.totalCost}
+                </p>
               </div>
             </CardContent>
           </Card>

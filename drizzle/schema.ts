@@ -1,4 +1,11 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -30,7 +37,9 @@ export type InsertUser = typeof users.$inferInsert;
  */
 export const projects = mysqlTable("projects", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id),
   photoUrl: text("photoUrl").notNull(), // S3 storage path
   photoKey: text("photoKey").notNull(), // S3 key for reference
   squareFeet: int("squareFeet"), // Calculated from corner points
@@ -60,7 +69,9 @@ export type InsertProject = typeof projects.$inferInsert;
  */
 export const projectShares = mysqlTable("projectShares", {
   id: int("id").autoincrement().primaryKey(),
-  projectId: int("projectId").notNull().references(() => projects.id),
+  projectId: int("projectId")
+    .notNull()
+    .references(() => projects.id),
   shareToken: varchar("shareToken", { length: 64 }).notNull().unique(), // Unique token for public access
   contractorEmail: varchar("contractorEmail", { length: 320 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

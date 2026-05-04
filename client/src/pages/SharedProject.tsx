@@ -1,6 +1,12 @@
 import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Download } from "lucide-react";
 
@@ -62,12 +68,19 @@ export default function SharedProject() {
       yPosition += 8;
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      const materialName = materials[project.selectedMaterial || ""]?.name || project.selectedMaterial || "Unknown";
+      const materialName =
+        materials[project.selectedMaterial || ""]?.name ||
+        project.selectedMaterial ||
+        "Unknown";
       doc.text(`Type: ${materialName}`, margin + 5, yPosition);
       yPosition += 6;
       doc.text(`Quantity: ${project.quantityNeeded}`, margin + 5, yPosition);
       yPosition += 6;
-      doc.text(`Price per Unit: ${project.pricePerUnit}`, margin + 5, yPosition);
+      doc.text(
+        `Price per Unit: ${project.pricePerUnit}`,
+        margin + 5,
+        yPosition
+      );
 
       yPosition += 10;
 
@@ -102,8 +115,12 @@ export default function SharedProject() {
         <div className="max-w-2xl mx-auto">
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-400 mb-4">Project not found or link has expired</p>
-              <p className="text-slate-500 text-sm">Please check the link and try again</p>
+              <p className="text-slate-400 mb-4">
+                Project not found or link has expired
+              </p>
+              <p className="text-slate-500 text-sm">
+                Please check the link and try again
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -112,7 +129,9 @@ export default function SharedProject() {
   }
 
   const project = projectQuery.data;
-  const materialInfo = project.selectedMaterial ? materials[project.selectedMaterial] : null;
+  const materialInfo = project.selectedMaterial
+    ? materials[project.selectedMaterial]
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
@@ -120,10 +139,15 @@ export default function SharedProject() {
         {/* Header */}
         <div className="mb-8 flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">{project.projectName}</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              {project.projectName}
+            </h1>
             <p className="text-slate-300">Driveway Estimate Summary</p>
           </div>
-          <Button onClick={handleDownloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button
+            onClick={handleDownloadPDF}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             <Download className="w-4 h-4 mr-2" />
             Download PDF
           </Button>
@@ -137,9 +161,16 @@ export default function SharedProject() {
                 <CardTitle className="text-white">Original Photo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                <div
+                  className="relative w-full bg-black rounded-lg overflow-hidden"
+                  style={{ aspectRatio: "16/9" }}
+                >
                   {/* @ts-ignore */}
-                  <img src={project.photoUrl} alt="Original" className="w-full h-full object-cover" />
+                  <img
+                    src={project.photoUrl}
+                    alt="Original"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -151,9 +182,16 @@ export default function SharedProject() {
                 <CardTitle className="text-white">Material Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                <div
+                  className="relative w-full bg-black rounded-lg overflow-hidden"
+                  style={{ aspectRatio: "16/9" }}
+                >
                   {/* @ts-ignore */}
-                  <img src={project.previewImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <img
+                    src={project.previewImageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -170,15 +208,21 @@ export default function SharedProject() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-slate-400 text-sm">Area</p>
-                <p className="text-2xl font-bold text-white">{project.squareFeet} sq ft</p>
+                <p className="text-2xl font-bold text-white">
+                  {project.squareFeet} sq ft
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Depth</p>
-                <p className="text-lg font-semibold text-white">{project.depthInches} inches</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.depthInches} inches
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Location</p>
-                <p className="text-lg font-semibold text-white">{project.zipCode}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.zipCode}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -192,11 +236,15 @@ export default function SharedProject() {
               <div className="text-4xl mb-2">{materialInfo?.icon}</div>
               <div>
                 <p className="text-slate-400 text-sm">Type</p>
-                <p className="text-lg font-semibold text-white">{materialInfo?.name}</p>
+                <p className="text-lg font-semibold text-white">
+                  {materialInfo?.name}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Quantity</p>
-                <p className="text-lg font-semibold text-white">{project.quantityNeeded}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.quantityNeeded}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -209,11 +257,15 @@ export default function SharedProject() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-slate-400 text-sm">Price per Unit</p>
-                <p className="text-lg font-semibold text-white">{project.pricePerUnit}</p>
+                <p className="text-lg font-semibold text-white">
+                  {project.pricePerUnit}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Total Cost</p>
-                <p className="text-3xl font-bold text-green-400">{project.totalCost}</p>
+                <p className="text-3xl font-bold text-green-400">
+                  {project.totalCost}
+                </p>
               </div>
             </CardContent>
           </Card>

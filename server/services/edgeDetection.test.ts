@@ -14,7 +14,12 @@ describe("Edge Detection Service", () => {
       const imageHeight = 1000;
       const pixelsPerFoot = 0.1;
 
-      const squareFeet = calculateSquareFeetFromCorners(corners, imageWidth, imageHeight, pixelsPerFoot);
+      const squareFeet = calculateSquareFeetFromCorners(
+        corners,
+        imageWidth,
+        imageHeight,
+        pixelsPerFoot
+      );
       expect(squareFeet).toBeGreaterThan(0);
       expect(squareFeet).toBeLessThanOrEqual(10000); // Reasonable upper bound
     });
@@ -31,7 +36,12 @@ describe("Edge Detection Service", () => {
       const imageHeight = 1000;
       const pixelsPerFoot = 0.01; // Very small calibration
 
-      const squareFeet = calculateSquareFeetFromCorners(corners, imageWidth, imageHeight, pixelsPerFoot);
+      const squareFeet = calculateSquareFeetFromCorners(
+        corners,
+        imageWidth,
+        imageHeight,
+        pixelsPerFoot
+      );
       expect(squareFeet).toBeGreaterThanOrEqual(100);
     });
 
@@ -60,8 +70,18 @@ describe("Edge Detection Service", () => {
       const imageWidth = 1000;
       const imageHeight = 1000;
 
-      const result1 = calculateSquareFeetFromCorners(corners, imageWidth, imageHeight, 0.05);
-      const result2 = calculateSquareFeetFromCorners(corners, imageWidth, imageHeight, 0.1);
+      const result1 = calculateSquareFeetFromCorners(
+        corners,
+        imageWidth,
+        imageHeight,
+        0.05
+      );
+      const result2 = calculateSquareFeetFromCorners(
+        corners,
+        imageWidth,
+        imageHeight,
+        0.1
+      );
 
       // Higher calibration factor should give larger area
       expect(result2).toBeGreaterThan(result1);
@@ -78,7 +98,12 @@ describe("Edge Detection Service", () => {
       const imageWidth = 1000;
       const imageHeight = 1000;
 
-      const squareFeet = calculateSquareFeetFromCorners(corners, imageWidth, imageHeight, 0.1);
+      const squareFeet = calculateSquareFeetFromCorners(
+        corners,
+        imageWidth,
+        imageHeight,
+        0.1
+      );
       expect(squareFeet).toBeGreaterThan(0);
       expect(squareFeet).toBeLessThanOrEqual(10000);
     });

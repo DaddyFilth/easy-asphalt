@@ -5,18 +5,21 @@ This project uses **Capacitor** to wrap the React web application as native iOS 
 ## Prerequisites
 
 ### For iOS Development
+
 - macOS with Xcode 14.0 or later
 - Xcode Command Line Tools: `xcode-select --install`
 - CocoaPods: `sudo gem install cocoapods`
 - Apple Developer Account (for signing and distribution)
 
 ### For Android Development
+
 - Android Studio 2021.1 or later
 - Android SDK (API level 28 or higher)
 - Java Development Kit (JDK) 11 or later
 - Android NDK (optional, for native code)
 
 ### General Requirements
+
 - Node.js 16+ and pnpm
 - Capacitor CLI (installed as dev dependency)
 
@@ -37,18 +40,20 @@ driveway-estimator-pro/
 
 All mobile build commands are defined in `package.json`:
 
-| Script | Purpose |
-|--------|---------|
-| `pnpm mobile:build` | Build web assets and sync to native projects |
-| `pnpm mobile:ios` | Build web, sync, and open iOS project in Xcode |
-| `pnpm mobile:android` | Build web, sync, and open Android project in Android Studio |
-| `pnpm mobile:build-ios` | Create iOS release build (requires Xcode) |
-| `pnpm mobile:build-android` | Create Android release build (requires Android SDK) |
+| Script                      | Purpose                                                     |
+| --------------------------- | ----------------------------------------------------------- |
+| `pnpm mobile:build`         | Build web assets and sync to native projects                |
+| `pnpm mobile:ios`           | Build web, sync, and open iOS project in Xcode              |
+| `pnpm mobile:android`       | Build web, sync, and open Android project in Android Studio |
+| `pnpm mobile:build-ios`     | Create iOS release build (requires Xcode)                   |
+| `pnpm mobile:build-android` | Create Android release build (requires Android SDK)         |
 
 ## Development Workflow
 
 ### 1. Web Development
+
 During development, run the web app in dev mode:
+
 ```bash
 pnpm dev
 ```
@@ -56,6 +61,7 @@ pnpm dev
 ### 2. Testing on iOS Simulator
 
 **First time setup:**
+
 ```bash
 # Install dependencies
 pnpm install
@@ -65,11 +71,13 @@ pnpm mobile:ios
 ```
 
 This opens Xcode with the iOS project. In Xcode:
+
 1. Select "iPhone 15" (or your preferred simulator) from the device dropdown
 2. Click the "Play" button to build and run on the simulator
 3. The app will launch in the simulator
 
 **For subsequent builds:**
+
 ```bash
 pnpm mobile:build
 # Then use Xcode's Run button (⌘R)
@@ -78,6 +86,7 @@ pnpm mobile:build
 ### 3. Testing on Android Emulator
 
 **First time setup:**
+
 ```bash
 # Install dependencies
 pnpm install
@@ -87,11 +96,13 @@ pnpm mobile:android
 ```
 
 This opens Android Studio with the Android project. In Android Studio:
+
 1. Create or select an Android Virtual Device (AVD)
 2. Click "Run" or press Shift+F10 to build and deploy to the emulator
 3. The app will launch in the emulator
 
 **For subsequent builds:**
+
 ```bash
 pnpm mobile:build
 # Then use Android Studio's Run button
@@ -108,6 +119,7 @@ pnpm mobile:build
    - Select your team and update the bundle identifier if needed
 
 2. **Build release:**
+
    ```bash
    pnpm mobile:build-ios
    ```
@@ -133,9 +145,11 @@ pnpm mobile:build
      ```
 
 2. **Build release APK:**
+
    ```bash
    pnpm mobile:build-android
    ```
+
    The APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
 
 3. **Build release AAB (for Play Store):**
@@ -167,6 +181,7 @@ pnpm mobile:build
 ### Android (Internal Testing)
 
 1. **Build APK:**
+
    ```bash
    pnpm mobile:build-android
    ```
@@ -186,6 +201,7 @@ The following Capacitor plugins are integrated:
 ### Permissions
 
 **iOS (`ios/App/App/Info.plist`):**
+
 ```xml
 <key>NSCameraUsageDescription</key>
 <string>We need camera access to capture driveway photos</string>
@@ -194,6 +210,7 @@ The following Capacitor plugins are integrated:
 ```
 
 **Android (`android/app/src/main/AndroidManifest.xml`):**
+
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -207,6 +224,7 @@ These are already configured in the native projects.
 ### iOS Issues
 
 **"Pod install failed":**
+
 ```bash
 cd ios/App
 rm -rf Pods Podfile.lock
@@ -214,16 +232,19 @@ pod install
 ```
 
 **"Xcode build failed":**
+
 - Clean build: Product → Clean Build Folder (⇧⌘K)
 - Update pods: `pod repo update`
 
 ### Android Issues
 
 **"Gradle sync failed":**
+
 - File → Sync Now
 - Check Android SDK versions in `android/app/build.gradle`
 
 **"Build failed with missing dependencies":**
+
 ```bash
 cd android
 ./gradlew clean
@@ -258,7 +279,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: pnpm install
       - run: pnpm mobile:build-ios
       - run: pnpm mobile:build-android
@@ -275,6 +296,7 @@ jobs:
 ## Support
 
 For issues or questions:
+
 1. Check the Capacitor docs
 2. Review native platform documentation
 3. Check the GitHub repository issues

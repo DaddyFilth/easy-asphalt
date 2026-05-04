@@ -1,7 +1,16 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, projects, projectShares, materialPrices, InsertProject, InsertProjectShare, InsertMaterialPrice } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import {
+  InsertUser,
+  users,
+  projects,
+  projectShares,
+  materialPrices,
+  InsertProject,
+  InsertProjectShare,
+  InsertMaterialPrice,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -56,8 +65,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = "admin";
+      updateSet.role = "admin";
     }
 
     if (!values.lastSignedIn) {
@@ -84,7 +93,11 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
@@ -92,13 +105,21 @@ export async function getUserByOpenId(openId: string) {
 export async function getUserProjects(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(projects).where(eq(projects.userId, userId)).orderBy(projects.createdAt);
+  return db
+    .select()
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(projects.createdAt);
 }
 
 export async function getProjectById(projectId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  const result = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -109,7 +130,10 @@ export async function createProject(project: InsertProject) {
   return result;
 }
 
-export async function updateProject(projectId: number, updates: Partial<InsertProject>) {
+export async function updateProject(
+  projectId: number,
+  updates: Partial<InsertProject>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(projects).set(updates).where(eq(projects.id, projectId));
@@ -130,15 +154,26 @@ export async function createProjectShare(share: InsertProjectShare) {
 export async function getProjectShareByToken(token: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(projectShares).where(eq(projectShares.shareToken, token)).limit(1);
+  const result = await db
+    .select()
+    .from(projectShares)
+    .where(eq(projectShares.shareToken, token))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getMaterialPrices(zipCode: string, material: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(materialPrices)
-    .where(and(eq(materialPrices.zipCode, zipCode), eq(materialPrices.material, material)))
+  const result = await db
+    .select()
+    .from(materialPrices)
+    .where(
+      and(
+        eq(materialPrices.zipCode, zipCode),
+        eq(materialPrices.material, material)
+      )
+    )
     .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
@@ -146,14 +181,17 @@ export async function getMaterialPrices(zipCode: string, material: string) {
 export async function upsertMaterialPrice(price: InsertMaterialPrice) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(materialPrices).values(price).onDuplicateKeyUpdate({
-    set: {
-      pricePerTon: price.pricePerTon,
-      pricePerSquareFoot: price.pricePerSquareFoot,
-      supplier: price.supplier,
-      lastUpdated: new Date(),
-    },
-  });
+  return db
+    .insert(materialPrices)
+    .values(price)
+    .onDuplicateKeyUpdate({
+      set: {
+        pricePerTon: price.pricePerTon,
+        pricePerSquareFoot: price.pricePerSquareFoot,
+        supplier: price.supplier,
+        lastUpdated: new Date(),
+      },
+    });
 }
 
 // TODO: add feature queries here as your schema grows.
