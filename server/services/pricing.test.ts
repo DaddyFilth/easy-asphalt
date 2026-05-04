@@ -1,0 +1,64 @@
+import { describe, it, expect } from "vitest";
+import { calculateMaterialQuantity, calculateTotalCost } from "./pricing";
+
+describe("Pricing Service", () => {
+  describe("calculateMaterialQuantity", () => {
+    it("should calculate quantity for hotmix correctly", () => {
+      const result = calculateMaterialQuantity(1000, 2, "hotmix");
+      expect(result.unit).toBe("tons");
+      expect(result.quantity).toBeGreaterThan(0);
+      expect(result.quantityStr).toMatch(/^\d+\.\d{2} tons$/);
+    });
+
+    it("should calculate quantity for gravel correctly", () => {
+      const result = calculateMaterialQuantity(1000, 2, "gravel");
+      expect(result.unit).toBe("tons");
+      expect(result.quantity).toBeGreaterThan(0);
+      // Gravel should be lighter than hotmix
+      const hotmixResult = calculateMaterialQuantity(1000, 2, "hotmix");
+      expect(result.quantity).toBeLessThan(hotmixResult.quantity);
+    });
+
+    it("should handle different depths", () => {
+      const shallow = calculateMaterialQuantity(1000, 1, "hotmix");
+      const deep = calculateMaterialQuantity(1000, 4, "hotmix");
+      expect(deep.quantity).toBeGreaterThan(shallow.quantity);
+    });
+
+    it("should handle different areas", () => {
+      const small = calculateMaterialQuantity(500, 2, "hotmix");
+      const large = calculateMaterialQuantity(2000, 2, "hotmix");
+      expect(large.quantity).toBeGreaterThan(small.quantity);
+    });
+  });
+
+  describe("calculateTotalCost", () => {
+    it("should calculate total cost correctly", () => {
+      const cost = calculateTotalCost(2.5, "$45.00");
+      expect(cost).toBe("$112.50");
+    });
+
+    it("should handle zero quantity", () => {
+      const cost = calculateTotalCost(0, "$45.00");
+      expect(cost).toBe("$0.00");
+    });
+
+    it("should handle null price", () => {
+      const cost = calculateTotalCost(2.5, null);
+      expect(cost).toBe("$0.00");
+    });
+
+    it("should handle undefined price", () => {
+      const cost = calculateTotalCost(2.5, undefined);
+      expect(cost).toBe("$0.00");
+    });
+
+    it("should parse price strings with various formats", () => {
+      const cost1 = calculateTotalCost(2, "$50");
+      expect(cost1).toBe("$100.00");
+
+      const cost2 = calculateTotalCost(2, "$50.50");
+      expect(cost2).toBe("$101.00");
+    });
+  });
+});
