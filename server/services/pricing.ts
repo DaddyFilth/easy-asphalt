@@ -8,7 +8,10 @@ type Material = (typeof MATERIALS)[number];
  * Mock pricing data - in production, integrate with real supplier APIs
  * This demonstrates the structure; replace with actual API calls to suppliers
  */
-const mockPricingByZip: Record<string, Record<Material, { pricePerTon: number; pricePerSqFt: number }>> = {
+const mockPricingByZip: Record<
+  string,
+  Record<Material, { pricePerTon: number; pricePerSqFt: number }>
+> = {
   "10001": {
     hotmix: { pricePerTon: 85, pricePerSqFt: 2.5 },
     millings: { pricePerTon: 35, pricePerSqFt: 1.0 },

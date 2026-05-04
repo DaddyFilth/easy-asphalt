@@ -32,7 +32,11 @@ export async function generateProjectPDF(project: Project): Promise<Buffer> {
   yPosition += 10;
   doc.setFontSize(10);
   doc.setTextColor(120, 120, 120);
-  doc.text(`Created: ${new Date(project.createdAt).toLocaleDateString()}`, margin, yPosition);
+  doc.text(
+    `Created: ${new Date(project.createdAt).toLocaleDateString()}`,
+    margin,
+    yPosition
+  );
 
   yPosition += 15;
 
@@ -51,7 +55,7 @@ export async function generateProjectPDF(project: Project): Promise<Buffer> {
     `Location: ${project.zipCode}`,
   ];
 
-  measurements.forEach((measurement) => {
+  measurements.forEach(measurement => {
     doc.text(measurement, margin + 5, yPosition);
     yPosition += 6;
   });

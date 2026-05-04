@@ -130,7 +130,9 @@ Driveway Estimator Pro
  * Core email sending function
  * In production, replace with actual email service provider
  */
-async function sendEmail(notification: EmailNotification): Promise<{ success: boolean; messageId?: string }> {
+async function sendEmail(
+  notification: EmailNotification
+): Promise<{ success: boolean; messageId?: string }> {
   try {
     // Mock implementation - in production, use SendGrid, AWS SES, etc.
     console.log("[Email] Sending email to:", notification.to);
@@ -138,7 +140,7 @@ async function sendEmail(notification: EmailNotification): Promise<{ success: bo
     console.log("[Email] HTML:", notification.html);
 
     // Simulate async operation
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // In production, this would return a real message ID from the email service
     const mockMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

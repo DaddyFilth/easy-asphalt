@@ -5,6 +5,7 @@ A professional-grade mobile application that allows homeowners and contractors t
 ## Features
 
 ### Core Functionality
+
 - **📸 Camera Capture**: Take photos of driveways using device camera or upload existing images
 - **🤖 AI Edge Detection**: Automatically detect driveway boundaries using LLM vision analysis
 - **📐 Manual Adjustment**: Fine-tune measurements with draggable corner points
@@ -15,6 +16,7 @@ A professional-grade mobile application that allows homeowners and contractors t
 - **📧 Email Notifications**: Automatic notifications for homeowners and contractors
 
 ### Supported Materials
+
 - **Hot Mix Asphalt** - Professional durable surface
 - **Asphalt Millings** - Recycled asphalt, budget-friendly
 - **Tar & Chip** - Rustic appearance, good traction
@@ -23,6 +25,7 @@ A professional-grade mobile application that allows homeowners and contractors t
 ## Technology Stack
 
 ### Frontend
+
 - **React 19** - Modern UI framework
 - **TypeScript** - Type-safe development
 - **Tailwind CSS 4** - Responsive design
@@ -30,17 +33,20 @@ A professional-grade mobile application that allows homeowners and contractors t
 - **tRPC** - End-to-end type safety
 
 ### Backend
+
 - **Express.js** - Node.js server framework
 - **tRPC** - Type-safe API procedures
 - **Drizzle ORM** - Type-safe database queries
 - **MySQL/TiDB** - Database
 
 ### Mobile
+
 - **Capacitor** - Cross-platform native app framework
 - **@capacitor/camera** - Native camera access
 - **@capacitor/geolocation** - GPS location services
 
 ### AI & Services
+
 - **LLM Vision** - Automatic edge detection
 - **Image Generation** - Photorealistic material previews
 - **jsPDF** - PDF export functionality
@@ -73,6 +79,7 @@ driveway-estimator-pro/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 16+ and pnpm
 - For mobile development: Xcode (iOS) and/or Android Studio (Android)
 
@@ -94,12 +101,14 @@ cp .env.example .env.local
 ### Development
 
 **Web Development:**
+
 ```bash
 pnpm dev
 # Opens at http://localhost:3000
 ```
 
 **Mobile Development:**
+
 ```bash
 # iOS
 pnpm mobile:ios
@@ -126,12 +135,14 @@ pnpm test --watch
 ### Building
 
 **Web Build:**
+
 ```bash
 pnpm build
 pnpm start
 ```
 
 **Mobile Build:**
+
 ```bash
 # Build web assets and sync to native projects
 pnpm mobile:build
@@ -148,6 +159,7 @@ pnpm mobile:build-android
 ### tRPC Procedures
 
 #### Projects
+
 - `projects.list` - Get all user projects
 - `projects.getById` - Get specific project details
 - `projects.create` - Create new project with measurements
@@ -161,12 +173,14 @@ pnpm mobile:build-android
 - `projects.downloadPDF` - Download project as PDF
 
 #### Authentication
+
 - `auth.me` - Get current user info
 - `auth.logout` - Log out current user
 
 ## Database Schema
 
 ### Users
+
 - `id` - Primary key
 - `openId` - OAuth identifier
 - `name` - User name
@@ -175,6 +189,7 @@ pnpm mobile:build-android
 - `createdAt`, `updatedAt`, `lastSignedIn` - Timestamps
 
 ### Projects
+
 - `id` - Primary key
 - `userId` - Project owner
 - `photoUrl` - Original driveway photo
@@ -193,6 +208,7 @@ pnpm mobile:build-android
 - `createdAt`, `updatedAt` - Timestamps
 
 ### ProjectShares
+
 - `id` - Primary key
 - `projectId` - Shared project
 - `shareToken` - Unique share token
@@ -200,6 +216,7 @@ pnpm mobile:build-android
 - `createdAt` - Share creation date
 
 ### MaterialPrices
+
 - `id` - Primary key
 - `zipCode` - Location
 - `material` - Material type
@@ -241,16 +258,19 @@ VITE_APP_LOGO=https://example.com/logo.png
 ## Production Deployment
 
 ### Web Deployment
+
 The application is deployed using Manus built-in hosting. See the Management UI for deployment options.
 
 ### Mobile Distribution
 
 **iOS (Internal Testing):**
+
 1. Build release: `pnpm mobile:build-ios`
 2. Archive in Xcode
 3. Distribute via TestFlight or Ad Hoc
 
 **Android (Internal Testing):**
+
 1. Build release: `pnpm mobile:build-android`
 2. Share APK or upload to Google Play Console internal testing track
 
@@ -299,6 +319,7 @@ MIT License - see LICENSE file for details
 ## Support
 
 For issues, questions, or feature requests:
+
 - Check existing GitHub issues
 - Review [MOBILE_BUILD.md](./MOBILE_BUILD.md) for mobile-specific help
 - Contact the development team
@@ -319,6 +340,7 @@ For issues, questions, or feature requests:
 ## Changelog
 
 ### v1.0.0 (Initial Release)
+
 - Core driveway measurement and estimation
 - AI-powered edge detection
 - Material visualization and pricing

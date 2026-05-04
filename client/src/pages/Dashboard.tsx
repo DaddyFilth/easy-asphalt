@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -19,7 +25,7 @@ export default function Dashboard() {
     },
   });
   const createShareLinkMutation = trpc.projects.createShareLink.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success("Share link created! Copied to clipboard.");
       navigator.clipboard.writeText(data.shareLink);
     },
@@ -49,10 +55,14 @@ export default function Dashboard() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">My Projects</h1>
-            <p className="text-slate-300">Manage your driveway estimates and share with contractors</p>
+            <p className="text-slate-300">
+              Manage your driveway estimates and share with contractors
+            </p>
           </div>
           <Link href="/estimator">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">New Estimate</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              New Estimate
+            </Button>
           </Link>
         </div>
 
@@ -64,18 +74,27 @@ export default function Dashboard() {
         ) : !projectsQuery.data || projectsQuery.data.length === 0 ? (
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-400 mb-4">No projects yet. Create your first driveway estimate!</p>
+              <p className="text-slate-400 mb-4">
+                No projects yet. Create your first driveway estimate!
+              </p>
               <Link href="/estimator">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">Start Estimating</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Start Estimating
+                </Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projectsQuery.data.map((project) => (
-              <Card key={project.id} className="bg-slate-800 border-slate-700 hover:border-blue-500 transition">
+            {projectsQuery.data.map(project => (
+              <Card
+                key={project.id}
+                className="bg-slate-800 border-slate-700 hover:border-blue-500 transition"
+              >
                 <CardHeader>
-                  <CardTitle className="text-white">{project.projectName}</CardTitle>
+                  <CardTitle className="text-white">
+                    {project.projectName}
+                  </CardTitle>
                   <CardDescription className="text-slate-400">
                     {new Date(project.createdAt).toLocaleDateString()}
                   </CardDescription>
@@ -85,13 +104,21 @@ export default function Dashboard() {
                   {project.previewImageUrl && (
                     <div className="relative w-full h-40 bg-black rounded-lg overflow-hidden">
                       {/* @ts-ignore */}
-                      <img src={project.previewImageUrl} alt={project.projectName} className="w-full h-full object-cover" />
+                      <img
+                        src={project.previewImageUrl}
+                        alt={project.projectName}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
                   {!project.previewImageUrl && project.photoUrl && (
                     <div className="relative w-full h-40 bg-black rounded-lg overflow-hidden">
                       {/* @ts-ignore */}
-                      <img src={project.photoUrl} alt={project.projectName} className="w-full h-full object-cover" />
+                      <img
+                        src={project.photoUrl}
+                        alt={project.projectName}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
 
@@ -99,19 +126,24 @@ export default function Dashboard() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Area:</span>
-                      <span className="text-white font-semibold">{project.squareFeet} sq ft</span>
+                      <span className="text-white font-semibold">
+                        {project.squareFeet} sq ft
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Material:</span>
                       <span className="text-white font-semibold">
-                        {project.selectedMaterial && materials[project.selectedMaterial]
+                        {project.selectedMaterial &&
+                        materials[project.selectedMaterial]
                           ? materials[project.selectedMaterial].name
                           : "Unknown"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Cost:</span>
-                      <span className="text-green-400 font-semibold">{project.totalCost}</span>
+                      <span className="text-green-400 font-semibold">
+                        {project.totalCost}
+                      </span>
                     </div>
                   </div>
 

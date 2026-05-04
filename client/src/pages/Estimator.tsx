@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,7 +67,8 @@ export default function Estimator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const uploadPhotoMutation = trpc.projects.uploadPhotoAndDetectEdges.useMutation();
+  const uploadPhotoMutation =
+    trpc.projects.uploadPhotoAndDetectEdges.useMutation();
   const getPricingQuery = trpc.projects.getPricing.useQuery(
     {
       zipCode: state.zipCode,
@@ -69,9 +76,13 @@ export default function Estimator() {
       squareFeet: state.squareFeet || 1000,
       depthInches: state.depthInches,
     },
-    { enabled: !!state.zipCode && !!state.selectedMaterial && !!state.squareFeet }
+    {
+      enabled:
+        !!state.zipCode && !!state.selectedMaterial && !!state.squareFeet,
+    }
   );
-  const generatePreviewMutation = trpc.projects.generateMaterialPreview.useMutation();
+  const generatePreviewMutation =
+    trpc.projects.generateMaterialPreview.useMutation();
   const createProjectMutation = trpc.projects.create.useMutation();
 
   // Get user's geolocation on mount
@@ -79,19 +90,19 @@ export default function Estimator() {
     if (!user) return;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setState((prev) => ({
+        position => {
+          setState(prev => ({
             ...prev,
             latitude: position.coords.latitude.toString(),
             longitude: position.coords.longitude.toString(),
           }));
           // In production, reverse geocode to get ZIP code
           // For now, use a default
-          setState((prev) => ({ ...prev, zipCode: "10001" }));
+          setState(prev => ({ ...prev, zipCode: "10001" }));
         },
-        (error) => {
+        error => {
           console.warn("Geolocation error:", error);
-          setState((prev) => ({ ...prev, zipCode: "10001" })); // Default ZIP
+          setState(prev => ({ ...prev, zipCode: "10001" })); // Default ZIP
         }
       );
     }
@@ -103,7 +114,7 @@ export default function Estimator() {
     setLoading(true);
     try {
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = async e => {
         const base64 = (e.target?.result as string).split(",")[1];
         if (!base64) return;
 
@@ -118,7 +129,7 @@ export default function Estimator() {
               imageHeight: img.height,
             });
 
-            setState((prev) => ({
+            setState(prev => ({
               ...prev,
               photoUrl: result.photoUrl,
               photoKey: result.photoKey,
@@ -149,13 +160,14 @@ export default function Estimator() {
   };
 
   const handleCornerDrag = (e: React.MouseEvent) => {
-    if (draggingCorner === null || !containerRef.current || !state.photoUrl) return;
+    if (draggingCorner === null || !containerRef.current || !state.photoUrl)
+      return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    setState((prev) => {
+    setState(prev => {
       const newCorners = [...prev.corners];
       newCorners[draggingCorner] = {
         x: Math.max(0, Math.min(100, x)),
@@ -169,8 +181,10 @@ export default function Estimator() {
     setDraggingCorner(null);
   };
 
-  const handleMaterialSelect = (material: "hotmix" | "millings" | "tar_and_chip" | "gravel") => {
-    setState((prev) => ({ ...prev, selectedMaterial: material }));
+  const handleMaterialSelect = (
+    material: "hotmix" | "millings" | "tar_and_chip" | "gravel"
+  ) => {
+    setState(prev => ({ ...prev, selectedMaterial: material }));
   };
 
   const handleGeneratePreview = async () => {
@@ -183,7 +197,7 @@ export default function Estimator() {
         material: state.selectedMaterial,
       });
 
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         previewUrl: result.previewUrl,
         previewKey: result.previewKey,
@@ -278,36 +292,52 @@ export default function Estimator() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Driveway Estimator Pro</h1>
-          <p className="text-slate-300">Measure, visualize, and estimate your driveway project</p>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Driveway Estimator Pro
+          </h1>
+          <p className="text-slate-300">
+            Measure, visualize, and estimate your driveway project
+          </p>
         </div>
 
         {/* Step Indicator */}
         <div className="flex justify-between mb-8">
-          {["upload", "adjust", "material", "preview", "summary"].map((s, i) => (
-            <div key={s} className="flex items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                  step === s
-                    ? "bg-blue-500 text-white"
-                    : ["upload", "adjust", "material", "preview", "summary"].indexOf(step) > i
-                      ? "bg-green-500 text-white"
-                      : "bg-slate-600 text-slate-300"
-                }`}
-              >
-                {i + 1}
+          {["upload", "adjust", "material", "preview", "summary"].map(
+            (s, i) => (
+              <div key={s} className="flex items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                    step === s
+                      ? "bg-blue-500 text-white"
+                      : [
+                            "upload",
+                            "adjust",
+                            "material",
+                            "preview",
+                            "summary",
+                          ].indexOf(step) > i
+                        ? "bg-green-500 text-white"
+                        : "bg-slate-600 text-slate-300"
+                  }`}
+                >
+                  {i + 1}
+                </div>
+                {i < 4 && <div className="w-12 h-1 bg-slate-600 mx-2"></div>}
               </div>
-              {i < 4 && <div className="w-12 h-1 bg-slate-600 mx-2"></div>}
-            </div>
-          ))}
+            )
+          )}
         </div>
 
         {/* Upload Step */}
         {step === "upload" && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Step 1: Capture Your Driveway</CardTitle>
-              <CardDescription>Take a photo or upload an image of your driveway</CardDescription>
+              <CardTitle className="text-white">
+                Step 1: Capture Your Driveway
+              </CardTitle>
+              <CardDescription>
+                Take a photo or upload an image of your driveway
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-blue-500 transition">
@@ -316,7 +346,9 @@ export default function Estimator() {
                   type="file"
                   accept="image/*"
                   capture="environment"
-                  onChange={(e) => e.target.files?.[0] && handlePhotoCapture(e.target.files[0])}
+                  onChange={e =>
+                    e.target.files?.[0] && handlePhotoCapture(e.target.files[0])
+                  }
                   className="hidden"
                 />
                 <button
@@ -333,8 +365,12 @@ export default function Estimator() {
                     <>
                       <Camera className="w-12 h-12 text-slate-400" />
                       <div>
-                        <p className="text-white font-semibold">Click to capture or upload</p>
-                        <p className="text-slate-400 text-sm">or drag and drop an image</p>
+                        <p className="text-white font-semibold">
+                          Click to capture or upload
+                        </p>
+                        <p className="text-slate-400 text-sm">
+                          or drag and drop an image
+                        </p>
                       </div>
                     </>
                   )}
@@ -348,8 +384,12 @@ export default function Estimator() {
         {step === "adjust" && state.photoUrl && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Step 2: Adjust Driveway Corners</CardTitle>
-              <CardDescription>Drag the corners to match your driveway edges</CardDescription>
+              <CardTitle className="text-white">
+                Step 2: Adjust Driveway Corners
+              </CardTitle>
+              <CardDescription>
+                Drag the corners to match your driveway edges
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div
@@ -360,7 +400,11 @@ export default function Estimator() {
                 onMouseUp={handleCornerDragEnd}
                 onMouseLeave={handleCornerDragEnd}
               >
-                <img src={state.photoUrl} alt="Driveway" className="w-full h-full object-cover" />
+                <img
+                  src={state.photoUrl}
+                  alt="Driveway"
+                  className="w-full h-full object-cover"
+                />
 
                 {/* Corner Markers */}
                 {state.corners.map((corner, i) => (
@@ -376,7 +420,9 @@ export default function Estimator() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-slate-300">Detected Area</Label>
-                  <p className="text-2xl font-bold text-white">{state.squareFeet} sq ft</p>
+                  <p className="text-2xl font-bold text-white">
+                    {state.squareFeet} sq ft
+                  </p>
                 </div>
                 <div>
                   <Label className="text-slate-300">Depth</Label>
@@ -385,7 +431,12 @@ export default function Estimator() {
                     min="1"
                     max="12"
                     value={state.depthInches}
-                    onChange={(e) => setState((prev) => ({ ...prev, depthInches: parseInt(e.target.value) }))}
+                    onChange={e =>
+                      setState(prev => ({
+                        ...prev,
+                        depthInches: parseInt(e.target.value),
+                      }))
+                    }
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <p className="text-xs text-slate-400">inches</p>
@@ -406,12 +457,16 @@ export default function Estimator() {
         {step === "material" && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Step 3: Select Material</CardTitle>
-              <CardDescription>Choose the driveway material you want</CardDescription>
+              <CardTitle className="text-white">
+                Step 3: Select Material
+              </CardTitle>
+              <CardDescription>
+                Choose the driveway material you want
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {materials.map((material) => (
+                {materials.map(material => (
                   <button
                     key={material.id}
                     onClick={() => handleMaterialSelect(material.id as any)}
@@ -422,9 +477,13 @@ export default function Estimator() {
                     }`}
                   >
                     <div className="text-3xl mb-2">{material.icon}</div>
-                    <p className="text-white font-semibold text-sm">{material.name}</p>
+                    <p className="text-white font-semibold text-sm">
+                      {material.name}
+                    </p>
                     {getPricingQuery.data && (
-                      <p className="text-blue-400 text-xs mt-2">{getPricingQuery.data.pricePerSquareFoot}/sq ft</p>
+                      <p className="text-blue-400 text-xs mt-2">
+                        {getPricingQuery.data.pricePerSquareFoot}/sq ft
+                      </p>
                     )}
                   </button>
                 ))}
@@ -436,15 +495,21 @@ export default function Estimator() {
                     <div className="space-y-2 text-white">
                       <div className="flex justify-between">
                         <span>Quantity Needed:</span>
-                        <span className="font-bold">{getPricingQuery.data.quantityNeeded}</span>
+                        <span className="font-bold">
+                          {getPricingQuery.data.quantityNeeded}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Price per Ton:</span>
-                        <span className="font-bold">{getPricingQuery.data.pricePerTon}</span>
+                        <span className="font-bold">
+                          {getPricingQuery.data.pricePerTon}
+                        </span>
                       </div>
                       <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
                         <span>Total Cost:</span>
-                        <span className="font-bold text-green-400">{getPricingQuery.data.totalCost}</span>
+                        <span className="font-bold text-green-400">
+                          {getPricingQuery.data.totalCost}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -456,7 +521,9 @@ export default function Estimator() {
                 disabled={!state.selectedMaterial || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {loading ? "Generating Preview..." : "Generate Material Preview"}
+                {loading
+                  ? "Generating Preview..."
+                  : "Generate Material Preview"}
               </Button>
             </CardContent>
           </Card>
@@ -466,12 +533,23 @@ export default function Estimator() {
         {step === "preview" && state.previewUrl && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Step 4: Preview Your Driveway</CardTitle>
-              <CardDescription>See how your driveway will look with the selected material</CardDescription>
+              <CardTitle className="text-white">
+                Step 4: Preview Your Driveway
+              </CardTitle>
+              <CardDescription>
+                See how your driveway will look with the selected material
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                <img src={state.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+              <div
+                className="relative w-full bg-black rounded-lg overflow-hidden"
+                style={{ aspectRatio: "16/9" }}
+              >
+                <img
+                  src={state.previewUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               <Button
@@ -488,8 +566,12 @@ export default function Estimator() {
         {step === "summary" && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Step 5: Project Summary</CardTitle>
-              <CardDescription>Review and save your driveway estimate</CardDescription>
+              <CardTitle className="text-white">
+                Step 5: Project Summary
+              </CardTitle>
+              <CardDescription>
+                Review and save your driveway estimate
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -497,18 +579,30 @@ export default function Estimator() {
                   <Label className="text-slate-300">Project Name</Label>
                   <Input
                     value={state.projectName}
-                    onChange={(e) => setState((prev) => ({ ...prev, projectName: e.target.value }))}
+                    onChange={e =>
+                      setState(prev => ({
+                        ...prev,
+                        projectName: e.target.value,
+                      }))
+                    }
                     placeholder="e.g., Front Driveway Renovation"
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">Contractor Email (Optional)</Label>
+                  <Label className="text-slate-300">
+                    Contractor Email (Optional)
+                  </Label>
                   <Input
                     type="email"
                     value={state.contractorEmail}
-                    onChange={(e) => setState((prev) => ({ ...prev, contractorEmail: e.target.value }))}
+                    onChange={e =>
+                      setState(prev => ({
+                        ...prev,
+                        contractorEmail: e.target.value,
+                      }))
+                    }
                     placeholder="contractor@example.com"
                     className="bg-slate-700 border-slate-600 text-white"
                   />
@@ -518,7 +612,9 @@ export default function Estimator() {
                   <Label className="text-slate-300">Notes (Optional)</Label>
                   <Textarea
                     value={state.notes}
-                    onChange={(e) => setState((prev) => ({ ...prev, notes: e.target.value }))}
+                    onChange={e =>
+                      setState(prev => ({ ...prev, notes: e.target.value }))
+                    }
                     placeholder="Any additional details..."
                     className="bg-slate-700 border-slate-600 text-white"
                     rows={3}
@@ -531,23 +627,32 @@ export default function Estimator() {
                   <div className="space-y-2 text-white">
                     <div className="flex justify-between">
                       <span>Area:</span>
-                      <span className="font-bold">{state.squareFeet} sq ft</span>
+                      <span className="font-bold">
+                        {state.squareFeet} sq ft
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Material:</span>
                       <span className="font-bold">
-                        {materials.find((m) => m.id === state.selectedMaterial)?.name}
+                        {
+                          materials.find(m => m.id === state.selectedMaterial)
+                            ?.name
+                        }
                       </span>
                     </div>
                     {getPricingQuery.data && (
                       <>
                         <div className="flex justify-between">
                           <span>Quantity:</span>
-                          <span className="font-bold">{getPricingQuery.data.quantityNeeded}</span>
+                          <span className="font-bold">
+                            {getPricingQuery.data.quantityNeeded}
+                          </span>
                         </div>
                         <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
                           <span>Total Cost:</span>
-                          <span className="font-bold text-green-400">{getPricingQuery.data.totalCost}</span>
+                          <span className="font-bold text-green-400">
+                            {getPricingQuery.data.totalCost}
+                          </span>
                         </div>
                       </>
                     )}
