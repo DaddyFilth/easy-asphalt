@@ -1,91 +1,84 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Download } from "lucide-react";
+import { toast } from "sonner";
+import { Loader2, Share2, Download, ArrowLeft } from "lucide-react";
+import { useState } from "react";
 
-export default function SharedProject() {
-  const { shareToken } = useParams<{ shareToken: string }>();
+export default function ProjectDetail() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const [contractorEmail, setContractorEmail] = useState("");
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
-  const projectQuery = trpc.projects.getSharedProject.useQuery(
-    { shareToken: shareToken || "" },
-    { enabled: !!shareToken }
+  const projectQuery = trpc.projects.getById.useQuery(
+    { projectId: parseInt(projectId || "0") },
+    { enabled: !!projectId && !!user }
   );
+
+  const createShareLinkMutation = trpc.projects.createShareLink.useMutation({
+    onSuccess: (data) => {
+      toast.success("Share link created! Copied to clipboard.");
+      navigator.clipboard.writeText(data.shareLink);
+      setIsShareDialogOpen(false);
+      setContractorEmail("");
+    },
+    onError: (error) => {
+      toast.error("Failed to create share link");
+    },
+  });
+
+  const handleShare = async () => {
+    if (!projectId) return;
+    try {
+      await createShareLinkMutation.mutateAsync({
+        projectId: parseInt(projectId),
+        contractorEmail: contractorEmail || undefined,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const downloadPDFMutation = trpc.projects.downloadPDF.useMutation({
+    onSuccess: (data) => {
+      const binaryString = atob(data.pdfBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("PDF downloaded successfully");
+    },
+    onError: () => {
+      toast.error("Failed to download PDF");
+    },
+  });
+
+  const handleDownloadPDF = () => {
+    if (!projectId) return;
+    downloadPDFMutation.mutate({ projectId: parseInt(projectId) });
+  };
 
   const materials: Record<string, { name: string; icon: string }> = {
     hotmix: { name: "Hot Mix Asphalt", icon: "🛣️" },
     millings: { name: "Asphalt Millings", icon: "♻️" },
     tar_and_chip: { name: "Tar & Chip", icon: "🪨" },
     gravel: { name: "Gravel", icon: "⚫" },
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!projectQuery.data) return;
-    const project = projectQuery.data;
-
-    try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-      const margin = 15;
-      let yPosition = margin;
-
-      doc.setFontSize(24);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Driveway Estimate", margin, yPosition);
-
-      yPosition += 12;
-      doc.setFontSize(14);
-      doc.setTextColor(80, 80, 80);
-      doc.text(project.projectName || "Project", margin, yPosition);
-
-      yPosition += 15;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Measurements", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Area: ${project.squareFeet} sq ft`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Depth: ${project.depthInches} inches`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Location: ${project.zipCode}`, margin + 5, yPosition);
-
-      yPosition += 12;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Material", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      const materialName = materials[project.selectedMaterial || ""]?.name || project.selectedMaterial || "Unknown";
-      doc.text(`Type: ${materialName}`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Quantity: ${project.quantityNeeded}`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Price per Unit: ${project.pricePerUnit}`, margin + 5, yPosition);
-
-      yPosition += 10;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Pricing", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 128, 0);
-      doc.text(`Total Cost: ${project.totalCost}`, margin + 5, yPosition);
-
-      const filename = `driveway-estimate-${project.projectName?.replace(/\s+/g, "-")}-${Date.now()}.pdf`;
-      doc.save(filename);
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      alert("Failed to generate PDF");
-    }
   };
 
   if (projectQuery.isLoading) {
@@ -100,10 +93,18 @@ export default function SharedProject() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
+          <Button
+            onClick={() => navigate("/dashboard")}
+            variant="outline"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-400 mb-4">Project not found or link has expired</p>
-              <p className="text-slate-500 text-sm">Please check the link and try again</p>
+              <p className="text-slate-400 mb-4">Project not found</p>
+              <p className="text-slate-500 text-sm">The project you're looking for doesn't exist or has been deleted.</p>
             </CardContent>
           </Card>
         </div>
@@ -118,18 +119,64 @@ export default function SharedProject() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
+        <div className="flex justify-between items-start mb-8">
           <div>
+            <Button
+              onClick={() => navigate("/dashboard")}
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
             <h1 className="text-4xl font-bold text-white mb-2">{project.projectName}</h1>
-            <p className="text-slate-300">Driveway Estimate Summary</p>
+            <p className="text-slate-300">Created on {new Date(project.createdAt).toLocaleDateString()}</p>
           </div>
-          <Button onClick={handleDownloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Download className="w-4 h-4 mr-2" />
-            Download PDF
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-800 border-slate-700">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Share Project</DialogTitle>
+                  <DialogDescription className="text-slate-400">
+                    Generate a shareable link and optionally send it to a contractor
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-slate-300">Contractor Email (Optional)</Label>
+                    <Input
+                      type="email"
+                      value={contractorEmail}
+                      onChange={(e) => setContractorEmail(e.target.value)}
+                      placeholder="contractor@example.com"
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleShare}
+                    disabled={createShareLinkMutation.isPending}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {createShareLinkMutation.isPending ? "Creating..." : "Create & Copy Link"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button onClick={handleDownloadPDF} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <Download className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
+          </div>
         </div>
 
-        {/* Project Images */}
+        {/* Images */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {project.photoUrl && (
             <Card className="bg-slate-800 border-slate-700 overflow-hidden">
@@ -138,7 +185,6 @@ export default function SharedProject() {
               </CardHeader>
               <CardContent>
                 <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                  {/* @ts-ignore */}
                   <img src={project.photoUrl} alt="Original" className="w-full h-full object-cover" />
                 </div>
               </CardContent>
@@ -152,7 +198,6 @@ export default function SharedProject() {
               </CardHeader>
               <CardContent>
                 <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                  {/* @ts-ignore */}
                   <img src={project.previewImageUrl} alt="Preview" className="w-full h-full object-cover" />
                 </div>
               </CardContent>
@@ -230,12 +275,6 @@ export default function SharedProject() {
             </CardContent>
           </Card>
         )}
-
-        {/* Footer */}
-        <div className="mt-12 text-center text-slate-500 text-sm">
-          <p>This project was shared via Driveway Estimator Pro</p>
-          <p>Created on {new Date(project.createdAt).toLocaleDateString()}</p>
-        </div>
       </div>
     </div>
   );

@@ -371,4 +371,28 @@ export const projectsRouter = router({
         cornerPoints: project.cornerPoints ? JSON.parse(project.cornerPoints) : null,
       };
     }),
+
+  /**
+   * Download project as PDF
+   */
+  downloadPDF: protectedProcedure
+    .input(z.object({ projectId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const project = await getProjectById(input.projectId);
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      }
+      if (project.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
+      }
+
+      const { generateProjectPDF } = await import("../services/pdfExport");
+      const pdfBuffer = await generateProjectPDF(project);
+      const base64PDF = pdfBuffer.toString("base64");
+
+      return {
+        pdfBase64: base64PDF,
+        filename: `driveway-estimate-${project.projectName?.replace(/\s+/g, "-")}-${Date.now()}.pdf`,
+      };
+    }),
 });

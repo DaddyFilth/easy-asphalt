@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Estimator from "./pages/Estimator";
 import Dashboard from "./pages/Dashboard";
+import ProjectDetail from "./pages/ProjectDetail";
 import SharedProject from "./pages/SharedProject";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/estimator"} component={Estimator} />
       <Route path={"/dashboard"} component={Dashboard} />
+      <Route path={"/project/:projectId"} component={ProjectDetail} />
       <Route path={"/share/:shareToken"} component={SharedProject} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
