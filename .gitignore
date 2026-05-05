@@ -130,3 +130,4 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 # Android keystore
 android/app/*.jks
 android/keystore.properties
+pnpm-lock.yaml
