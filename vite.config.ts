@@ -173,6 +173,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+          rollupOptions: {
+            output: {
+              manualChunks: {
+                vendor: ['react', 'react-dom', 'react-router-dom'],
+                pdf: ['jspdf', 'html2canvas'],
+                ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
+              }
+            }
+          },
   },
   server: {
     host: true,
