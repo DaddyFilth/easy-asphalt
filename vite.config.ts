@@ -11,7 +11,7 @@ import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
-const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024; // 1MB per log file
+const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024;
 const TRIM_TARGET_BYTES = Math.floor(MAX_LOG_SIZE_BYTES * 0.6);
 
 type LogSource = "browserConsole" | "networkRequests" | "sessionReplay";
@@ -32,17 +32,16 @@ function trimLogFile(logPath: string, maxSize: number) {
     const keptLines: string[] = [];
     let keptBytes = 0;
 
-    const targetSize = TRIM_TARGET_BYTES;
     for (let i = lines.length - 1; i >= 0; i--) {
       const lineBytes = Buffer.byteLength(`${lines[i]}\n`, "utf-8");
-      if (keptBytes + lineBytes > targetSize) break;
+      if (keptBytes + lineBytes > TRIM_TARGET_BYTES) break;
       keptLines.unshift(lines[i]);
       keptBytes += lineBytes;
     }
 
     fs.writeFileSync(logPath, keptLines.join("\n"), "utf-8");
   } catch {
-    /* ignore trim errors */
+    // ignore trim errors
   }
 }
 
@@ -135,30 +134,13 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-// Conditionally include jsxLocPlugin only in development
-const getPlugins = () => {
-  const plugins = [
+export default defineConfig({
+  plugins: [
     react(),
     tailwindcss(),
     vitePluginManusRuntime(),
     vitePluginManusDebugCollector(),
-  ];
-  
-  // Only include jsxLocPlugin in development
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      const { jsxLocPlugin } = await import("@builder.io/vite-plugin-jsx-loc");
-      plugins.unshift(jsxLocPlugin());
-    } catch (e) {
-      console.log("jsxLocPlugin not available, skipping");
-    }
-  }
-  
-  return plugins;
-};
-
-export default defineConfig({
-  plugins: getPlugins(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -172,15 +154,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          pdf: ['jspdf', 'html2canvas'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
-        }
-      }
-    }
   },
   server: {
     host: true,
