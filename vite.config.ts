@@ -5,9 +5,7 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-// =============================================================================
-// Manus Debug Collector - Vite Plugin
-// =============================================================================
+// ... (rest of your config, but simplified)
 
 const PROJECT_ROOT = import.meta.dirname;
 const LOG_DIR = path.join(PROJECT_ROOT, ".manus-logs");
