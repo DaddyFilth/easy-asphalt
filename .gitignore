@@ -130,7 +130,7 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 # Android keystore
 android/app/*.jks
 android/keystore.properties
-pnpm-lock.yaml
+# pnpm-lock.yaml  # tracked for reproducible Docker builds
 .env
 .env.*
 .env

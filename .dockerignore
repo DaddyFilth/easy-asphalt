@@ -1,0 +1,47 @@
+# Dependencies (re-installed inside image)
+node_modules/
+.pnpm-store/
+
+# Build output (produced inside image)
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Dev / IDE artefacts
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+.manus-logs/
+
+# Test outputs
+coverage/
+.nyc_output/
+
+# Mobile native projects (not needed in server image)
+ios/
+android/
+
+# Manus / Vercel platform artefacts
+.manus-logs/
+.webdev/
+.vercel/
+
+# Git
+.git/
+.github/
+
+# Misc
+*.tsbuildinfo
+tmp/
+temp/

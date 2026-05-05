@@ -48,6 +48,9 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
+  // In development: __dirname is <root>/server/_core  → go up two levels to dist/public
+  // In production:  esbuild emits dist/index.js       → __dirname is <root>/dist
+  //                 so the static assets live in       → <root>/dist/public
   const distPath =
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
