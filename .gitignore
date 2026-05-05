@@ -131,3 +131,9 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 android/app/*.jks
 android/keystore.properties
 pnpm-lock.yaml
+.env
+.env.*
+.env
+.env.*
+.vercel
+.env*.local
