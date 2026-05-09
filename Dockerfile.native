@@ -1,0 +1,29 @@
+# ---------- Builder ----------
+FROM rust:1.78-slim AS builder
+WORKDIR /app
+
+# Install minimal runtime deps needed by egui/eframe
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        fontconfig libfreetype6 libfontconfig1 pkg-config libssl-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the whole repository
+COPY . .
+
+# Build the actual crate (workspace member) in release mode
+WORKDIR /app/server
+RUN cargo build --release
+
+# ---------- Runtime ----------
+FROM debian:bookworm-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        fontconfig libfreetype6 libfontconfig1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the built binary from the builder stage
+# (If your workspace puts artifacts in the workspace root target/, use:
+# COPY --from=builder /app/target/release/<binary-name> /usr/local/bin/<binary-name>)
+COPY --from=builder /app/server/target/release/easy-asphalt /usr/local/bin/easy-asphalt
+RUN chmod +x /usr/local/bin/easy-asphalt
+
+ENTRYPOINT ["/usr/local/bin/easy-asphalt"]

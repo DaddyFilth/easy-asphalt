@@ -45,3 +45,5 @@ android/
 *.tsbuildinfo
 tmp/
 temp/
+node_modules
+dist

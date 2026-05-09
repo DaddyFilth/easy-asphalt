@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  app:
+    image: easy-asphalt-app:latest
+    container_name: easy-asphalt
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"   # Admin UI
+    volumes:
+      - ./npm-data:/data
+      - ./letsencrypt:/etc/letsencrypt

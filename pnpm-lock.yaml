@@ -264,7 +264,7 @@ importers:
         specifier: ^0.18.1
         version: 0.18.1
       esbuild:
-        specifier: ^0.27.0
+        specifier: ^0.27.7
         version: 0.27.7
       pnpm:
         specifier: ^10.15.1
@@ -287,6 +287,9 @@ importers:
       typescript:
         specifier: 5.9.3
         version: 5.9.3
+      vite:
+        specifier: ^8.0.10
+        version: 8.0.10(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)
       vite-plugin-manus-runtime:
         specifier: ^0.0.57
         version: 0.0.57

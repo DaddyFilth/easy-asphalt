@@ -1,58 +1,21 @@
-version: "3.9"
+version: "3.8"
 
 services:
-  db:
-    image: mysql:8.0
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-driveway}
-      MYSQL_USER: ${MYSQL_USER:-app}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apppassword}
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    ports:
-      - "3306:3306"   # remove or comment out to keep DB internal-only
-
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: easy-asphalt-app:latest
+    container_name: easy-asphalt
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-apppassword}@db:3306/${MYSQL_DATABASE:-driveway}
+    expose:
+      - "80"
 
-      # Auth / JWT
-      JWT_SECRET: ${JWT_SECRET}
-      VITE_APP_ID: ${VITE_APP_ID}
-      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL}
-      VITE_OAUTH_PORTAL_URL: ${VITE_OAUTH_PORTAL_URL}
-
-      # Forge / Storage (S3 presign proxy)
-      BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY}
-      BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL}
-
-      # Owner bootstrap
-      OWNER_OPEN_ID: ${OWNER_OPEN_ID}
-      OWNER_NAME: ${OWNER_NAME}
-
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "80:80"
+      - "443:443"
+      - "81:81"
     volumes:
-      # Persist any file-based logs if needed (optional)
-      - app_logs:/app/logs
-
-volumes:
-  db_data:
-  app_logs:
+      - ./npm-data:/data
+      - ./letsencrypt:/etc/letsencrypt
