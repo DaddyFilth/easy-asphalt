@@ -145,3 +145,9 @@ dist/
 *.tar.gz
 *.tar
 *-wasm
+node_modules/
+dist/
+.next/
+*.tar.gz
+*.tar
+*-wasm
