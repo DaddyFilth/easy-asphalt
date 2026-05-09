@@ -1,0 +1,22 @@
+# ---------- 1. Build the WASM binary ----------
+FROM rust:1.78-slim AS builder
+WORKDIR /app
+
+# Install the WASM target and trunk (creates the .js glue + index.html)
+RUN rustup target add wasm32-unknown-unknown && \
+    cargo install trunk
+
+# Copy source and build in release mode
+COPY . .
+RUN trunk build --release --dist /app/dist   # outputs to /app/dist
+
+# ---------- 2. Serve with nginx ----------
+FROM nginx:alpine AS runtime
+# Remove default nginx html
+RUN rm -rf /usr/share/nginx/html/*
+# Copy the WASM build output
+COPY --from=builder /app/dist /usr/share/nginx/html
+# Expose port 80 (nginx default)
+EXPOSE 80
+# Start nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
