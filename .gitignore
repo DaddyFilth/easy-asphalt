@@ -138,3 +138,4 @@ android/keystore.properties
 .vercel
 .env*.local
 node_modules/
+*.tar.gz\n*.tar\n*-wasm
