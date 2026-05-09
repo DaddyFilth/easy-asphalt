@@ -137,3 +137,4 @@ android/keystore.properties
 .env.*
 .vercel
 .env*.local
+node_modules/
