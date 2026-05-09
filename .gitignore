@@ -139,3 +139,9 @@ android/keystore.properties
 .env*.local
 node_modules/
 *.tar.gz\n*.tar\n*-wasm
+node_modules/
+.next/
+dist/
+*.tar.gz
+*.tar
+*-wasm
