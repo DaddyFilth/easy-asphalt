@@ -1,0 +1,6 @@
+services:
+  easyasphalt:
+    image: easyasphalt
+    build:
+      context: .
+      dockerfile: ./Dockerfile
