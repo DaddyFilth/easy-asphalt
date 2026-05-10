@@ -139,3 +139,5 @@ android/keystore.properties
 
 .early.coverage
 *.early.test/
+.vercel
+.env*.local

@@ -1,6 +1,18 @@
-
 [profile.release]
 strip = true                     # strip symbols
 lto = true                       # link‑time optimization
 codegen-units = 1                # better optimizations, slower compile
 panic = "abort"                  # avoid unwinding tables
+filth@fedora:~/easy-asphalt$ cat src/lib.rs
+// src/lib.rs
+pub mod core {
+    pub struct Config {
+        pub input_path: String,
+        pub output_path: String,
+    }
+
+    pub fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
+        // your existing processing
+        Ok(())
+    }
+}
