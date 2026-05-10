@@ -136,3 +136,6 @@ android/keystore.properties
 *.tar.gz
 *.tar
 *-wasm
+
+.early.coverage
+*.early.test/

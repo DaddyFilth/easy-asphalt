@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Loader2, Upload, Camera, AlertCircle } from "lucide-react";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
+type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
 
 interface CornerPoint {
   x: number;
@@ -28,7 +29,7 @@ interface EstimatorState {
   corners: CornerPoint[];
   squareFeet: number | null;
   depthInches: number;
-  selectedMaterial: "hotmix" | "millings" | "tar_and_chip" | "gravel" | null;
+  selectedMaterial: Material | null;
   pricing: any | null;
   previewUrl: string | null;
   previewKey: string | null;
@@ -181,9 +182,7 @@ export default function Estimator() {
     setDraggingCorner(null);
   };
 
-  const handleMaterialSelect = (
-    material: "hotmix" | "millings" | "tar_and_chip" | "gravel"
-  ) => {
+  const handleMaterialSelect = (material: Material) => {
     setState(prev => ({ ...prev, selectedMaterial: material }));
   };
 
@@ -280,7 +279,7 @@ export default function Estimator() {
     }
   };
 
-  const materials = [
+  const materials: Array<{ id: Material; name: string; icon: string }> = [
     { id: "hotmix", name: "Hot Mix Asphalt", icon: "🛣️" },
     { id: "millings", name: "Asphalt Millings", icon: "♻️" },
     { id: "tar_and_chip", name: "Tar & Chip", icon: "🪨" },
@@ -469,7 +468,7 @@ export default function Estimator() {
                 {materials.map(material => (
                   <button
                     key={material.id}
-                    onClick={() => handleMaterialSelect(material.id as any)}
+                    onClick={() => handleMaterialSelect(material.id)}
                     className={`p-4 rounded-lg border-2 transition ${
                       state.selectedMaterial === material.id
                         ? "border-blue-500 bg-blue-500/10"

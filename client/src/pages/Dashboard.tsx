@@ -103,20 +103,18 @@ export default function Dashboard() {
                   {/* Project Thumbnail */}
                   {project.previewImageUrl && (
                     <div className="relative w-full h-40 bg-black rounded-lg overflow-hidden">
-                      {/* @ts-ignore */}
                       <img
                         src={project.previewImageUrl}
-                        alt={project.projectName}
+                        alt={project.projectName ?? "Project preview"}
                         className="w-full h-full object-cover"
                       />
                     </div>
                   )}
                   {!project.previewImageUrl && project.photoUrl && (
                     <div className="relative w-full h-40 bg-black rounded-lg overflow-hidden">
-                      {/* @ts-ignore */}
                       <img
                         src={project.photoUrl}
-                        alt={project.projectName}
+                        alt={project.projectName ?? "Project photo"}
                         className="w-full h-full object-cover"
                       />
                     </div>

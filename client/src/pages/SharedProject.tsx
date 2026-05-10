@@ -165,7 +165,6 @@ export default function SharedProject() {
                   className="relative w-full bg-black rounded-lg overflow-hidden"
                   style={{ aspectRatio: "16/9" }}
                 >
-                  {/* @ts-ignore */}
                   <img
                     src={project.photoUrl}
                     alt="Original"
@@ -186,7 +185,6 @@ export default function SharedProject() {
                   className="relative w-full bg-black rounded-lg overflow-hidden"
                   style={{ aspectRatio: "16/9" }}
                 >
-                  {/* @ts-ignore */}
                   <img
                     src={project.previewImageUrl}
                     alt="Preview"
