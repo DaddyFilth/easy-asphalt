@@ -11,10 +11,6 @@ build/
 *.tsbuildinfo
 coverage/
 
-# Package files
-package-lock.json
-pnpm-lock.yaml
-
 # Database
 *.db
 *.sqlite

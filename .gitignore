@@ -130,24 +130,9 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 # Android keystore
 android/app/*.jks
 android/keystore.properties
-# pnpm-lock.yaml  # tracked for reproducible Docker builds
-.env
-.env.*
-.env
-.env.*
-.vercel
-.env*.local
-node_modules/
-*.tar.gz\n*.tar\n*-wasm
-node_modules/
-.next/
-dist/
-*.tar.gz
-*.tar
-*-wasm
-node_modules/
-dist/
-.next/
+
+# Platform state and generated archives
+.vercel/
 *.tar.gz
 *.tar
 *-wasm

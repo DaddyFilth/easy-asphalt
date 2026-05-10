@@ -1,7 +1,12 @@
-// client/src/App.tsx
 import { Analytics } from "@vercel/analytics/react";
+import { Route, Switch } from "wouter";
 import Login from "./pages/Login";
-// ...other imports
+import Dashboard from "./pages/Dashboard";
+import Estimator from "./pages/Estimator";
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
+import ProjectDetail from "./pages/ProjectDetail";
+import SharedProject from "./pages/SharedProject";
 
 export default function App() {
   return (
@@ -13,7 +18,6 @@ export default function App() {
         <Route path={"/project/:projectId"} component={ProjectDetail} />
         <Route path={"/share/:shareToken"} component={SharedProject} />
 
-        {/* new login route */}
         <Route path={"/login"} component={Login} />
 
         <Route path={"/404"} component={NotFound} />

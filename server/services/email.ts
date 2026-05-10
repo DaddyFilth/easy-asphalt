@@ -134,18 +134,17 @@ async function sendEmail(
   notification: EmailNotification
 ): Promise<{ success: boolean; messageId?: string }> {
   try {
-    // Mock implementation - in production, use SendGrid, AWS SES, etc.
-    console.log("[Email] Sending email to:", notification.to);
-    console.log("[Email] Subject:", notification.subject);
-    console.log("[Email] HTML:", notification.html);
+    const mockMessageId = `msg_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 11)}`;
 
-    // Simulate async operation
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // In production, this would return a real message ID from the email service
-    const mockMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    console.log("[Email] Email sent successfully with ID:", mockMessageId);
+    console.info("[Email] Mock email accepted", {
+      messageId: mockMessageId,
+      toDomain: notification.to.split("@")[1] ?? "unknown",
+      subject: notification.subject,
+    });
     return { success: true, messageId: mockMessageId };
   } catch (error) {
     console.error("[Email] Failed to send email:", error);
