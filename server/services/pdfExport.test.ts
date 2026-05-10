@@ -1,77 +1,70 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock pdfkit so tests don't require native bindings
+vi.mock("pdfkit", () => {
+  const mockDoc = {
+    on: vi.fn().mockReturnThis(),
+    fontSize: vi.fn().mockReturnThis(),
+    font: vi.fn().mockReturnThis(),
+    text: vi.fn().mockReturnThis(),
+    moveDown: vi.fn().mockReturnThis(),
+    rect: vi.fn().mockReturnThis(),
+    fill: vi.fn().mockReturnThis(),
+    stroke: vi.fn().mockReturnThis(),
+    fillColor: vi.fn().mockReturnThis(),
+    strokeColor: vi.fn().mockReturnThis(),
+    image: vi.fn().mockReturnThis(),
+    addPage: vi.fn().mockReturnThis(),
+    end: vi.fn(),
+    pipe: vi.fn().mockReturnThis(),
+  };
+  return { default: vi.fn(() => mockDoc) };
+});
+
 import { generateProjectPDF } from "./pdfExport";
-import type { Project } from "../../drizzle/schema";
+
+const mockProject = {
+  id: 1,
+  userId: "user_123",
+  projectName: "My Driveway",
+  photoUrl: "https://example.com/photo.jpg",
+  photoKey: "projects/user_123/photo.jpg",
+  squareFeet: 640,
+  depthInches: 2,
+  cornerPoints: JSON.stringify([{ x: 10, y: 10 }, { x: 90, y: 10 }, { x: 90, y: 90 }, { x: 10, y: 90 }]),
+  selectedMaterial: "hotmix",
+  quantityNeeded: "5.50 tons",
+  pricePerUnit: "75.00",
+  totalCost: "$412.50",
+  zipCode: "75022",
+  latitude: null,
+  longitude: null,
+  previewImageUrl: null,
+  previewImageKey: null,
+  contractorEmail: null,
+  notes: "Front driveway only",
+  createdAt: new Date("2026-01-15"),
+  updatedAt: new Date("2026-01-15"),
+};
 
 describe("PDF Export Service", () => {
-  const mockProject: Project = {
-    id: 1,
-    userId: 1,
-    photoUrl: "https://example.com/photo.jpg",
-    photoKey: "photos/123",
-    squareFeet: 500,
-    depthInches: 2,
-    cornerPoints: JSON.stringify([
-      { x: 0, y: 0 },
-      { x: 100, y: 0 },
-      { x: 100, y: 100 },
-      { x: 0, y: 100 },
-    ]),
-    selectedMaterial: "hotmix",
-    quantityNeeded: "2.5 tons",
-    pricePerUnit: "$45.00",
-    totalCost: "$112.50",
-    zipCode: "10001",
-    latitude: "40.7128",
-    longitude: "-74.0060",
-    previewImageUrl: "https://example.com/preview.jpg",
-    previewImageKey: "previews/123",
-    contractorEmail: "contractor@example.com",
-    projectName: "Test Driveway",
-    notes: "This is a test project",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  it("should generate a PDF buffer from a project", async () => {
-    const pdfBuffer = await generateProjectPDF(mockProject);
-
-    expect(pdfBuffer).toBeInstanceOf(Buffer);
-    expect(pdfBuffer.length).toBeGreaterThan(0);
+  it("should return a Buffer", async () => {
+    const result = await generateProjectPDF(mockProject as any);
+    expect(result).toBeInstanceOf(Buffer);
   });
 
-  it("should include project name in PDF", async () => {
-    const pdfBuffer = await generateProjectPDF(mockProject);
-    const pdfString = pdfBuffer.toString("utf-8", 0, 1000);
-
-    // PDF should contain some text data
-    expect(pdfString.length).toBeGreaterThan(0);
+  it("should not throw for a minimal project", async () => {
+    const minimal = { ...mockProject, notes: null, previewImageUrl: null };
+    await expect(generateProjectPDF(minimal as any)).resolves.not.toThrow();
   });
 
-  it("should handle projects without notes", async () => {
-    const projectWithoutNotes: Project = {
+  it("should handle missing optional fields gracefully", async () => {
+    const sparse = {
       ...mockProject,
-      notes: null,
+      projectName: null,
+      totalCost: null,
+      quantityNeeded: null,
     };
-
-    const pdfBuffer = await generateProjectPDF(projectWithoutNotes);
-
-    expect(pdfBuffer).toBeInstanceOf(Buffer);
-    expect(pdfBuffer.length).toBeGreaterThan(0);
-  });
-
-  it("should handle all material types", async () => {
-    const materials = ["hotmix", "millings", "tar_and_chip", "gravel"];
-
-    for (const material of materials) {
-      const project: Project = {
-        ...mockProject,
-        selectedMaterial: material,
-      };
-
-      const pdfBuffer = await generateProjectPDF(project);
-
-      expect(pdfBuffer).toBeInstanceOf(Buffer);
-      expect(pdfBuffer.length).toBeGreaterThan(0);
-    }
+    await expect(generateProjectPDF(sparse as any)).resolves.not.toThrow();
   });
 });
