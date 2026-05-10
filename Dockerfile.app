@@ -1,31 +1,32 @@
-# ---------- Builder (Node + pnpm) ----------
-FROM node:20-slim AS builder
+FROM node:20-slim AS base
 WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy manifests and patches first (for Docker layer caching)
+FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
+RUN pnpm install --frozen-lockfile
 
-# Install dependencies
-RUN pnpm install
-
-# Copy the rest of the source (node_modules is excluded by .dockerignore)
+FROM deps AS build
 COPY . .
+RUN pnpm build
 
-# Patch vite.config.ts to use postcss CSS transformer (avoids lightningcss @theme error)
-RUN sed -i "s/export default defineConfig({/export default defineConfig({\\n  css: { transformer: 'postcss' },/" vite.config.ts || true
+FROM base AS prod-deps
+COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
+RUN pnpm install --prod --frozen-lockfile
 
-# Build using pnpm exec
-RUN pnpm exec vite build && \
-    pnpm exec esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && \
-    cp dist/public/index.html dist/index.html
+FROM node:20-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
-# ---------- Runtime (nginx) ----------
-FROM nginx:alpine AS runtime
-RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json ./
+
+EXPOSE 3000
+CMD ["node", "dist/index.js"]

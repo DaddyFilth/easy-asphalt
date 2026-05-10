@@ -1,6 +1,10 @@
 services:
-  easyasphalt:
-    image: easyasphalt
+  vite:
+    image: vite
     build:
-      context: .
+      context: node_modules/vite
       dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000
