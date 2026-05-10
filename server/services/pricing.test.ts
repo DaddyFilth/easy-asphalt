@@ -34,31 +34,31 @@ describe("Pricing Service", () => {
 
   describe("calculateTotalCost", () => {
     it("should calculate total cost correctly", () => {
-      const cost = calculateTotalCost(2.5, "$45.00");
+      const cost = calculateTotalCost(2.5, 45);
       expect(cost).toBe("$112.50");
     });
 
     it("should handle zero quantity", () => {
-      const cost = calculateTotalCost(0, "$45.00");
+      const cost = calculateTotalCost(0, 45);
       expect(cost).toBe("$0.00");
     });
 
-    it("should handle null price", () => {
-      const cost = calculateTotalCost(2.5, null);
+    it("should handle zero price", () => {
+      const cost = calculateTotalCost(2.5, 0);
       expect(cost).toBe("$0.00");
     });
 
-    it("should handle undefined price", () => {
-      const cost = calculateTotalCost(2.5, undefined);
-      expect(cost).toBe("$0.00");
-    });
-
-    it("should parse price strings with various formats", () => {
-      const cost1 = calculateTotalCost(2, "$50");
+    it("should handle decimal prices", () => {
+      const cost1 = calculateTotalCost(2, 50);
       expect(cost1).toBe("$100.00");
 
-      const cost2 = calculateTotalCost(2, "$50.50");
+      const cost2 = calculateTotalCost(2, 50.5);
       expect(cost2).toBe("$101.00");
+    });
+
+    it("should round to two decimal places", () => {
+      const cost = calculateTotalCost(3, 33.333);
+      expect(cost).toBe("$100.00");
     });
   });
 });
