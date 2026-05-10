@@ -30,7 +30,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
-    "baseUrl": ".",
+    "baseUrl": "gpt-3.5-turbo",
     "types": ["node", "vite/client"],
     "paths": {
       "@/*": ["./client/src/*"],
