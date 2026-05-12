@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 import { Loader2, Share2, Download, ArrowLeft } from "lucide-react";
 import { useState } from "react";
@@ -29,6 +30,7 @@ export default function ProjectDetail() {
   const { user } = useAuth();
   const [contractorEmail, setContractorEmail] = useState("");
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareLink, setShareLink] = useState("");
 
   const projectQuery = trpc.projects.getById.useQuery(
     { projectId: parseInt(projectId || "0") },
@@ -36,11 +38,14 @@ export default function ProjectDetail() {
   );
 
   const createShareLinkMutation = trpc.projects.createShareLink.useMutation({
-    onSuccess: data => {
-      toast.success("Share link created! Copied to clipboard.");
-      navigator.clipboard.writeText(data.shareLink);
-      setIsShareDialogOpen(false);
-      setContractorEmail("");
+    onSuccess: async data => {
+      setShareLink(data.shareLink);
+      const copied = await copyTextToClipboard(data.shareLink);
+      toast.success(
+        copied
+          ? "Share link created and copied."
+          : "Share link created. Copy it from the dialog."
+      );
     },
     onError: error => {
       toast.error("Failed to create share link");
@@ -52,7 +57,7 @@ export default function ProjectDetail() {
     try {
       await createShareLinkMutation.mutateAsync({
         projectId: parseInt(projectId),
-        contractorEmail: contractorEmail || undefined,
+        contractorEmail: contractorEmail.trim() || undefined,
       });
     } catch (error) {
       console.error(error);
@@ -157,7 +162,13 @@ export default function ProjectDetail() {
           <div className="flex gap-2">
             <Dialog
               open={isShareDialogOpen}
-              onOpenChange={setIsShareDialogOpen}
+              onOpenChange={open => {
+                setIsShareDialogOpen(open);
+                if (!open) {
+                  setShareLink("");
+                  setContractorEmail("");
+                }
+              }}
             >
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -197,6 +208,31 @@ export default function ProjectDetail() {
                       ? "Creating..."
                       : "Create & Copy Link"}
                   </Button>
+                  {shareLink && (
+                    <div className="space-y-2">
+                      <Label className="text-slate-300">Share Link</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          readOnly
+                          value={shareLink}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                          onClick={async () => {
+                            const copied = await copyTextToClipboard(shareLink);
+                            toast.success(
+                              copied ? "Copied link." : "Copy unavailable."
+                            );
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>

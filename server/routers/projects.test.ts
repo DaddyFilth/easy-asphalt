@@ -61,7 +61,7 @@ import {
   calculateSquareFeetFromCorners,
 } from "../services/edgeDetection";
 import { appRouter } from "../routers";
-import { createProject, createProjectShare } from "../db";
+import { createProject, createProjectShare, getProjectById } from "../db";
 import {
   sendContractorNotification,
   sendEstimateNotification,
@@ -69,6 +69,7 @@ import {
 
 const mockedCreateProject = vi.mocked(createProject);
 const mockedCreateProjectShare = vi.mocked(createProjectShare);
+const mockedGetProjectById = vi.mocked(getProjectById);
 const mockedSendEstimateNotification = vi.mocked(sendEstimateNotification);
 const mockedSendContractorNotification = vi.mocked(sendContractorNotification);
 
@@ -113,6 +114,7 @@ const savedProjectInput = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedCreateProject.mockResolvedValue({ id: 1 });
+  mockedGetProjectById.mockResolvedValue(null);
 });
 
 // ── Unit tests for the service functions called inside the router ───────────
@@ -216,6 +218,72 @@ describe("projects.create", () => {
       "$504.05",
       expect.stringContaining("/share/")
     );
+  });
+});
+
+describe("projects share and export tools", () => {
+  const project = {
+    id: 42,
+    userId: 7,
+    projectName: "../../Oak Ridge Driveway!",
+    photoUrl: "/local-storage/projects/7/photo.jpg",
+    photoKey: "projects/7/photo.jpg",
+    squareFeet: 640,
+    depthInches: 2,
+    cornerPoints: JSON.stringify(savedProjectInput.cornerPoints),
+    selectedMaterial: "hotmix",
+    quantityNeeded: "5.93 tons",
+    pricePerUnit: "$85.00",
+    totalCost: "$504.05",
+    zipCode: "10001",
+    latitude: null,
+    longitude: null,
+    previewImageUrl: null,
+    previewImageKey: null,
+    contractorEmail: null,
+    notes: null,
+    createdAt: new Date("2026-05-10T12:00:00.000Z"),
+    updatedAt: new Date("2026-05-10T12:00:00.000Z"),
+  };
+
+  it("creates share links from the request origin and trims contractor email", async () => {
+    mockedGetProjectById.mockResolvedValue(project as any);
+    const caller = createAuthedCaller();
+
+    const result = await caller.projects.createShareLink({
+      projectId: 42,
+      contractorEmail: " contractor@example.com ",
+    });
+
+    expect(result.shareLink).toMatch(
+      /^https:\/\/app\.example\.com\/share\/[A-Za-z0-9_-]+$/
+    );
+    expect(mockedCreateProjectShare).toHaveBeenCalledWith({
+      projectId: 42,
+      shareToken: expect.any(String),
+      contractorEmail: "contractor@example.com",
+    });
+    expect(mockedSendContractorNotification).toHaveBeenCalledWith(
+      "contractor@example.com",
+      "Owner Name",
+      "../../Oak Ridge Driveway!",
+      640,
+      "hotmix",
+      "$504.05",
+      result.shareLink
+    );
+  });
+
+  it("sanitizes generated PDF filenames", async () => {
+    mockedGetProjectById.mockResolvedValue(project as any);
+    const caller = createAuthedCaller();
+
+    const result = await caller.projects.downloadPDF({ projectId: 42 });
+
+    expect(result.filename).toMatch(
+      /^driveway-estimate-oak-ridge-driveway-\d+\.pdf$/
+    );
+    expect(result.pdfBase64.length).toBeGreaterThan(0);
   });
 });
 

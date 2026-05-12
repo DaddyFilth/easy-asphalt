@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,13 +7,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
-import { Link } from "wouter";
 import { Trash2, Share2, Eye, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
 
   const projectsQuery = trpc.projects.list.useQuery();
   const deleteProjectMutation = trpc.projects.delete.useMutation({
@@ -25,9 +23,17 @@ export default function Dashboard() {
     },
   });
   const createShareLinkMutation = trpc.projects.createShareLink.useMutation({
-    onSuccess: data => {
-      toast.success("Share link created! Copied to clipboard.");
-      navigator.clipboard.writeText(data.shareLink);
+    onSuccess: async data => {
+      setShareLink(data.shareLink);
+      const copied = await copyTextToClipboard(data.shareLink);
+      toast.success(
+        copied
+          ? "Share link created and copied."
+          : "Share link created. Copy it from the link panel."
+      );
+    },
+    onError: () => {
+      toast.error("Failed to create share link");
     },
   });
 
@@ -59,12 +65,34 @@ export default function Dashboard() {
               Manage your driveway estimates and share with contractors
             </p>
           </div>
-          <Link href="/estimator">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              New Estimate
-            </Button>
-          </Link>
+          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+            <a href="/estimator">New Estimate</a>
+          </Button>
         </div>
+
+        {shareLink && (
+          <Card className="mb-6 border-blue-500/40 bg-slate-800">
+            <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center">
+              <a
+                href={shareLink}
+                className="min-w-0 flex-1 truncate text-sm text-blue-300 hover:text-blue-200"
+              >
+                {shareLink}
+              </a>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                onClick={async () => {
+                  const copied = await copyTextToClipboard(shareLink);
+                  toast.success(copied ? "Copied link." : "Copy unavailable.");
+                }}
+              >
+                Copy
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Projects Grid */}
         {projectsQuery.isLoading ? (
@@ -77,11 +105,12 @@ export default function Dashboard() {
               <p className="text-slate-400 mb-4">
                 No projects yet. Create your first driveway estimate!
               </p>
-              <Link href="/estimator">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Start Estimating
-                </Button>
-              </Link>
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <a href="/estimator">Start Estimating</a>
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -147,18 +176,23 @@ export default function Dashboard() {
 
                   {/* Actions */}
                   <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-700">
-                    <Link href={`/project/${project.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+                    >
+                      <a
+                        href={`/project/${project.id}`}
+                        aria-label={`View ${project.projectName}`}
                       >
                         <Eye className="w-4 h-4" />
-                      </Button>
-                    </Link>
+                      </a>
+                    </Button>
                     <Button
                       onClick={() => handleShare(project.id)}
                       disabled={createShareLinkMutation.isPending}
+                      aria-label={`Create share link for ${project.projectName}`}
                       variant="outline"
                       size="sm"
                       className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -168,6 +202,7 @@ export default function Dashboard() {
                     <Button
                       onClick={() => handleDelete(project.id)}
                       disabled={deleteProjectMutation.isPending}
+                      aria-label={`Delete ${project.projectName}`}
                       variant="outline"
                       size="sm"
                       className="w-full border-red-600 text-red-400 hover:bg-red-900/20"

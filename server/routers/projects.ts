@@ -91,6 +91,21 @@ const optionalCoordinateSchema = z
   .max(32)
   .regex(/^-?\d{1,3}(?:\.\d{1,15})?$/)
   .optional();
+const shareTokenSchema = z
+  .string()
+  .min(16)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/);
+
+function safePdfSlug(value: string | null | undefined) {
+  const slug = (value || "driveway-estimate")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+  return slug || "driveway-estimate";
+}
 
 function getBaseUrl(req: Request) {
   const envBaseUrl = process.env.VITE_FRONTEND_FORGE_API_URL?.trim();
@@ -115,7 +130,7 @@ export const projectsRouter = router({
    * Get a single project by ID
    */
   getById: protectedProcedure
-    .input(z.object({ projectId: z.number() }))
+    .input(z.object({ projectId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       const project = await getProjectById(input.projectId);
       if (!project || project.userId !== ctx.user.id) {
@@ -422,11 +437,11 @@ export const projectsRouter = router({
   update: protectedProcedure
     .input(
       z.object({
-        projectId: z.number(),
+        projectId: z.number().int().positive(),
         updates: z.object({
-          projectName: z.string().optional(),
-          notes: z.string().optional(),
-          contractorEmail: z.string().email().optional(),
+          projectName: z.string().trim().min(1).max(120).optional(),
+          notes: z.string().trim().max(2_000).optional(),
+          contractorEmail: z.string().trim().email().max(320).optional(),
         }),
       })
     )
@@ -447,7 +462,7 @@ export const projectsRouter = router({
    * Delete a project
    */
   delete: protectedProcedure
-    .input(z.object({ projectId: z.number() }))
+    .input(z.object({ projectId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       const project = await getProjectById(input.projectId);
       if (!project || project.userId !== ctx.user.id) {
@@ -467,8 +482,8 @@ export const projectsRouter = router({
   createShareLink: protectedProcedure
     .input(
       z.object({
-        projectId: z.number(),
-        contractorEmail: z.string().email().optional(),
+        projectId: z.number().int().positive(),
+        contractorEmail: z.string().trim().email().max(320).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -481,9 +496,7 @@ export const projectsRouter = router({
       }
 
       const shareToken = nanoid(32);
-      const baseUrl =
-        process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000";
-      const shareLink = `${baseUrl}/share/${shareToken}`;
+      const shareLink = `${getBaseUrl(ctx.req)}/share/${shareToken}`;
 
       await createProjectShare({
         projectId: input.projectId,
@@ -511,7 +524,7 @@ export const projectsRouter = router({
    * Get a shared project by token (public access)
    */
   getSharedProject: publicProcedure
-    .input(z.object({ shareToken: z.string() }))
+    .input(z.object({ shareToken: shareTokenSchema }))
     .query(async ({ input }) => {
       const share = await getProjectShareByToken(input.shareToken);
       if (!share) {
@@ -538,7 +551,7 @@ export const projectsRouter = router({
    * Download project as PDF
    */
   downloadPDF: protectedProcedure
-    .input(z.object({ projectId: z.number() }))
+    .input(z.object({ projectId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const project = await getProjectById(input.projectId);
       if (!project) {
@@ -557,7 +570,7 @@ export const projectsRouter = router({
 
       return {
         pdfBase64: base64PDF,
-        filename: `driveway-estimate-${project.projectName?.replace(/\s+/g, "-")}-${Date.now()}.pdf`,
+        filename: `driveway-estimate-${safePdfSlug(project.projectName)}-${Date.now()}.pdf`,
       };
     }),
 });
