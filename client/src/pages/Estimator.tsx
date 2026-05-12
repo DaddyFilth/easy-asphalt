@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +23,8 @@ import { Loader2, Upload, Camera, AlertCircle } from "lucide-react";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
 type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 interface CornerPoint {
   x: number;
@@ -63,6 +71,7 @@ export default function Estimator() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -109,51 +118,85 @@ export default function Estimator() {
     }
   }, [user]);
 
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = event => {
+        const result = event.target?.result;
+        if (typeof result === "string") {
+          resolve(result);
+          return;
+        }
+
+        reject(new Error("Unable to read image file"));
+      };
+      reader.onerror = () => reject(new Error("Unable to read image file"));
+      reader.readAsDataURL(file);
+    });
+
+  const loadImageDimensions = (dataUrl: string) =>
+    new Promise<{ width: number; height: number }>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.width, height: img.height });
+      img.onerror = () => reject(new Error("Unable to load image"));
+      img.src = dataUrl;
+    });
+
   const handlePhotoCapture = async (file: File) => {
-    if (!file) return;
+    if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+      toast.error("Upload a JPG, PNG, or WebP image");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image must be 10 MB or smaller");
+      return;
+    }
 
     setLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async e => {
-        const base64 = (e.target?.result as string).split(",")[1];
-        if (!base64) return;
+      const dataUrl = await readFileAsDataUrl(file);
+      const base64 = dataUrl.split(",")[1];
+      if (!base64) throw new Error("Image file did not contain base64 data");
 
-        // Get image dimensions
-        const img = new Image();
-        img.onload = async () => {
-          try {
-            const result = await uploadPhotoMutation.mutateAsync({
-              photoBase64: base64,
-              photoName: file.name,
-              imageWidth: img.width,
-              imageHeight: img.height,
-            });
+      const dimensions = await loadImageDimensions(dataUrl);
+      const result = await uploadPhotoMutation.mutateAsync({
+        photoBase64: base64,
+        photoName: file.name,
+        photoMimeType: file.type,
+        imageWidth: dimensions.width,
+        imageHeight: dimensions.height,
+      });
 
-            setState(prev => ({
-              ...prev,
-              photoUrl: result.photoUrl,
-              photoKey: result.photoKey,
-              corners: result.corners,
-              squareFeet: result.squareFeet,
-            }));
+      setState(prev => ({
+        ...prev,
+        photoUrl: result.photoUrl,
+        photoKey: result.photoKey,
+        corners: result.corners,
+        squareFeet: result.squareFeet,
+      }));
 
-            toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
-            setStep("adjust");
-          } catch (error) {
-            toast.error("Failed to detect driveway edges");
-            console.error(error);
-          } finally {
-            setLoading(false);
-          }
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
+      setStep("adjust");
     } catch (error) {
       toast.error("Failed to process photo");
+      console.error(error);
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file) void handlePhotoCapture(file);
+  };
+
+  const handlePhotoDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingOver(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) void handlePhotoCapture(file);
   };
 
   const handleCornerDragStart = (index: number) => {
@@ -339,21 +382,41 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-blue-500 transition">
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+                  isDraggingOver
+                    ? "border-blue-400 bg-blue-500/10"
+                    : "border-slate-600 hover:border-blue-500"
+                }`}
+                onDragEnter={event => {
+                  event.preventDefault();
+                  setIsDraggingOver(true);
+                }}
+                onDragOver={event => {
+                  event.preventDefault();
+                  setIsDraggingOver(true);
+                }}
+                onDragLeave={event => {
+                  if (event.currentTarget === event.target) {
+                    setIsDraggingOver(false);
+                  }
+                }}
+                onDrop={handlePhotoDrop}
+              >
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   capture="environment"
-                  onChange={e =>
-                    e.target.files?.[0] && handlePhotoCapture(e.target.files[0])
-                  }
+                  onChange={handleFileInputChange}
                   className="hidden"
                 />
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
                   className="flex flex-col items-center gap-4 w-full"
+                  aria-label="Capture or upload a driveway photo"
                 >
                   {loading ? (
                     <>
@@ -362,13 +425,19 @@ export default function Estimator() {
                     </>
                   ) : (
                     <>
-                      <Camera className="w-12 h-12 text-slate-400" />
+                      {isDraggingOver ? (
+                        <Upload className="w-12 h-12 text-blue-300" />
+                      ) : (
+                        <Camera className="w-12 h-12 text-slate-400" />
+                      )}
                       <div>
                         <p className="text-white font-semibold">
-                          Click to capture or upload
+                          {isDraggingOver
+                            ? "Drop image to upload"
+                            : "Click to capture or upload"}
                         </p>
                         <p className="text-slate-400 text-sm">
-                          or drag and drop an image
+                          JPG, PNG, or WebP up to 10 MB
                         </p>
                       </div>
                     </>

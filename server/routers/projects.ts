@@ -22,10 +22,41 @@ import {
   calculateTotalCost,
 } from "../services/pricing";
 import {
+  buildStoredPhotoName,
+  decodePhotoBase64,
+  isSupportedPhotoMimeType,
+} from "../services/photoUpload";
+import {
   sendEstimateNotification,
   sendContractorNotification,
 } from "../services/email";
 import { generateImage } from "../_core/imageGeneration";
+import type { Request } from "express";
+
+function getRequestOrigin(req: Request) {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const proto = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : forwardedProto?.split(",")[0];
+  const host = Array.isArray(forwardedHost)
+    ? forwardedHost[0]
+    : forwardedHost?.split(",")[0] || req.headers.host;
+  const scheme = (proto || req.protocol || "http").trim();
+
+  if (!host) return "";
+
+  return `${scheme}://${host.trim()}`;
+}
+
+function toAbsoluteUrl(req: Request, url: string) {
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const origin = getRequestOrigin(req);
+  if (!origin) return url;
+
+  return `${origin}${url.startsWith("/") ? url : `/${url}`}`;
+}
 
 export const projectsRouter = router({
   /**
@@ -67,26 +98,41 @@ export const projectsRouter = router({
     .input(
       z.object({
         photoBase64: z.string(),
-        photoName: z.string(),
-        imageWidth: z.number(),
-        imageHeight: z.number(),
+        photoName: z.string().min(1).max(160),
+        photoMimeType: z
+          .string()
+          .refine(isSupportedPhotoMimeType, {
+            message: "Unsupported image type",
+          }),
+        imageWidth: z.number().int().positive().max(20_000),
+        imageHeight: z.number().int().positive().max(20_000),
       })
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        // Convert base64 to buffer
-        const buffer = Buffer.from(input.photoBase64, "base64");
+        const photoMimeType = input.photoMimeType;
+        if (!isSupportedPhotoMimeType(photoMimeType)) {
+          throw new Error("Unsupported image type");
+        }
+
+        const buffer = decodePhotoBase64(input.photoBase64, photoMimeType);
+        const storedPhotoName = buildStoredPhotoName(
+          input.photoName,
+          photoMimeType
+        );
 
         // Upload to S3
-        const photoKey = `projects/${ctx.user.id}/${nanoid()}-${input.photoName}`;
-        const { url: photoUrl } = await storagePut(
-          photoKey,
+        const requestedPhotoKey = `projects/${ctx.user.id}/${nanoid()}-${storedPhotoName}`;
+        const { key: photoKey, url: photoUrl } = await storagePut(
+          requestedPhotoKey,
           buffer,
-          "image/jpeg"
+          photoMimeType
         );
 
         // Detect driveway edges using LLM vision
-        const edgeDetection = await detectDrivewayEdges(photoUrl);
+        const edgeDetection = await detectDrivewayEdges(
+          toAbsoluteUrl(ctx.req, photoUrl)
+        );
 
         // Calculate square footage from detected corners
         const squareFeet = calculateSquareFeetFromCorners(

@@ -3,6 +3,15 @@
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
 import { ENV } from "./_core/env";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+
+export const LOCAL_STORAGE_URL_PREFIX = "/local-storage";
+export const LOCAL_STORAGE_DIR = path.resolve(
+  process.cwd(),
+  ".local-storage"
+);
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
@@ -22,10 +31,40 @@ function normalizeKey(relKey: string): string {
 }
 
 function appendHashSuffix(relKey: string): string {
-  const hash = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+  const hash = randomUUID().replace(/-/g, "").slice(0, 8);
   const lastDot = relKey.lastIndexOf(".");
   if (lastDot === -1) return `${relKey}_${hash}`;
   return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
+}
+
+function canUseLocalStorageFallback() {
+  return !ENV.isProduction && (!ENV.forgeApiUrl || !ENV.forgeApiKey);
+}
+
+function getLocalStoragePath(key: string) {
+  const filePath = path.resolve(LOCAL_STORAGE_DIR, key);
+  const storageRoot = `${LOCAL_STORAGE_DIR}${path.sep}`;
+
+  if (!filePath.startsWith(storageRoot)) {
+    throw new Error("Invalid local storage key");
+  }
+
+  return filePath;
+}
+
+async function localStoragePut(
+  relKey: string,
+  data: Buffer | Uint8Array | string
+): Promise<{ key: string; url: string }> {
+  const key = appendHashSuffix(normalizeKey(relKey));
+  const filePath = getLocalStoragePath(key);
+  const payload =
+    typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, payload, { flag: "wx" });
+
+  return { key, url: `${LOCAL_STORAGE_URL_PREFIX}/${key}` };
 }
 
 export async function storagePut(
@@ -33,6 +72,10 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
+  if (canUseLocalStorageFallback()) {
+    return localStoragePut(relKey, data);
+  }
+
   const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
 
@@ -75,6 +118,10 @@ export async function storageGet(
   relKey: string
 ): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
+  if (canUseLocalStorageFallback()) {
+    return { key, url: `${LOCAL_STORAGE_URL_PREFIX}/${key}` };
+  }
+
   return { key, url: `/manus-storage/${key}` };
 }
 

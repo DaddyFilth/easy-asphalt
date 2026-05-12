@@ -1,7 +1,40 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import {
+  LOCAL_STORAGE_DIR,
+  LOCAL_STORAGE_URL_PREFIX,
+} from "../storage";
+import path from "node:path";
 
 export function registerStorageProxy(app: Express) {
+  app.get(`${LOCAL_STORAGE_URL_PREFIX}/*`, (req, res) => {
+    if (ENV.isProduction) {
+      res.status(404).send("Not found");
+      return;
+    }
+
+    const key = (req.params as Record<string, string>)[0];
+    if (!key) {
+      res.status(400).send("Missing storage key");
+      return;
+    }
+
+    const filePath = path.resolve(LOCAL_STORAGE_DIR, key);
+    const storageRoot = `${LOCAL_STORAGE_DIR}${path.sep}`;
+
+    if (!filePath.startsWith(storageRoot)) {
+      res.status(400).send("Invalid storage key");
+      return;
+    }
+
+    res.set("Cache-Control", "no-store");
+    res.sendFile(filePath, err => {
+      if (err && !res.headersSent) {
+        res.status(404).send("Stored file not found");
+      }
+    });
+  });
+
   app.get("/manus-storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
     if (!key) {

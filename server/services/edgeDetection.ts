@@ -1,4 +1,5 @@
 import { invokeLLM } from "../_core/llm";
+import { ENV } from "../_core/env";
 
 const LLM_TIMEOUT_MS = 15_000;
 
@@ -11,6 +12,20 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+function getFallbackDrivewayEdges() {
+  return {
+    corners: [
+      { x: 24, y: 26 },
+      { x: 76, y: 26 },
+      { x: 88, y: 88 },
+      { x: 12, y: 88 },
+    ],
+    confidence: 0.35,
+    description:
+      "Estimated driveway boundary; adjust the corner points before continuing.",
+  };
+}
+
 /**
  * Use LLM vision to analyze a driveway photo and detect corner points.
  * Returns normalized coordinates as percentage of image dimensions.
@@ -21,6 +36,10 @@ export async function detectDrivewayEdges(photoUrl: string): Promise<{
   confidence: number;
   description: string;
 }> {
+  if (!ENV.forgeApiKey) {
+    return getFallbackDrivewayEdges();
+  }
+
   const call = invokeLLM({
     messages: [
       {
