@@ -15,7 +15,7 @@ This project uses **Capacitor** to wrap the React web application as native iOS 
 
 - Android Studio 2021.1 or later
 - Android SDK (API level 28 or higher)
-- Java Development Kit (JDK) 11 or later
+- Java Development Kit (JDK) 21 or later
 - Android NDK (optional, for native code)
 
 ### General Requirements
@@ -40,13 +40,15 @@ driveway-estimator-pro/
 
 All mobile build commands are defined in `package.json`:
 
-| Script                      | Purpose                                                     |
-| --------------------------- | ----------------------------------------------------------- |
-| `pnpm mobile:build`         | Build web assets and sync to native projects                |
-| `pnpm mobile:ios`           | Build web, sync, and open iOS project in Xcode              |
-| `pnpm mobile:android`       | Build web, sync, and open Android project in Android Studio |
-| `pnpm mobile:build-ios`     | Create iOS release build (requires Xcode)                   |
-| `pnpm mobile:build-android` | Create Android release build (requires Android SDK)         |
+| Script                            | Purpose                                                     |
+| --------------------------------- | ----------------------------------------------------------- |
+| `pnpm mobile:build`               | Build web assets and sync to native projects                |
+| `pnpm mobile:ios`                 | Build web, sync, and open iOS project in Xcode              |
+| `pnpm mobile:android`             | Build web, sync, and open Android project in Android Studio |
+| `pnpm mobile:build-ios`           | Create iOS release build (requires Xcode)                   |
+| `pnpm mobile:build-android`       | Create Android release build (requires Android SDK)         |
+| `pnpm mobile:build-android-debug` | Create installable debug APK for internal sharing           |
+| `pnpm mobile:apk`                 | Build web assets, sync Android, and create a debug APK      |
 
 ## Development Workflow
 
@@ -130,6 +132,15 @@ pnpm mobile:build
 
 ### Android Release Build
 
+For a quick internal APK you can sideload for testing:
+
+```bash
+pnpm mobile:apk
+```
+
+The debug APK will be at:
+`android/app/build/outputs/apk/debug/app-debug.apk`
+
 1. **Prepare signing:**
    - Create a keystore file (if you don't have one):
      ```bash
@@ -143,6 +154,8 @@ pnpm mobile:build
      keyAlias=my-key-alias
      keyPassword=your_key_password
      ```
+   - Keep both files private. They are ignored by git and are required to
+     publish updates signed with the same certificate.
 
 2. **Build release APK:**
 
@@ -260,6 +273,8 @@ DATABASE_URL=your_database_url
 JWT_SECRET=your_jwt_secret
 VITE_APP_ID=your_oauth_app_id
 OAUTH_SERVER_URL=https://api.manus.im
+VITE_API_BASE_URL=https://your-production-app.example.com
+MOBILE_ALLOWED_ORIGINS=https://your-production-app.example.com
 # ... other environment variables
 ```
 

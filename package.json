@@ -15,7 +15,9 @@
     "mobile:ios": "pnpm mobile:build && npx cap open ios",
     "mobile:android": "pnpm mobile:build && npx cap open android",
     "mobile:build-ios": "cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release",
-    "mobile:build-android": "cd android && ./gradlew assembleRelease"
+    "mobile:build-android": "cd android && ./gradlew assembleRelease",
+    "mobile:build-android-debug": "cd android && ./gradlew assembleDebug",
+    "mobile:apk": "pnpm mobile:build && pnpm mobile:build-android-debug"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",

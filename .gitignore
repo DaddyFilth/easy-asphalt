@@ -118,6 +118,7 @@ client/public/__manus__/version.json
 ios/App/Pods/
 ios/App/Podfile.lock
 android/.gradle/
+android/.kotlin/
 android/local.properties
 android/app/build/
 
@@ -130,6 +131,8 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 
 # Android keystore
+android/*.jks
+android/*.keystore
 android/app/*.jks
 android/keystore.properties
 
