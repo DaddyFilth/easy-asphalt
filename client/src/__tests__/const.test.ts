@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  getApiBaseUrl,
-  getApiUrl,
-  getAuthorizationUrl,
-  getLoginUrl,
-} from "../const";
+import { getApiBaseUrl, getApiUrl, getLoginUrl } from "../const";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -15,15 +10,9 @@ describe("auth URL helpers", () => {
     expect(getLoginUrl("/estimator")).toBe("/login?returnTo=%2Festimator");
   });
 
-  it("links to Google authorization only from the auth action", () => {
-    expect(getAuthorizationUrl("/dashboard")).toBe(
-      "/api/auth/google?returnTo=%2Fdashboard"
-    );
-  });
-
   it("rejects unsafe return paths", () => {
     expect(getLoginUrl("//evil.example")).toBe("/login");
-    expect(getAuthorizationUrl("/login")).toBe("/api/auth/google");
+    expect(getLoginUrl("/login")).toBe("/login");
   });
 
   it("uses the configured HTTPS API base for native builds", () => {
@@ -31,9 +20,7 @@ describe("auth URL helpers", () => {
 
     expect(getApiBaseUrl()).toBe("https://app.example.com");
     expect(getApiUrl("/api/trpc")).toBe("https://app.example.com/api/trpc");
-    expect(getAuthorizationUrl("/dashboard")).toBe(
-      "https://app.example.com/api/auth/google?returnTo=%2Fdashboard"
-    );
+    expect(getLoginUrl("/dashboard")).toBe("/login?returnTo=%2Fdashboard");
   });
 
   it("ignores unsafe API base URLs", () => {

@@ -15,6 +15,13 @@
       "when": 1777881870234,
       "tag": "0001_sturdy_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1778067600000,
+      "tag": "0002_secure_password_auth",
+      "breakpoints": true
     }
   ]
 }

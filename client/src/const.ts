@@ -1,5 +1,4 @@
 // client/src/const.ts
-const GOOGLE_LOGIN_PATH = "/api/auth/google";
 const LOGIN_PATH = "/login";
 const LOCAL_HTTP_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
@@ -64,20 +63,16 @@ function getSafeReturnPath(returnTo?: string) {
   return undefined;
 }
 
-function withReturnTo(path: string, returnTo?: string, absolute = false) {
-  const apiBaseUrl = absolute ? getApiBaseUrl() : "";
-  const url = new URL(path, apiBaseUrl || "http://localhost");
+function withReturnTo(path: string, returnTo?: string) {
+  const url = new URL(path, "http://localhost");
   const nextPath = getSafeReturnPath(returnTo);
 
   if (nextPath) {
     url.searchParams.set("returnTo", nextPath);
   }
 
-  return apiBaseUrl ? url.toString() : `${url.pathname}${url.search}`;
+  return `${url.pathname}${url.search}`;
 }
 
 export const getLoginUrl = (returnTo?: string) =>
   withReturnTo(LOGIN_PATH, returnTo);
-
-export const getAuthorizationUrl = (returnTo?: string) =>
-  withReturnTo(GOOGLE_LOGIN_PATH, returnTo, true);

@@ -232,9 +232,7 @@ DATABASE_URL=mysql://user:password@host:port/database
 
 # Authentication
 JWT_SECRET=your_jwt_secret_key
-VITE_APP_ID=your_oauth_app_id
-OAUTH_SERVER_URL=https://api.manus.im
-VITE_OAUTH_PORTAL_URL=https://oauth.manus.im
+VITE_APP_ID=easy-asphalt
 
 # API Keys
 BUILT_IN_FORGE_API_KEY=your_api_key
@@ -243,8 +241,7 @@ VITE_FRONTEND_FORGE_API_KEY=your_frontend_key
 VITE_FRONTEND_FORGE_API_URL=https://api.manus.im
 
 # Owner Info
-OWNER_NAME=Your Name
-OWNER_OPEN_ID=your_open_id
+OWNER_EMAIL=owner@example.com
 
 # Analytics
 VITE_ANALYTICS_ENDPOINT=https://analytics.example.com

@@ -19,24 +19,26 @@ export default function SharedProject() {
     { shareToken: shareToken || "" },
     { enabled: !!shareToken }
   );
-  const downloadSharedPDFMutation = trpc.projects.downloadSharedPDF.useMutation({
-    onSuccess: data => {
-      try {
-        downloadBase64File({
-          base64: data.pdfBase64,
-          filename: data.filename,
-          mimeType: "application/pdf",
-        });
-        toast.success("PDF downloaded successfully");
-      } catch (error) {
-        console.error("PDF download failed:", error);
+  const downloadSharedPDFMutation = trpc.projects.downloadSharedPDF.useMutation(
+    {
+      onSuccess: data => {
+        try {
+          downloadBase64File({
+            base64: data.pdfBase64,
+            filename: data.filename,
+            mimeType: "application/pdf",
+          });
+          toast.success("PDF downloaded successfully");
+        } catch (error) {
+          console.error("PDF download failed:", error);
+          toast.error("Failed to download PDF");
+        }
+      },
+      onError: () => {
         toast.error("Failed to download PDF");
-      }
-    },
-    onError: () => {
-      toast.error("Failed to download PDF");
-    },
-  });
+      },
+    }
+  );
 
   const materials: Record<string, { name: string; icon: string }> = {
     hotmix: { name: "Hot Mix Asphalt", icon: "🛣️" },
@@ -83,12 +85,12 @@ export default function SharedProject() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
               {project.projectName}
             </h1>
             <p className="text-slate-300">Driveway Estimate Summary</p>

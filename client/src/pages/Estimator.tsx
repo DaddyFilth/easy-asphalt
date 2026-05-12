@@ -443,11 +443,11 @@ export default function Estimator() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
             Driveway Estimator Pro
           </h1>
           <p className="text-slate-300">
@@ -456,31 +456,35 @@ export default function Estimator() {
         </div>
 
         {/* Step Indicator */}
-        <div className="flex justify-between mb-8">
-          {["upload", "adjust", "material", "preview", "summary"].map(
-            (s, i) => (
-              <div key={s} className="flex items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    step === s
-                      ? "bg-blue-500 text-white"
-                      : [
-                            "upload",
-                            "adjust",
-                            "material",
-                            "preview",
-                            "summary",
-                          ].indexOf(step) > i
-                        ? "bg-green-500 text-white"
-                        : "bg-slate-600 text-slate-300"
-                  }`}
-                >
-                  {i + 1}
+        <div className="-mx-1 mb-8 overflow-x-auto pb-2">
+          <div className="flex min-w-max items-center gap-2 px-1 sm:justify-between">
+            {["upload", "adjust", "material", "preview", "summary"].map(
+              (s, i) => (
+                <div key={s} className="flex shrink-0 items-center">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${
+                      step === s
+                        ? "bg-blue-500 text-white"
+                        : [
+                              "upload",
+                              "adjust",
+                              "material",
+                              "preview",
+                              "summary",
+                            ].indexOf(step) > i
+                          ? "bg-green-500 text-white"
+                          : "bg-slate-600 text-slate-300"
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                  {i < 4 && (
+                    <div className="mx-2 h-1 w-8 bg-slate-600 sm:w-12"></div>
+                  )}
                 </div>
-                {i < 4 && <div className="w-12 h-1 bg-slate-600 mx-2"></div>}
-              </div>
-            )
-          )}
+              )
+            )}
+          </div>
         </div>
 
         {/* Upload Step */}
@@ -640,7 +644,7 @@ export default function Estimator() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="text-slate-300">Detected Area</Label>
                   <p className="text-2xl font-bold text-white">

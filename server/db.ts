@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  User,
   InsertUser,
   users,
   projects,
@@ -61,7 +62,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
+    const textFields = [
+      "name",
+      "email",
+      "loginMethod",
+      "passwordHash",
+    ] as const;
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -84,6 +90,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     } else if (user.openId === ENV.ownerOpenId) {
       values.role = "admin";
       updateSet.role = "admin";
+    }
+    if (user.failedLoginAttempts !== undefined) {
+      values.failedLoginAttempts = user.failedLoginAttempts;
+      updateSet.failedLoginAttempts = user.failedLoginAttempts;
+    }
+    if (user.lockedUntil !== undefined) {
+      values.lockedUntil = user.lockedUntil;
+      updateSet.lockedUntil = user.lockedUntil;
     }
 
     if (!values.lastSignedIn) {
@@ -117,6 +131,80 @@ export async function getUserByOpenId(openId: string) {
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user by id: database not available");
+    return undefined;
+  }
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user by email: database not available");
+    return undefined;
+  }
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function hasAdminUser() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot check admin users: database not available");
+    return false;
+  }
+
+  const result = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, "admin"))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+export async function createUser(user: InsertUser): Promise<User> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(users).values(user);
+  const userId = getInsertId(result);
+  if (userId === undefined) {
+    throw new Error("Database did not return a user id");
+  }
+
+  const createdUser = await getUserById(userId);
+  if (!createdUser) {
+    throw new Error("Failed to load created user");
+  }
+
+  return createdUser;
+}
+
+export async function updateUserById(
+  userId: number,
+  updates: Partial<InsertUser>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return db.update(users).set(updates).where(eq(users.id, userId));
 }
 
 export async function getUserProjects(userId: number) {

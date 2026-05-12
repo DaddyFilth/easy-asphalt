@@ -136,10 +136,10 @@ export default function ProjectDetail() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <Button
               onClick={() => navigate("/dashboard")}
@@ -149,14 +149,14 @@ export default function ProjectDetail() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
               {project.projectName}
             </h1>
             <p className="text-slate-300">
               Created on {new Date(project.createdAt).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Dialog
               open={isShareDialogOpen}
               onOpenChange={open => {
@@ -208,7 +208,7 @@ export default function ProjectDetail() {
                   {shareLink && (
                     <div className="space-y-2">
                       <Label className="text-slate-300">Share Link</Label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <Input
                           readOnly
                           value={shareLink}
