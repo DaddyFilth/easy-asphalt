@@ -95,6 +95,13 @@ export default function Login() {
   }, [isAuthenticated, loading, navigate, returnTo]);
 
   const pending = loginMutation.isPending || registerMutation.isPending;
+  const neonInputClassName =
+    "border-[#2b6e1b] bg-black/70 text-[#39ff14] placeholder:text-[#5e9f4d]";
+  const neonInputStyle = {
+    color: "#39ff14",
+    WebkitTextFillColor: "#39ff14",
+    caretColor: "#39ff14",
+  } as const;
 
   const handleLoginSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,7 +129,7 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#020b00] px-4 py-10 text-[#b9ff9a] sm:px-6">
+    <main className="min-h-screen overflow-x-hidden bg-[#020b00] px-4 py-10 text-[#b9ff9a] [color-scheme:dark] sm:px-6">
       <section className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-md items-center">
         <div className="w-full rounded-xl border border-[#2b6e1b] bg-[#041103]/95 p-6 shadow-2xl shadow-black/50 sm:p-8">
           <header className="mb-6 space-y-3 text-center">
@@ -187,7 +194,8 @@ export default function Login() {
                         email: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                 </div>
@@ -206,14 +214,15 @@ export default function Login() {
                         password: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#d6ffcb] hover:bg-[#195314]"
+                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
                 >
                   <LogIn className="h-4 w-4" />
                   {loginMutation.isPending ? "Signing in..." : "Sign In"}
@@ -238,7 +247,8 @@ export default function Login() {
                         name: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                 </div>
@@ -258,7 +268,8 @@ export default function Login() {
                         email: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                 </div>
@@ -280,7 +291,8 @@ export default function Login() {
                         password: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                   <p className="text-xs text-[#72b061]">
@@ -289,7 +301,10 @@ export default function Login() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="register-confirm-password">
+                  <Label
+                    htmlFor="register-confirm-password"
+                    className="text-[#9cff79]"
+                  >
                     Confirm password
                   </Label>
                   <Input
@@ -303,14 +318,15 @@ export default function Login() {
                         confirmPassword: event.target.value,
                       }))
                     }
-                    className="border-[#2b6e1b] bg-black/40 text-[#d6ffcb] placeholder:text-[#5e9f4d]"
+                    className={neonInputClassName}
+                    style={neonInputStyle}
                     required
                   />
                 </div>
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#d6ffcb] hover:bg-[#195314]"
+                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
                 >
                   <UserPlus className="h-4 w-4" />
                   {registerMutation.isPending

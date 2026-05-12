@@ -136,6 +136,18 @@
     touch-action: pan-y;
   }
 
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: #39ff14;
+    caret-color: #39ff14;
+    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.82) inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
   #root {
     isolation: isolate;
     overflow-x: hidden;
