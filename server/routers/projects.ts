@@ -21,6 +21,7 @@ import {
   calculateMaterialQuantity,
   calculateTotalCost,
   MATERIALS,
+  normalizeZipCode,
 } from "../services/pricing";
 import {
   buildStoredPhotoName,
@@ -73,6 +74,30 @@ const storedImageUrlSchema = z
       url.startsWith("/local-storage/") || url.startsWith("/manus-storage/"),
     "Image URL must reference project storage"
   );
+const storageKeySchema = z
+  .string()
+  .min(1)
+  .max(512)
+  .refine(key => !key.includes("..") && !key.includes("\\"), {
+    message: "Invalid storage key",
+  });
+const cornerPointSchema = z.object({
+  x: z.number().finite().min(0).max(100),
+  y: z.number().finite().min(0).max(100),
+});
+const optionalCoordinateSchema = z
+  .string()
+  .trim()
+  .max(32)
+  .regex(/^-?\d{1,3}(?:\.\d{1,15})?$/)
+  .optional();
+
+function getBaseUrl(req: Request) {
+  const envBaseUrl = process.env.VITE_FRONTEND_FORGE_API_URL?.trim();
+  if (envBaseUrl) return envBaseUrl.replace(/\/+$/, "");
+
+  return getRequestOrigin(req) || "http://localhost:3000";
+}
 
 export const projectsRouter = router({
   /**
@@ -261,7 +286,7 @@ export const projectsRouter = router({
         }
 
         return {
-          previewUrl,
+          previewUrl: usedFallback ? input.photoUrl : previewUrl,
           previewKey: previewKey ?? null,
           usedFallback: usedFallback ?? false,
         };
@@ -280,33 +305,39 @@ export const projectsRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        projectName: z.string(),
-        photoUrl: z.string(),
-        photoKey: z.string(),
-        squareFeet: z.number(),
-        depthInches: z.number(),
-        cornerPoints: z.array(z.object({ x: z.number(), y: z.number() })),
-        selectedMaterial: z.enum([
-          "hotmix",
-          "millings",
-          "tar_and_chip",
-          "gravel",
-        ]),
-        quantityNeeded: z.string(),
-        pricePerUnit: z.string(),
-        totalCost: z.string(),
-        zipCode: z.string(),
-        latitude: z.string().optional(),
-        longitude: z.string().optional(),
-        previewImageUrl: z.string().optional(),
-        previewImageKey: z.string().optional(),
-        contractorEmail: z.string().email().optional(),
-        notes: z.string().optional(),
+        projectName: z.string().trim().min(1).max(120),
+        photoUrl: storedImageUrlSchema,
+        photoKey: storageKeySchema,
+        squareFeet: z.number().finite().int().positive().max(1_000_000),
+        depthInches: z.number().finite().int().min(1).max(12),
+        cornerPoints: z.array(cornerPointSchema).min(3).max(8),
+        selectedMaterial: z.enum(MATERIALS),
+        zipCode: usZipCodeSchema,
+        latitude: optionalCoordinateSchema,
+        longitude: optionalCoordinateSchema,
+        previewImageUrl: storedImageUrlSchema.optional(),
+        previewImageKey: storageKeySchema.optional(),
+        contractorEmail: z.string().trim().email().max(320).optional(),
+        notes: z.string().trim().max(2_000).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const result = await createProject({
+        const pricing = await getMaterialPricingForZip(
+          input.zipCode,
+          input.selectedMaterial
+        );
+        const quantity = calculateMaterialQuantity(
+          input.squareFeet,
+          input.depthInches,
+          input.selectedMaterial
+        );
+        const totalCost = calculateTotalCost(
+          quantity.quantity,
+          pricing.pricePerTon
+        );
+        const normalizedZipCode = normalizeZipCode(input.zipCode);
+        const project = await createProject({
           userId: ctx.user.id,
           projectName: input.projectName,
           photoUrl: input.photoUrl,
@@ -315,10 +346,10 @@ export const projectsRouter = router({
           depthInches: input.depthInches,
           cornerPoints: JSON.stringify(input.cornerPoints),
           selectedMaterial: input.selectedMaterial,
-          quantityNeeded: input.quantityNeeded,
-          pricePerUnit: input.pricePerUnit,
-          totalCost: input.totalCost,
-          zipCode: input.zipCode,
+          quantityNeeded: quantity.quantityStr,
+          pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
+          totalCost,
+          zipCode: normalizedZipCode,
           latitude: input.latitude,
           longitude: input.longitude,
           previewImageUrl: input.previewImageUrl,
@@ -327,35 +358,55 @@ export const projectsRouter = router({
           notes: input.notes,
         });
 
-        // Send notification email to owner
-        if (ctx.user.email) {
-          const shareToken = nanoid(32);
-          const shareLink = `${process.env.VITE_FRONTEND_FORGE_API_URL || "http://localhost:3000"}/share/${shareToken}`;
+        const projectId = project.id;
+        let shareToken: string | undefined;
+        let shareLink: string | undefined;
 
+        if (projectId) {
+          shareToken = nanoid(32);
+          shareLink = `${getBaseUrl(ctx.req)}/share/${shareToken}`;
+          await createProjectShare({
+            projectId,
+            shareToken,
+            contractorEmail: input.contractorEmail,
+          });
+        } else if (ctx.user.email || input.contractorEmail) {
+          console.warn(
+            "[Projects] Created project without returned id; notification share link skipped"
+          );
+        }
+
+        if (ctx.user.email && shareLink) {
           await sendEstimateNotification(
             ctx.user.email,
             input.projectName,
             input.squareFeet,
             input.selectedMaterial,
-            input.totalCost,
+            totalCost,
             shareLink
           );
-
-          // Send notification to contractor if provided
-          if (input.contractorEmail) {
-            await sendContractorNotification(
-              input.contractorEmail,
-              ctx.user.name || "A homeowner",
-              input.projectName,
-              input.squareFeet,
-              input.selectedMaterial,
-              input.totalCost,
-              shareLink
-            );
-          }
         }
 
-        return result;
+        if (input.contractorEmail && shareLink) {
+          await sendContractorNotification(
+            input.contractorEmail,
+            ctx.user.name || "A homeowner",
+            input.projectName,
+            input.squareFeet,
+            input.selectedMaterial,
+            totalCost,
+            shareLink
+          );
+        }
+
+        return {
+          projectId,
+          shareToken,
+          shareLink,
+          quantityNeeded: quantity.quantityStr,
+          pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
+          totalCost,
+        };
       } catch (error) {
         console.error("[Projects] Create error:", error);
         throw new TRPCError({

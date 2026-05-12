@@ -14,28 +14,36 @@ vi.mock("../db", () => ({
 }));
 
 vi.mock("../storage", () => ({
-  storagePut: vi.fn().mockResolvedValue({ url: "https://s3.example.com/photo.jpg" }),
+  storagePut: vi
+    .fn()
+    .mockResolvedValue({ url: "https://s3.example.com/photo.jpg" }),
 }));
 
 vi.mock("../_core/llm", () => ({
   invokeLLM: vi.fn().mockResolvedValue({
-    choices: [{
-      message: {
-        content: JSON.stringify({
-          corners: [
-            { x: 10, y: 10 }, { x: 90, y: 10 },
-            { x: 90, y: 90 }, { x: 10, y: 90 },
-          ],
-          confidence: 0.92,
-          description: "Rectangular driveway detected",
-        }),
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            corners: [
+              { x: 10, y: 10 },
+              { x: 90, y: 10 },
+              { x: 90, y: 90 },
+              { x: 10, y: 90 },
+            ],
+            confidence: 0.92,
+            description: "Rectangular driveway detected",
+          }),
+        },
       },
-    }],
+    ],
   }),
 }));
 
 vi.mock("../_core/imageGeneration", () => ({
-  generateImage: vi.fn().mockResolvedValue({ url: "https://s3.example.com/preview.jpg" }),
+  generateImage: vi
+    .fn()
+    .mockResolvedValue({ url: "https://s3.example.com/preview.jpg" }),
 }));
 
 vi.mock("../services/email", () => ({
@@ -52,6 +60,60 @@ import {
   detectDrivewayEdges,
   calculateSquareFeetFromCorners,
 } from "../services/edgeDetection";
+import { appRouter } from "../routers";
+import { createProject, createProjectShare } from "../db";
+import {
+  sendContractorNotification,
+  sendEstimateNotification,
+} from "../services/email";
+
+const mockedCreateProject = vi.mocked(createProject);
+const mockedCreateProjectShare = vi.mocked(createProjectShare);
+const mockedSendEstimateNotification = vi.mocked(sendEstimateNotification);
+const mockedSendContractorNotification = vi.mocked(sendContractorNotification);
+
+function createAuthedCaller() {
+  return appRouter.createCaller({
+    user: {
+      id: 7,
+      openId: "google-user",
+      name: "Owner Name",
+      email: "owner@example.com",
+      role: "user",
+    } as any,
+    req: {
+      headers: {
+        host: "app.example.com",
+      },
+      protocol: "https",
+    } as any,
+    res: {
+      clearCookie: vi.fn(),
+    } as any,
+  });
+}
+
+const savedProjectInput = {
+  projectName: "Front Driveway",
+  photoUrl: "/local-storage/projects/7/photo.jpg",
+  photoKey: "projects/7/photo.jpg",
+  squareFeet: 640,
+  depthInches: 2,
+  cornerPoints: [
+    { x: 10, y: 10 },
+    { x: 90, y: 10 },
+    { x: 90, y: 90 },
+    { x: 10, y: 90 },
+  ],
+  selectedMaterial: "hotmix" as const,
+  zipCode: "10001",
+  contractorEmail: "contractor@example.com",
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockedCreateProject.mockResolvedValue({ id: 1 });
+});
 
 // ── Unit tests for the service functions called inside the router ───────────
 describe("Router — service integration (unit)", () => {
@@ -73,9 +135,16 @@ describe("Router — service integration (unit)", () => {
     });
 
     it("all four materials resolve without error", async () => {
-      const materials = ["hotmix", "millings", "tar_and_chip", "gravel"] as const;
+      const materials = [
+        "hotmix",
+        "millings",
+        "tar_and_chip",
+        "gravel",
+      ] as const;
       for (const m of materials) {
-        await expect(getMaterialPricingForZip("90210", m)).resolves.not.toThrow();
+        await expect(
+          getMaterialPricingForZip("90210", m)
+        ).resolves.not.toThrow();
       }
     });
   });
@@ -93,10 +162,60 @@ describe("Router — service integration (unit)", () => {
     });
 
     it("square footage is calculated from detected corners", async () => {
-      const { corners } = await detectDrivewayEdges("https://example.com/photo.jpg");
+      const { corners } = await detectDrivewayEdges(
+        "https://example.com/photo.jpg"
+      );
       const sqft = calculateSquareFeetFromCorners(corners, 1000, 1000, 10);
       expect(sqft).toBeGreaterThanOrEqual(100);
     });
+  });
+});
+
+describe("projects.create", () => {
+  it("recomputes pricing server-side and persists the emailed share link", async () => {
+    const caller = createAuthedCaller();
+
+    const result = await caller.projects.create({
+      ...savedProjectInput,
+      quantityNeeded: "1.00 tons",
+      totalCost: "$1.00",
+    } as any);
+
+    expect(result.projectId).toBe(1);
+    expect(result.totalCost).toBe("$504.05");
+    expect(result.quantityNeeded).toBe("5.93 tons");
+    expect(mockedCreateProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 7,
+        projectName: "Front Driveway",
+        quantityNeeded: "5.93 tons",
+        pricePerUnit: "$85.00",
+        totalCost: "$504.05",
+        zipCode: "10001",
+      })
+    );
+    expect(mockedCreateProjectShare).toHaveBeenCalledWith({
+      projectId: 1,
+      shareToken: expect.any(String),
+      contractorEmail: "contractor@example.com",
+    });
+    expect(mockedSendEstimateNotification).toHaveBeenCalledWith(
+      "owner@example.com",
+      "Front Driveway",
+      640,
+      "hotmix",
+      "$504.05",
+      expect.stringContaining("/share/")
+    );
+    expect(mockedSendContractorNotification).toHaveBeenCalledWith(
+      "contractor@example.com",
+      "Owner Name",
+      "Front Driveway",
+      640,
+      "hotmix",
+      "$504.05",
+      expect.stringContaining("/share/")
+    );
   });
 });
 

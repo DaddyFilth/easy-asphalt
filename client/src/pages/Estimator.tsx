@@ -31,6 +31,7 @@ import {
 } from "@shared/geometry";
 import { toast } from "sonner";
 import { Loader2, Upload, Camera } from "lucide-react";
+import { useLocation } from "wouter";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
 type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
@@ -64,6 +65,7 @@ interface EstimatorState {
 
 export default function Estimator() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("upload");
   const [state, setState] = useState<EstimatorState>({
     photoUrl: null,
@@ -357,12 +359,21 @@ export default function Estimator() {
   };
 
   const handleSaveProject = async () => {
-    if (!state.photoUrl || !state.selectedMaterial || !state.squareFeet) {
+    if (
+      !state.photoUrl ||
+      !state.photoKey ||
+      !state.selectedMaterial ||
+      !state.squareFeet
+    ) {
       toast.error("Please complete all steps");
       return;
     }
 
-    if (!state.projectName) {
+    const projectName = state.projectName.trim();
+    const contractorEmail = state.contractorEmail.trim();
+    const notes = state.notes.trim();
+
+    if (!projectName) {
       toast.error("Please enter a project name");
       return;
     }
@@ -375,24 +386,21 @@ export default function Estimator() {
         return;
       }
 
-      await createProjectMutation.mutateAsync({
-        projectName: state.projectName,
+      const result = await createProjectMutation.mutateAsync({
+        projectName,
         photoUrl: state.photoUrl,
         photoKey: state.photoKey as string,
         squareFeet: state.squareFeet,
         depthInches: state.depthInches,
         cornerPoints: state.corners,
         selectedMaterial: state.selectedMaterial,
-        quantityNeeded: pricing.quantityNeeded,
-        pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
-        totalCost: pricing.totalCost,
         zipCode: state.zipCode,
-        latitude: state.latitude,
-        longitude: state.longitude,
+        latitude: state.latitude || undefined,
+        longitude: state.longitude || undefined,
         previewImageUrl: state.previewUrl || undefined,
         previewImageKey: state.previewKey || undefined,
-        contractorEmail: state.contractorEmail || undefined,
-        notes: state.notes || undefined,
+        contractorEmail: contractorEmail || undefined,
+        notes: notes || undefined,
       });
 
       toast.success("Project saved successfully!");
@@ -416,7 +424,9 @@ export default function Estimator() {
         latitude: state.latitude,
         longitude: state.longitude,
       });
-      setStep("upload");
+      navigate(
+        result.projectId ? `/project/${result.projectId}` : "/dashboard"
+      );
     } catch (error) {
       toast.error("Failed to save project");
       console.error(error);
@@ -905,7 +915,9 @@ export default function Estimator() {
 
               <Button
                 onClick={handleSaveProject}
-                disabled={loading || !state.projectName}
+                disabled={
+                  loading || !state.projectName.trim() || !getPricingQuery.data
+                }
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
                 {loading ? "Saving..." : "Save Project"}

@@ -11,6 +11,19 @@ export interface EmailNotification {
   text?: string;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function sanitizeSubject(value: string) {
+  return value.replace(/[\r\n]+/g, " ").slice(0, 200);
+}
+
 /**
  * Send email notification for project estimate
  */
@@ -22,18 +35,23 @@ export async function sendEstimateNotification(
   totalCost: string,
   shareLink: string
 ): Promise<{ success: boolean; messageId?: string }> {
+  const safeProjectName = escapeHtml(projectName);
+  const safeMaterial = escapeHtml(formatMaterialName(material));
+  const safeTotalCost = escapeHtml(totalCost);
+  const safeShareLink = escapeHtml(shareLink);
+
   const html = `
     <h2>Driveway Estimate Ready</h2>
-    <p>Your driveway estimate for <strong>${projectName}</strong> is ready!</p>
+    <p>Your driveway estimate for <strong>${safeProjectName}</strong> is ready!</p>
     
     <h3>Project Summary</h3>
     <ul>
       <li><strong>Area:</strong> ${squareFeet} sq ft</li>
-      <li><strong>Material:</strong> ${formatMaterialName(material)}</li>
-      <li><strong>Estimated Cost:</strong> ${totalCost}</li>
+      <li><strong>Material:</strong> ${safeMaterial}</li>
+      <li><strong>Estimated Cost:</strong> ${safeTotalCost}</li>
     </ul>
     
-    <p><a href="${shareLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+    <p><a href="${safeShareLink}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
       View Full Estimate
     </a></p>
     
@@ -61,7 +79,7 @@ Driveway Estimator Pro
 
   return sendEmail({
     to: recipientEmail,
-    subject: `Driveway Estimate Ready: ${projectName}`,
+    subject: sanitizeSubject(`Driveway Estimate Ready: ${projectName}`),
     html,
     text,
   });
@@ -79,19 +97,25 @@ export async function sendContractorNotification(
   totalCost: string,
   shareLink: string
 ): Promise<{ success: boolean; messageId?: string }> {
+  const safeOwnerName = escapeHtml(ownerName);
+  const safeProjectName = escapeHtml(projectName);
+  const safeMaterial = escapeHtml(formatMaterialName(material));
+  const safeTotalCost = escapeHtml(totalCost);
+  const safeShareLink = escapeHtml(shareLink);
+
   const html = `
     <h2>New Driveway Project Estimate</h2>
-    <p><strong>${ownerName}</strong> has shared a driveway estimate with you.</p>
+    <p><strong>${safeOwnerName}</strong> has shared a driveway estimate with you.</p>
     
     <h3>Project Details</h3>
     <ul>
-      <li><strong>Project Name:</strong> ${projectName}</li>
+      <li><strong>Project Name:</strong> ${safeProjectName}</li>
       <li><strong>Area:</strong> ${squareFeet} sq ft</li>
-      <li><strong>Material:</strong> ${formatMaterialName(material)}</li>
-      <li><strong>Estimated Cost:</strong> ${totalCost}</li>
+      <li><strong>Material:</strong> ${safeMaterial}</li>
+      <li><strong>Estimated Cost:</strong> ${safeTotalCost}</li>
     </ul>
     
-    <p><a href="${shareLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+    <p><a href="${safeShareLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
       View Project Details
     </a></p>
     
@@ -120,7 +144,7 @@ Driveway Estimator Pro
 
   return sendEmail({
     to: contractorEmail,
-    subject: `New Driveway Project: ${projectName}`,
+    subject: sanitizeSubject(`New Driveway Project: ${projectName}`),
     html,
     text,
   });

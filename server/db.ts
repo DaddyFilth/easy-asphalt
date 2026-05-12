@@ -12,6 +12,23 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+function getInsertId(result: unknown): number | undefined {
+  if (!result || typeof result !== "object") return undefined;
+
+  if ("insertId" in result && typeof result.insertId === "number") {
+    return result.insertId;
+  }
+
+  if (Array.isArray(result)) {
+    for (const item of result) {
+      const insertId = getInsertId(item);
+      if (insertId !== undefined) return insertId;
+    }
+  }
+
+  return undefined;
+}
+
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
@@ -127,7 +144,9 @@ export async function createProject(project: InsertProject) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(projects).values(project);
-  return result;
+  return {
+    id: getInsertId(result),
+  };
 }
 
 export async function updateProject(
