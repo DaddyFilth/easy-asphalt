@@ -70,13 +70,11 @@ export default function DashboardLayout({
             </p>
           </div>
           <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
+            asChild
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            <a href={getLoginUrl()}>Sign in with Google</a>
           </Button>
         </div>
       </div>

@@ -177,11 +177,11 @@ export default function Home() {
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard"><a className="btn-secondary" style={{ padding: "9px 18px", fontSize: 14 }}>Dashboard</a></Link>
-                <Link href="/estimator"><a className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>New Estimate <ArrowRight size={14} /></a></Link>
+                <Link href="/dashboard" asChild><a className="btn-secondary" style={{ padding: "9px 18px", fontSize: 14 }}>Dashboard</a></Link>
+                <Link href="/estimator" asChild><a className="btn-primary" style={{ padding: "9px 20px", fontSize: 14 }}>New Estimate <ArrowRight size={14} /></a></Link>
               </>
             ) : (
-              <a href={getLoginUrl()} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>Sign In Free <ArrowRight size={14} /></a>
+              <a href={getLoginUrl("/estimator")} className="btn-primary" style={{ padding: "9px 22px", fontSize: 14 }}>Sign In Free <ArrowRight size={14} /></a>
             )}
           </div>
         </div>
@@ -214,11 +214,11 @@ export default function Home() {
 
             <div className="fade-up delay-3" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 40 }}>
               {isAuthenticated ? (
-                <Link href="/estimator"><a className="btn-primary">Start Estimating <ArrowRight size={16} /></a></Link>
+                <Link href="/estimator" asChild><a className="btn-primary">Start Estimating <ArrowRight size={16} /></a></Link>
               ) : (
-                <a href={getLoginUrl()} className="btn-primary">Get Started Free <ArrowRight size={16} /></a>
+                <a href={getLoginUrl("/estimator")} className="btn-primary">Get Started Free <ArrowRight size={16} /></a>
               )}
-              <Link href="/estimator"><a className="btn-secondary">See Demo</a></Link>
+              <Link href="/estimator" asChild><a className="btn-secondary">See Demo</a></Link>
             </div>
 
             <div className="fade-up delay-4" style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
@@ -360,9 +360,9 @@ export default function Home() {
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {isAuthenticated ? (
-              <Link href="/estimator"><a className="btn-primary" style={{ fontSize: 17, padding: "16px 36px" }}>Start Estimating <ArrowRight size={18} /></a></Link>
+              <Link href="/estimator" asChild><a className="btn-primary" style={{ fontSize: 17, padding: "16px 36px" }}>Start Estimating <ArrowRight size={18} /></a></Link>
             ) : (
-              <a href={getLoginUrl()} className="btn-primary" style={{ fontSize: 17, padding: "16px 36px" }}>Get Started Free <ArrowRight size={18} /></a>
+              <a href={getLoginUrl("/estimator")} className="btn-primary" style={{ fontSize: 17, padding: "16px 36px" }}>Get Started Free <ArrowRight size={18} /></a>
             )}
           </div>
         </div>
