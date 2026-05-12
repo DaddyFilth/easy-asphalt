@@ -51,7 +51,12 @@ export const projects = mysqlTable("projects", {
   selectedMaterial: varchar("selectedMaterial", { length: 50 }), // hotmix, millings, tar_and_chip, gravel
   quantityNeeded: varchar("quantityNeeded", { length: 50 }), // e.g., "2.5 tons"
   pricePerUnit: varchar("pricePerUnit", { length: 50 }), // e.g., "$45.00"
-  totalCost: varchar("totalCost", { length: 50 }), // e.g., "$112.50"
+  materialCost: varchar("materialCost", { length: 50 }), // e.g., "$112.50"
+  contractorPricePerSquareFoot: varchar("contractorPricePerSquareFoot", {
+    length: 50,
+  }), // e.g., "$4.25"
+  laborCost: varchar("laborCost", { length: 50 }), // e.g., "$720.00"
+  totalCost: varchar("totalCost", { length: 50 }), // e.g., "$832.50"
   zipCode: varchar("zipCode", { length: 10 }),
   latitude: varchar("latitude", { length: 20 }),
   longitude: varchar("longitude", { length: 20 }),

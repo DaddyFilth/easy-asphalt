@@ -201,12 +201,15 @@ describe("projects.create", () => {
 
     const result = await caller.projects.create({
       ...savedProjectInput,
+      contractorPricePerSquareFoot: 4.25,
       quantityNeeded: "1.00 tons",
       totalCost: "$1.00",
     } as any);
 
     expect(result.projectId).toBe(1);
-    expect(result.totalCost).toBe("$504.05");
+    expect(result.materialCost).toBe("$504.05");
+    expect(result.laborCost).toBe("$2,720.00");
+    expect(result.totalCost).toBe("$3,224.05");
     expect(result.quantityNeeded).toBe("5.93 tons");
     expect(mockedCreateProject).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -214,7 +217,10 @@ describe("projects.create", () => {
         projectName: "Front Driveway",
         quantityNeeded: "5.93 tons",
         pricePerUnit: "$85.00",
-        totalCost: "$504.05",
+        materialCost: "$504.05",
+        contractorPricePerSquareFoot: "$4.25",
+        laborCost: "$2,720.00",
+        totalCost: "$3,224.05",
         zipCode: "10001",
       })
     );
@@ -228,7 +234,7 @@ describe("projects.create", () => {
       "Front Driveway",
       640,
       "hotmix",
-      "$504.05",
+      "$3,224.05",
       expect.stringContaining("/share/")
     );
     expect(mockedSendContractorNotification).toHaveBeenCalledWith(
@@ -237,7 +243,7 @@ describe("projects.create", () => {
       "Front Driveway",
       640,
       "hotmix",
-      "$504.05",
+      "$3,224.05",
       expect.stringContaining("/share/")
     );
   });
@@ -257,7 +263,10 @@ describe("projects share and export tools", () => {
     selectedMaterial: "hotmix",
     quantityNeeded: "5.93 tons",
     pricePerUnit: "$85.00",
-    totalCost: "$504.05",
+    materialCost: "$504.05",
+    contractorPricePerSquareFoot: "$4.25",
+    laborCost: "$2,720.00",
+    totalCost: "$3,224.05",
     zipCode: "10001",
     latitude: null,
     longitude: null,
@@ -305,7 +314,7 @@ describe("projects share and export tools", () => {
       "../../Oak Ridge Driveway!",
       640,
       "hotmix",
-      "$504.05",
+      "$3,224.05",
       result.shareLink
     );
   });
@@ -335,7 +344,8 @@ describe("projects share and export tools", () => {
       squareFeet: 640,
       depthInches: 2,
       selectedMaterial: "hotmix",
-      totalCost: "$504.05",
+      materialCost: "$504.05",
+      totalCost: "$3,224.05",
     });
     expect(result).not.toHaveProperty("id");
     expect(result).not.toHaveProperty("userId");

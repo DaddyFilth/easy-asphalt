@@ -1,16 +1,24 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
+  requestMotionSensorPermission,
   requestDeviceLocationPermission,
   requestNativeCameraPermission,
   requestNativePhotoPermission,
 } from "@/lib/deviceMedia";
-import { Camera, Loader2, MapPin, ShieldCheck, Upload } from "lucide-react";
+import {
+  Camera,
+  Compass,
+  Loader2,
+  MapPin,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 type PermissionResult = "idle" | "requesting" | "granted" | "denied";
 
-const PERMISSION_REVIEW_PREFIX = "easy-asphalt-device-permissions-v2";
+const PERMISSION_REVIEW_PREFIX = "easy-asphalt-device-permissions-v3";
 
 function getPermissionStorageKey(user: unknown) {
   if (!user || typeof user !== "object") return PERMISSION_REVIEW_PREFIX;
@@ -62,6 +70,7 @@ export default function DevicePermissionGate({
   const [camera, setCamera] = useState<PermissionResult>("idle");
   const [photos, setPhotos] = useState<PermissionResult>("idle");
   const [location, setLocation] = useState<PermissionResult>("idle");
+  const [motion, setMotion] = useState<PermissionResult>("idle");
   const [requesting, setRequesting] = useState(false);
   const storageKey = useMemo(() => getPermissionStorageKey(user), [user]);
 
@@ -83,20 +92,24 @@ export default function DevicePermissionGate({
     setCamera("requesting");
     setPhotos("requesting");
     setLocation("requesting");
+    setMotion("requesting");
 
     const cameraResult = await requestNativeCameraPermission();
     const photosResult = await requestNativePhotoPermission();
     const locationResult = await requestDeviceLocationPermission();
+    const motionResult = await requestMotionSensorPermission();
 
     setCamera(cameraResult);
     setPhotos(photosResult);
     setLocation(locationResult);
+    setMotion(motionResult);
     setRequesting(false);
 
     if (
       cameraResult === "granted" &&
       photosResult === "granted" &&
-      locationResult === "granted"
+      locationResult === "granted" &&
+      motionResult === "granted"
     ) {
       finishReview();
     }
@@ -105,7 +118,10 @@ export default function DevicePermissionGate({
   if (reviewed) return <>{children}</>;
 
   const hasDeniedPermission =
-    camera === "denied" || photos === "denied" || location === "denied";
+    camera === "denied" ||
+    photos === "denied" ||
+    location === "denied" ||
+    motion === "denied";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-white">
@@ -116,7 +132,8 @@ export default function DevicePermissionGate({
         <h1 className="mb-3 text-2xl font-semibold">Allow device access</h1>
         <p className="mb-6 text-sm leading-6 text-slate-300">
           The estimator needs camera access for driveway photos, photo library
-          access for uploads, and location access for local material pricing.
+          access for uploads, location access for local material pricing, and
+          motion sensors to help keep capture angle and phone alignment stable.
         </p>
 
         <div className="mb-7 space-y-3">
@@ -134,6 +151,11 @@ export default function DevicePermissionGate({
             icon={<MapPin className="h-4 w-4" />}
             label="Location"
             result={location}
+          />
+          <PermissionRow
+            icon={<Compass className="h-4 w-4" />}
+            label="Motion Sensors"
+            result={motion}
           />
         </div>
 

@@ -119,7 +119,10 @@
   #root {
     min-height: 100%;
     width: 100%;
+    max-width: 100%;
     background: #020617;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   * {
@@ -128,10 +131,15 @@
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   #root {
     isolation: isolate;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

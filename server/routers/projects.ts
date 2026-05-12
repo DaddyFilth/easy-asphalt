@@ -97,6 +97,19 @@ const shareTokenSchema = z
   .min(16)
   .max(64)
   .regex(/^[A-Za-z0-9_-]+$/);
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+function formatUsd(value: number) {
+  return currencyFormatter.format(value);
+}
+
+function parseCurrencyAmount(value: string) {
+  const parsed = Number.parseFloat(value.replace(/[^0-9.-]+/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 function safePdfSlug(value: string | null | undefined) {
   const slug = (value || "driveway-estimate")
@@ -124,6 +137,9 @@ function toSharedProject(project: Project) {
     selectedMaterial: project.selectedMaterial,
     quantityNeeded: project.quantityNeeded,
     pricePerUnit: project.pricePerUnit,
+    materialCost: project.materialCost,
+    contractorPricePerSquareFoot: project.contractorPricePerSquareFoot,
+    laborCost: project.laborCost,
     totalCost: project.totalCost,
     zipCode: project.zipCode,
     previewImageUrl: project.previewImageUrl,
@@ -284,6 +300,7 @@ export const projectsRouter = router({
           pricePerSquareFoot: pricing.pricePerSquareFoot,
           supplier: pricing.supplier,
           quantityNeeded: quantity.quantityStr,
+          materialCost: totalCost,
           totalCost,
         };
       } catch (error) {
@@ -372,6 +389,12 @@ export const projectsRouter = router({
         previewImageUrl: storedImageUrlSchema.optional(),
         previewImageKey: storageKeySchema.optional(),
         contractorEmail: z.string().trim().email().max(320).optional(),
+        contractorPricePerSquareFoot: z
+          .number()
+          .finite()
+          .min(0)
+          .max(1_000)
+          .optional(),
         notes: z.string().trim().max(2_000).optional(),
       })
     )
@@ -386,9 +409,22 @@ export const projectsRouter = router({
           input.depthInches,
           input.selectedMaterial
         );
-        const totalCost = calculateTotalCost(
+        const materialCost = calculateTotalCost(
           quantity.quantity,
           pricing.pricePerTon
+        );
+        const contractorRate =
+          input.contractorPricePerSquareFoot &&
+          input.contractorPricePerSquareFoot > 0
+            ? input.contractorPricePerSquareFoot
+            : undefined;
+        const laborCostValue = contractorRate
+          ? contractorRate * input.squareFeet
+          : null;
+        const laborCost =
+          laborCostValue !== null ? formatUsd(laborCostValue) : null;
+        const totalCost = formatUsd(
+          parseCurrencyAmount(materialCost) + (laborCostValue ?? 0)
         );
         const normalizedZipCode = normalizeZipCode(input.zipCode);
         const project = await createProject({
@@ -402,6 +438,11 @@ export const projectsRouter = router({
           selectedMaterial: input.selectedMaterial,
           quantityNeeded: quantity.quantityStr,
           pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
+          materialCost,
+          contractorPricePerSquareFoot: contractorRate
+            ? `$${contractorRate.toFixed(2)}`
+            : null,
+          laborCost,
           totalCost,
           zipCode: normalizedZipCode,
           latitude: input.latitude,
@@ -459,6 +500,11 @@ export const projectsRouter = router({
           shareLink,
           quantityNeeded: quantity.quantityStr,
           pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
+          materialCost,
+          contractorPricePerSquareFoot: contractorRate
+            ? `$${contractorRate.toFixed(2)}`
+            : null,
+          laborCost,
           totalCost,
         };
       } catch (error) {

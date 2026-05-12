@@ -134,6 +134,9 @@ export default function ProjectDetail() {
   const materialInfo = project.selectedMaterial
     ? materials[project.selectedMaterial]
     : null;
+  const materialCost = project.materialCost || project.totalCost;
+  const hasLaborQuote =
+    !!project.contractorPricePerSquareFoot && !!project.laborCost;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
@@ -352,11 +355,39 @@ export default function ProjectDetail() {
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-sm">Total Cost</p>
+                <p className="text-slate-400 text-sm">Material Cost</p>
+                <p className="text-lg font-semibold text-blue-300">
+                  {materialCost}
+                </p>
+              </div>
+              {hasLaborQuote && (
+                <>
+                  <div>
+                    <p className="text-slate-400 text-sm">Contractor Rate</p>
+                    <p className="text-lg font-semibold text-white">
+                      {project.contractorPricePerSquareFoot}/sq ft
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-sm">Estimated Labor</p>
+                    <p className="text-lg font-semibold text-amber-300">
+                      {project.laborCost}
+                    </p>
+                  </div>
+                </>
+              )}
+              <div>
+                <p className="text-slate-400 text-sm">
+                  {hasLaborQuote ? "Estimated Total" : "Material-Only Total"}
+                </p>
                 <p className="text-3xl font-bold text-green-400">
                   {project.totalCost}
                 </p>
               </div>
+              <p className="text-xs text-slate-400">
+                Material pricing excludes labor unless a contractor quote is
+                provided.
+              </p>
             </CardContent>
           </Card>
         </div>

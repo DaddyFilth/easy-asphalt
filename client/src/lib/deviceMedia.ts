@@ -10,6 +10,20 @@ import { Capacitor } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 
 export type DevicePermissionResult = "granted" | "denied";
+export type DeviceLocationSnapshot = {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+};
+export type DeviceOrientationSnapshot = {
+  heading: number | null;
+  pitch: number | null;
+  roll: number | null;
+};
+export type DeviceConnectionSnapshot = {
+  online: boolean;
+  label: string;
+};
 
 const PHOTO_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -162,6 +176,163 @@ export async function requestDeviceLocationPermission(): Promise<DevicePermissio
       }
     );
   });
+}
+
+type MotionPermissionRequester = {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
+
+function getMotionPermissionRequester(name: "DeviceMotionEvent" | "DeviceOrientationEvent") {
+  return (
+    globalThis as typeof globalThis & {
+      DeviceMotionEvent?: MotionPermissionRequester;
+      DeviceOrientationEvent?: MotionPermissionRequester;
+    }
+  )[name];
+}
+
+export async function requestMotionSensorPermission(): Promise<DevicePermissionResult> {
+  const motionRequester = getMotionPermissionRequester("DeviceMotionEvent");
+  const orientationRequester = getMotionPermissionRequester(
+    "DeviceOrientationEvent"
+  );
+
+  const requesters = [motionRequester, orientationRequester].filter(
+    requester => typeof requester?.requestPermission === "function"
+  );
+
+  if (requesters.length === 0) {
+    return "granted";
+  }
+
+  try {
+    const results = await Promise.all(
+      requesters.map(requester => requester!.requestPermission!())
+    );
+    return results.every(result => result === "granted") ? "granted" : "denied";
+  } catch {
+    return "denied";
+  }
+}
+
+export async function getPreciseDeviceLocation(): Promise<DeviceLocationSnapshot | null> {
+  const permission = await requestDeviceLocationPermission();
+  if (permission !== "granted") return null;
+
+  if (isNativeMobileApp()) {
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15_000,
+        maximumAge: 0,
+      });
+
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  if (!navigator.geolocation) return null;
+
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      position =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy ?? null,
+        }),
+      () => resolve(null),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 15_000,
+      }
+    );
+  });
+}
+
+export async function captureDeviceOrientation(): Promise<DeviceOrientationSnapshot> {
+  const permission = await requestMotionSensorPermission();
+  if (permission !== "granted" || typeof window === "undefined") {
+    return { heading: null, pitch: null, roll: null };
+  }
+
+  return new Promise(resolve => {
+    let settled = false;
+
+    const finish = (snapshot: DeviceOrientationSnapshot) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("deviceorientation", handleOrientation);
+      resolve(snapshot);
+    };
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      finish({
+        heading:
+          typeof event.alpha === "number" ? Math.round(event.alpha * 10) / 10 : null,
+        pitch:
+          typeof event.beta === "number" ? Math.round(event.beta * 10) / 10 : null,
+        roll:
+          typeof event.gamma === "number" ? Math.round(event.gamma * 10) / 10 : null,
+      });
+    };
+
+    window.addEventListener("deviceorientation", handleOrientation, {
+      once: true,
+    });
+
+    window.setTimeout(() => {
+      finish({ heading: null, pitch: null, roll: null });
+    }, 1500);
+  });
+}
+
+export function getDeviceConnectionSnapshot(): DeviceConnectionSnapshot {
+  if (typeof navigator === "undefined") {
+    return { online: true, label: "Unknown connection" };
+  }
+
+  const connection = (
+    navigator as Navigator & {
+      connection?: {
+        effectiveType?: string;
+        type?: string;
+      };
+    }
+  ).connection;
+
+  const rawLabel = connection?.effectiveType || connection?.type;
+  const label = rawLabel ? rawLabel.toUpperCase() : "Unknown connection";
+
+  return {
+    online: navigator.onLine,
+    label,
+  };
+}
+
+export async function getBluetoothAvailability(): Promise<boolean | null> {
+  if (typeof navigator === "undefined") return null;
+
+  const bluetooth = (
+    navigator as Navigator & {
+      bluetooth?: { getAvailability?: () => Promise<boolean> };
+    }
+  ).bluetooth;
+
+  if (typeof bluetooth?.getAvailability !== "function") return null;
+
+  try {
+    return await bluetooth.getAvailability();
+  } catch {
+    return null;
+  }
 }
 
 export async function takeDrivewayPhotoWithCamera() {

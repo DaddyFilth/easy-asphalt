@@ -97,8 +97,36 @@ export async function generateProjectPDF(project: Project): Promise<Buffer> {
 
   yPosition += 8;
   doc.setFontSize(11);
+  doc.setTextColor(60, 100, 180);
+  doc.text(
+    `Material Cost: ${project.materialCost || project.totalCost}`,
+    margin + 5,
+    yPosition
+  );
+
+  if (project.contractorPricePerSquareFoot && project.laborCost) {
+    yPosition += 6;
+    doc.setTextColor(140, 100, 20);
+    doc.text(
+      `Contractor Rate: ${project.contractorPricePerSquareFoot}/sq ft`,
+      margin + 5,
+      yPosition
+    );
+    yPosition += 6;
+    doc.text(`Estimated Labor: ${project.laborCost}`, margin + 5, yPosition);
+  }
+
+  yPosition += 6;
   doc.setTextColor(0, 128, 0);
-  doc.text(`Total Cost: ${project.totalCost}`, margin + 5, yPosition);
+  doc.text(`Estimated Total: ${project.totalCost}`, margin + 5, yPosition);
+  yPosition += 6;
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(
+    "Material pricing excludes labor unless a contractor quote is provided.",
+    margin + 5,
+    yPosition
+  );
 
   yPosition += 15;
 

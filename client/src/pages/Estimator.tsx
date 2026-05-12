@@ -19,7 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  captureDeviceOrientation,
   chooseDrivewayPhotoFromGallery,
+  getBluetoothAvailability,
+  getDeviceConnectionSnapshot,
+  getPreciseDeviceLocation,
   isMediaSelectionCanceled,
   isNativeMobileApp,
   takeDrivewayPhotoWithCamera,
@@ -42,6 +46,8 @@ const usdFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 const formatUsd = (value: number) => usdFormatter.format(value);
+const parseCurrency = (value: string) =>
+  Number.parseFloat(value.replace(/[^0-9.-]+/g, ""));
 
 interface EstimatorState {
   photoUrl: string | null;
@@ -57,11 +63,21 @@ interface EstimatorState {
   previewKey: string | null;
   projectName: string;
   contractorEmail: string;
+  contractorPricePerSquareFoot: string;
   notes: string;
   zipCode: string;
   latitude: string;
   longitude: string;
 }
+
+type DeviceReadiness = {
+  gpsAccuracyFeet: number | null;
+  connectionLabel: string;
+  online: boolean;
+  bluetoothAvailable: boolean | null;
+  pitch: number | null;
+  roll: number | null;
+};
 
 export default function Estimator() {
   const { user } = useAuth();
@@ -79,17 +95,26 @@ export default function Estimator() {
     selectedMaterial: null,
     previewUrl: null,
     previewKey: null,
-    projectName: "",
-    contractorEmail: "",
-    notes: "",
-    zipCode: "",
-    latitude: "",
+      projectName: "",
+      contractorEmail: "",
+      contractorPricePerSquareFoot: "",
+      notes: "",
+      zipCode: "",
+      latitude: "",
     longitude: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
+  const [deviceReadiness, setDeviceReadiness] = useState<DeviceReadiness>({
+    gpsAccuracyFeet: null,
+    connectionLabel: "Unknown connection",
+    online: true,
+    bluetoothAvailable: null,
+    pitch: null,
+    roll: null,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,28 +144,62 @@ export default function Estimator() {
       ? `${state.imageWidth} / ${state.imageHeight}`
       : "16 / 9";
   const nativeMobileApp = isNativeMobileApp();
+  const materialCost =
+    getPricingQuery.data?.materialCost ?? getPricingQuery.data?.totalCost ?? null;
+  const materialCostValue = materialCost ? parseCurrency(materialCost) : null;
+  const contractorRateValue =
+    state.contractorPricePerSquareFoot.trim() === ""
+      ? null
+      : Number.parseFloat(state.contractorPricePerSquareFoot);
+  const laborCostValue =
+    state.squareFeet && contractorRateValue && contractorRateValue > 0
+      ? state.squareFeet * contractorRateValue
+      : null;
+  const estimatedProjectTotalValue =
+    materialCostValue !== null
+      ? materialCostValue + (laborCostValue ?? 0)
+      : null;
 
-  // Get user's geolocation on mount
+  // Capture device context that can improve field accuracy and capture quality.
   useEffect(() => {
     if (!user) return;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          setState(prev => ({
-            ...prev,
-            latitude: position.coords.latitude.toString(),
-            longitude: position.coords.longitude.toString(),
-          }));
-          // In production, reverse geocode to get ZIP code
-          // For now, use a default
-          setState(prev => ({ ...prev, zipCode: "10001" }));
-        },
-        error => {
-          console.warn("Geolocation error:", error);
-          setState(prev => ({ ...prev, zipCode: "10001" })); // Default ZIP
-        }
-      );
-    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const connection = getDeviceConnectionSnapshot();
+      const [location, orientation, bluetoothAvailable] = await Promise.all([
+        getPreciseDeviceLocation(),
+        captureDeviceOrientation(),
+        getBluetoothAvailability(),
+      ]);
+
+      if (cancelled) return;
+
+      if (location) {
+        setState(prev => ({
+          ...prev,
+          latitude: location.latitude.toString(),
+          longitude: location.longitude.toString(),
+        }));
+      }
+
+      setDeviceReadiness({
+        gpsAccuracyFeet:
+          location?.accuracy != null
+            ? Math.round(location.accuracy * 3.28084)
+            : null,
+        connectionLabel: connection.label,
+        online: connection.online,
+        bluetoothAvailable,
+        pitch: orientation.pitch,
+        roll: orientation.roll,
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const readFileAsDataUrl = (file: File) =>
@@ -400,6 +459,10 @@ export default function Estimator() {
         previewImageUrl: state.previewUrl || undefined,
         previewImageKey: state.previewKey || undefined,
         contractorEmail: contractorEmail || undefined,
+        contractorPricePerSquareFoot:
+          contractorRateValue && contractorRateValue > 0
+            ? contractorRateValue
+            : undefined,
         notes: notes || undefined,
       });
 
@@ -419,6 +482,7 @@ export default function Estimator() {
         previewKey: null,
         projectName: "",
         contractorEmail: "",
+        contractorPricePerSquareFoot: "",
         notes: "",
         zipCode: state.zipCode,
         latitude: state.latitude,
@@ -499,6 +563,61 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
+                  <p className="font-semibold text-white">Field accuracy signals</p>
+                  <p className="mt-2">
+                    GPS:{" "}
+                    <span className="text-blue-300">
+                      {deviceReadiness.gpsAccuracyFeet != null
+                        ? `within about ${deviceReadiness.gpsAccuracyFeet} ft`
+                        : "waiting for location lock"}
+                    </span>
+                  </p>
+                  <p className="mt-1">
+                    Connection:{" "}
+                    <span className="text-blue-300">
+                      {deviceReadiness.online
+                        ? deviceReadiness.connectionLabel
+                        : "Offline"}
+                    </span>
+                  </p>
+                  <p className="mt-1">
+                    Bluetooth:{" "}
+                    <span className="text-blue-300">
+                      {deviceReadiness.bluetoothAvailable === null
+                        ? "not exposed on this device"
+                        : deviceReadiness.bluetoothAvailable
+                          ? "available"
+                          : "off or unavailable"}
+                    </span>
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
+                  <p className="font-semibold text-white">Capture guidance</p>
+                  <p className="mt-2">
+                    Phone pitch:{" "}
+                    <span className="text-emerald-300">
+                      {deviceReadiness.pitch != null
+                        ? `${deviceReadiness.pitch.toFixed(1)} deg`
+                        : "not available"}
+                    </span>
+                  </p>
+                  <p className="mt-1">
+                    Phone roll:{" "}
+                    <span className="text-emerald-300">
+                      {deviceReadiness.roll != null
+                        ? `${deviceReadiness.roll.toFixed(1)} deg`
+                        : "not available"}
+                    </span>
+                  </p>
+                  <p className="mt-2 text-slate-400">
+                    A level phone and a strong GPS lock help produce cleaner
+                    capture data and more reliable local pricing context.
+                  </p>
+                </div>
+              </div>
+
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
                   isDraggingOver
@@ -695,6 +814,31 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="pricing-zip" className="text-slate-200">
+                  Pricing ZIP Code
+                </Label>
+                <Input
+                  id="pricing-zip"
+                  inputMode="numeric"
+                  value={state.zipCode}
+                  onChange={event =>
+                    setState(prev => ({
+                      ...prev,
+                      zipCode: event.target.value
+                        .replace(/[^\d-]/g, "")
+                        .slice(0, 10),
+                    }))
+                  }
+                  placeholder="Enter job site ZIP code"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <p className="text-xs text-slate-400">
+                  GPS helps confirm the job site, but ZIP code is what sets
+                  local material pricing.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {materials.map(material => (
                   <button
@@ -715,8 +859,7 @@ export default function Estimator() {
                     {state.selectedMaterial === material.id &&
                       getPricingQuery.data && (
                         <p className="text-blue-400 text-xs mt-2">
-                          {formatUsd(getPricingQuery.data.pricePerSquareFoot)}
-                          /sq ft
+                          {formatUsd(getPricingQuery.data.pricePerSquareFoot)} material/sq ft
                         </p>
                       )}
                   </button>
@@ -739,10 +882,16 @@ export default function Estimator() {
                 </div>
               )}
 
+              {state.selectedMaterial && !state.zipCode && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-950/30 p-3 text-sm text-amber-100">
+                  Enter the job site ZIP code to load local material pricing.
+                </div>
+              )}
+
               {getPricingQuery.data && state.selectedMaterial && (
                 <Card className="bg-slate-700 border-slate-600">
                   <CardContent className="pt-6">
-                    <div className="space-y-2 text-white">
+                    <div className="space-y-3 text-white">
                       <div className="flex justify-between">
                         <span>Quantity Needed:</span>
                         <span className="font-bold">
@@ -755,10 +904,15 @@ export default function Estimator() {
                           {formatUsd(getPricingQuery.data.pricePerTon)}
                         </span>
                       </div>
+                      <div className="rounded-md border border-blue-400/20 bg-slate-800/70 p-3 text-sm text-slate-200">
+                        Material pricing covers asphalt or aggregate only. Labor,
+                        equipment, taxes, and contractor markup are not included
+                        unless you add a contractor quote in the summary step.
+                      </div>
                       <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
-                        <span>Total Cost:</span>
+                        <span>Estimated Material Cost:</span>
                         <span className="font-bold text-green-400">
-                          {getPricingQuery.data.totalCost}
+                          {materialCost}
                         </span>
                       </div>
                     </div>
@@ -770,13 +924,16 @@ export default function Estimator() {
                 onClick={handleGeneratePreview}
                 disabled={
                   !state.selectedMaterial ||
+                  !getPricingQuery.data ||
                   loading ||
                   getPricingQuery.isLoading ||
                   getPricingQuery.isError
                 }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {getPricingQuery.isLoading
+                {!state.zipCode
+                  ? "Enter ZIP to Load Pricing"
+                  : getPricingQuery.isLoading
                   ? "Checking Pricing..."
                   : loading
                     ? "Generating Preview..."
@@ -866,6 +1023,30 @@ export default function Estimator() {
                 </div>
 
                 <div>
+                  <Label className="text-slate-300">
+                    Contractor Quote Per Sq Ft (Optional)
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    value={state.contractorPricePerSquareFoot}
+                    onChange={e => {
+                      const nextValue = e.target.value.replace(/[^0-9.]/g, "");
+                      if (!/^\d*(?:\.\d{0,2})?$/.test(nextValue)) return;
+                      setState(prev => ({
+                        ...prev,
+                        contractorPricePerSquareFoot: nextValue,
+                      }));
+                    }}
+                    placeholder="e.g., 4.25"
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                  <p className="mt-2 text-xs text-slate-400">
+                    Add a contractor&apos;s quoted rate per square foot to see an
+                    estimated labor line and installed total.
+                  </p>
+                </div>
+
+                <div>
                   <Label className="text-slate-300">Notes (Optional)</Label>
                   <Textarea
                     value={state.notes}
@@ -905,12 +1086,43 @@ export default function Estimator() {
                             {getPricingQuery.data.quantityNeeded}
                           </span>
                         </div>
-                        <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
-                          <span>Total Cost:</span>
-                          <span className="font-bold text-green-400">
-                            {getPricingQuery.data.totalCost}
+                        <div className="flex justify-between">
+                          <span>Material Estimate:</span>
+                          <span className="font-bold text-blue-300">
+                            {materialCost}
                           </span>
                         </div>
+                        {contractorRateValue && contractorRateValue > 0 && (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Contractor Rate:</span>
+                              <span className="font-bold">
+                                {formatUsd(contractorRateValue)}/sq ft
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Estimated Labor:</span>
+                              <span className="font-bold text-amber-300">
+                                {laborCostValue ? formatUsd(laborCostValue) : "--"}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
+                          <span>
+                            {contractorRateValue && contractorRateValue > 0
+                              ? "Estimated Total"
+                              : "Material-Only Total"}
+                          </span>
+                          <span className="font-bold text-green-400">
+                            {estimatedProjectTotalValue !== null
+                              ? formatUsd(estimatedProjectTotalValue)
+                              : materialCost}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Material pricing excludes labor by default.
+                        </p>
                       </>
                     )}
                   </div>
