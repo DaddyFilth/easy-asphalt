@@ -61,7 +61,12 @@ import {
   calculateSquareFeetFromCorners,
 } from "../services/edgeDetection";
 import { appRouter } from "../routers";
-import { createProject, createProjectShare, getProjectById } from "../db";
+import {
+  createProject,
+  createProjectShare,
+  getProjectById,
+  getProjectShareByToken,
+} from "../db";
 import {
   sendContractorNotification,
   sendEstimateNotification,
@@ -70,6 +75,7 @@ import {
 const mockedCreateProject = vi.mocked(createProject);
 const mockedCreateProjectShare = vi.mocked(createProjectShare);
 const mockedGetProjectById = vi.mocked(getProjectById);
+const mockedGetProjectShareByToken = vi.mocked(getProjectShareByToken);
 const mockedSendEstimateNotification = vi.mocked(sendEstimateNotification);
 const mockedSendContractorNotification = vi.mocked(sendContractorNotification);
 
@@ -82,6 +88,21 @@ function createAuthedCaller() {
       email: "owner@example.com",
       role: "user",
     } as any,
+    req: {
+      headers: {
+        host: "app.example.com",
+      },
+      protocol: "https",
+    } as any,
+    res: {
+      clearCookie: vi.fn(),
+    } as any,
+  });
+}
+
+function createPublicCaller() {
+  return appRouter.createCaller({
+    user: null,
     req: {
       headers: {
         host: "app.example.com",
@@ -115,6 +136,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedCreateProject.mockResolvedValue({ id: 1 });
   mockedGetProjectById.mockResolvedValue(null);
+  mockedGetProjectShareByToken.mockResolvedValue(null);
 });
 
 // ── Unit tests for the service functions called inside the router ───────────
@@ -222,6 +244,7 @@ describe("projects.create", () => {
 });
 
 describe("projects share and export tools", () => {
+  const shareToken = "validShareToken_1234567890ABCDEF";
   const project = {
     id: 42,
     userId: 7,
@@ -245,6 +268,19 @@ describe("projects share and export tools", () => {
     createdAt: new Date("2026-05-10T12:00:00.000Z"),
     updatedAt: new Date("2026-05-10T12:00:00.000Z"),
   };
+
+  function mockShare(overrides: Record<string, unknown> = {}) {
+    mockedGetProjectShareByToken.mockResolvedValue({
+      id: 1,
+      projectId: 42,
+      shareToken,
+      contractorEmail: "contractor@example.com",
+      createdAt: new Date("2026-05-10T12:00:00.000Z"),
+      expiresAt: null,
+      viewCount: 0,
+      ...overrides,
+    } as any);
+  }
 
   it("creates share links from the request origin and trims contractor email", async () => {
     mockedGetProjectById.mockResolvedValue(project as any);
@@ -284,6 +320,53 @@ describe("projects share and export tools", () => {
       /^driveway-estimate-oak-ridge-driveway-\d+\.pdf$/
     );
     expect(result.pdfBase64.length).toBeGreaterThan(0);
+  });
+
+  it("returns only contractor-safe fields for public shared projects", async () => {
+    mockShare();
+    mockedGetProjectById.mockResolvedValue(project as any);
+    const caller = createPublicCaller();
+
+    const result = await caller.projects.getSharedProject({ shareToken });
+
+    expect(result).toMatchObject({
+      projectName: "../../Oak Ridge Driveway!",
+      photoUrl: "/local-storage/projects/7/photo.jpg",
+      squareFeet: 640,
+      depthInches: 2,
+      selectedMaterial: "hotmix",
+      totalCost: "$504.05",
+    });
+    expect(result).not.toHaveProperty("id");
+    expect(result).not.toHaveProperty("userId");
+    expect(result).not.toHaveProperty("photoKey");
+    expect(result).not.toHaveProperty("previewImageKey");
+    expect(result).not.toHaveProperty("contractorEmail");
+    expect(result).not.toHaveProperty("cornerPoints");
+  });
+
+  it("downloads shared project PDFs through the share token", async () => {
+    mockShare();
+    mockedGetProjectById.mockResolvedValue(project as any);
+    const caller = createPublicCaller();
+
+    const result = await caller.projects.downloadSharedPDF({ shareToken });
+
+    expect(result.filename).toMatch(
+      /^driveway-estimate-oak-ridge-driveway-\d+\.pdf$/
+    );
+    expect(result.pdfBase64.length).toBeGreaterThan(0);
+  });
+
+  it("rejects expired share links", async () => {
+    mockShare({ expiresAt: new Date("2020-01-01T00:00:00.000Z") });
+    mockedGetProjectById.mockResolvedValue(project as any);
+    const caller = createPublicCaller();
+
+    await expect(
+      caller.projects.getSharedProject({ shareToken })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mockedGetProjectById).not.toHaveBeenCalled();
   });
 });
 

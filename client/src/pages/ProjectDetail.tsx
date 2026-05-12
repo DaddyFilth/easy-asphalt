@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { copyTextToClipboard } from "@/lib/clipboard";
+import { downloadBase64File } from "@/lib/download";
 import { toast } from "sonner";
 import { Loader2, Share2, Download, ArrowLeft } from "lucide-react";
 import { useState } from "react";
@@ -66,21 +67,17 @@ export default function ProjectDetail() {
 
   const downloadPDFMutation = trpc.projects.downloadPDF.useMutation({
     onSuccess: data => {
-      const binaryString = atob(data.pdfBase64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      try {
+        downloadBase64File({
+          base64: data.pdfBase64,
+          filename: data.filename,
+          mimeType: "application/pdf",
+        });
+        toast.success("PDF downloaded successfully");
+      } catch (error) {
+        console.error("PDF download failed:", error);
+        toast.error("Failed to download PDF");
       }
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = data.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success("PDF downloaded successfully");
     },
     onError: () => {
       toast.error("Failed to download PDF");

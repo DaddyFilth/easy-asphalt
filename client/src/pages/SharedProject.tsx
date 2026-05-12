@@ -8,7 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { downloadBase64File } from "@/lib/download";
 import { Loader2, Download } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SharedProject() {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -17,6 +19,24 @@ export default function SharedProject() {
     { shareToken: shareToken || "" },
     { enabled: !!shareToken }
   );
+  const downloadSharedPDFMutation = trpc.projects.downloadSharedPDF.useMutation({
+    onSuccess: data => {
+      try {
+        downloadBase64File({
+          base64: data.pdfBase64,
+          filename: data.filename,
+          mimeType: "application/pdf",
+        });
+        toast.success("PDF downloaded successfully");
+      } catch (error) {
+        console.error("PDF download failed:", error);
+        toast.error("Failed to download PDF");
+      }
+    },
+    onError: () => {
+      toast.error("Failed to download PDF");
+    },
+  });
 
   const materials: Record<string, { name: string; icon: string }> = {
     hotmix: { name: "Hot Mix Asphalt", icon: "🛣️" },
@@ -26,79 +46,8 @@ export default function SharedProject() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!projectQuery.data) return;
-    const project = projectQuery.data;
-
-    try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-      const margin = 15;
-      let yPosition = margin;
-
-      doc.setFontSize(24);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Driveway Estimate", margin, yPosition);
-
-      yPosition += 12;
-      doc.setFontSize(14);
-      doc.setTextColor(80, 80, 80);
-      doc.text(project.projectName || "Project", margin, yPosition);
-
-      yPosition += 15;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Measurements", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Area: ${project.squareFeet} sq ft`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Depth: ${project.depthInches} inches`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Location: ${project.zipCode}`, margin + 5, yPosition);
-
-      yPosition += 12;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Material", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      const materialName =
-        materials[project.selectedMaterial || ""]?.name ||
-        project.selectedMaterial ||
-        "Unknown";
-      doc.text(`Type: ${materialName}`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(`Quantity: ${project.quantityNeeded}`, margin + 5, yPosition);
-      yPosition += 6;
-      doc.text(
-        `Price per Unit: ${project.pricePerUnit}`,
-        margin + 5,
-        yPosition
-      );
-
-      yPosition += 10;
-
-      doc.setFontSize(12);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Pricing", margin, yPosition);
-
-      yPosition += 8;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 128, 0);
-      doc.text(`Total Cost: ${project.totalCost}`, margin + 5, yPosition);
-
-      const filename = `driveway-estimate-${project.projectName?.replace(/\s+/g, "-")}-${Date.now()}.pdf`;
-      doc.save(filename);
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      alert("Failed to generate PDF");
-    }
+    if (!shareToken) return;
+    downloadSharedPDFMutation.mutate({ shareToken });
   };
 
   if (projectQuery.isLoading) {
@@ -146,10 +95,17 @@ export default function SharedProject() {
           </div>
           <Button
             onClick={handleDownloadPDF}
+            disabled={downloadSharedPDFMutation.isPending}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Download PDF
+            {downloadSharedPDFMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {downloadSharedPDFMutation.isPending
+              ? "Downloading..."
+              : "Download PDF"}
           </Button>
         </div>
 

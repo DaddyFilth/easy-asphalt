@@ -34,6 +34,7 @@ import {
 } from "../services/email";
 import { generateImage } from "../_core/imageGeneration";
 import type { Request } from "express";
+import type { Project } from "../../drizzle/schema";
 
 function getRequestOrigin(req: Request) {
   const forwardedProto = req.headers["x-forwarded-proto"];
@@ -112,6 +113,44 @@ function getBaseUrl(req: Request) {
   if (envBaseUrl) return envBaseUrl.replace(/\/+$/, "");
 
   return getRequestOrigin(req) || "http://localhost:3000";
+}
+
+function toSharedProject(project: Project) {
+  return {
+    projectName: project.projectName,
+    photoUrl: project.photoUrl,
+    squareFeet: project.squareFeet,
+    depthInches: project.depthInches,
+    selectedMaterial: project.selectedMaterial,
+    quantityNeeded: project.quantityNeeded,
+    pricePerUnit: project.pricePerUnit,
+    totalCost: project.totalCost,
+    zipCode: project.zipCode,
+    previewImageUrl: project.previewImageUrl,
+    notes: project.notes,
+    createdAt: project.createdAt,
+  };
+}
+
+async function getProjectForShareToken(shareToken: string) {
+  const share = await getProjectShareByToken(shareToken);
+  if (!share) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Share not found" });
+  }
+
+  if (share.expiresAt && new Date(share.expiresAt).getTime() <= Date.now()) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Share not found" });
+  }
+
+  const project = await getProjectById(share.projectId);
+  if (!project) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Project not found",
+    });
+  }
+
+  return project;
 }
 
 export const projectsRouter = router({
@@ -526,24 +565,24 @@ export const projectsRouter = router({
   getSharedProject: publicProcedure
     .input(z.object({ shareToken: shareTokenSchema }))
     .query(async ({ input }) => {
-      const share = await getProjectShareByToken(input.shareToken);
-      if (!share) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Share not found" });
-      }
+      const project = await getProjectForShareToken(input.shareToken);
+      return toSharedProject(project);
+    }),
 
-      const project = await getProjectById(share.projectId);
-      if (!project) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Project not found",
-        });
-      }
+  /**
+   * Download a shared project as PDF (public access via token)
+   */
+  downloadSharedPDF: publicProcedure
+    .input(z.object({ shareToken: shareTokenSchema }))
+    .mutation(async ({ input }) => {
+      const project = await getProjectForShareToken(input.shareToken);
+      const { generateProjectPDF } = await import("../services/pdfExport");
+      const pdfBuffer = await generateProjectPDF(project);
+      const base64PDF = pdfBuffer.toString("base64");
 
       return {
-        ...project,
-        cornerPoints: project.cornerPoints
-          ? JSON.parse(project.cornerPoints)
-          : null,
+        pdfBase64: base64PDF,
+        filename: `driveway-estimate-${safePdfSlug(project.projectName)}-${Date.now()}.pdf`,
       };
     }),
 
