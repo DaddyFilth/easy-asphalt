@@ -29,16 +29,27 @@ export type GenerateImageOptions = {
 
 export type GenerateImageResponse = {
   url?: string;
+  key?: string;
+  mimeType?: string;
+  usedFallback?: boolean;
 };
 
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+    const originalImage = options.originalImages?.[0];
+    if (!ENV.isProduction && originalImage?.url) {
+      return {
+        url: originalImage.url,
+        mimeType: originalImage.mimeType,
+        usedFallback: true,
+      };
+    }
+
+    throw new Error(
+      "Image generation service is not configured: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+    );
   }
 
   // Build the full URL by appending the service path to the base URL
@@ -81,12 +92,14 @@ export async function generateImage(
   const buffer = Buffer.from(base64Data, "base64");
 
   // Save to S3
-  const { url } = await storagePut(
+  const { key, url } = await storagePut(
     `generated/${Date.now()}.png`,
     buffer,
     result.image.mimeType
   );
   return {
+    key,
     url,
+    mimeType: result.image.mimeType,
   };
 }

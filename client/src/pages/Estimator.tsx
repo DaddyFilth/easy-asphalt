@@ -39,6 +39,7 @@ const formatUsd = (value: number) => usdFormatter.format(value);
 interface EstimatorState {
   photoUrl: string | null;
   photoKey: string | null;
+  photoMimeType: string | null;
   imageWidth: number | null;
   imageHeight: number | null;
   corners: CornerPoint[];
@@ -61,6 +62,7 @@ export default function Estimator() {
   const [state, setState] = useState<EstimatorState>({
     photoUrl: null,
     photoKey: null,
+    photoMimeType: null,
     imageWidth: null,
     imageHeight: null,
     corners: [],
@@ -185,6 +187,7 @@ export default function Estimator() {
         ...prev,
         photoUrl: result.photoUrl,
         photoKey: result.photoKey,
+        photoMimeType: file.type,
         imageWidth: dimensions.width,
         imageHeight: dimensions.height,
         corners: result.corners,
@@ -289,16 +292,21 @@ export default function Estimator() {
     try {
       const result = await generatePreviewMutation.mutateAsync({
         photoUrl: state.photoUrl,
+        photoMimeType: state.photoMimeType || "image/jpeg",
         material: state.selectedMaterial,
       });
 
       setState(prev => ({
         ...prev,
         previewUrl: result.previewUrl,
-        previewKey: result.previewKey,
+        previewKey: result.previewKey ?? null,
       }));
 
-      toast.success("Material preview generated!");
+      toast.success(
+        result.usedFallback
+          ? "Preview service unavailable; showing original photo"
+          : "Material preview generated!"
+      );
       setStep("preview");
     } catch (error) {
       toast.error("Failed to generate preview");
@@ -352,6 +360,7 @@ export default function Estimator() {
       setState({
         photoUrl: null,
         photoKey: null,
+        photoMimeType: null,
         imageWidth: null,
         imageHeight: null,
         corners: [],

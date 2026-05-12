@@ -64,6 +64,16 @@ const usZipCodeSchema = z
   .trim()
   .regex(/^\d{5}(?:-\d{4})?$/, "Enter a valid US ZIP code");
 
+const storedImageUrlSchema = z
+  .string()
+  .min(1)
+  .max(2048)
+  .refine(
+    url =>
+      url.startsWith("/local-storage/") || url.startsWith("/manus-storage/"),
+    "Image URL must reference project storage"
+  );
+
 export const projectsRouter = router({
   /**
    * List all projects for the current user
@@ -212,8 +222,11 @@ export const projectsRouter = router({
   generateMaterialPreview: protectedProcedure
     .input(
       z.object({
-        photoUrl: z.string(),
-        material: z.enum(["hotmix", "millings", "tar_and_chip", "gravel"]),
+        photoUrl: storedImageUrlSchema,
+        photoMimeType: z.string().refine(isSupportedPhotoMimeType, {
+          message: "Unsupported image type",
+        }),
+        material: z.enum(MATERIALS),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -227,18 +240,19 @@ export const projectsRouter = router({
 
         const prompt = `Take this driveway photo and generate a photorealistic preview showing what it would look like with ${materialNames[input.material]} applied. Keep the same perspective, lighting, and surroundings. Only modify the driveway surface itself.`;
 
-        const { url: previewUrl } = await generateImage({
+        const {
+          url: previewUrl,
+          key: previewKey,
+          usedFallback,
+        } = await generateImage({
           prompt,
           originalImages: [
             {
-              url: input.photoUrl,
-              mimeType: "image/jpeg",
+              url: toAbsoluteUrl(ctx.req, input.photoUrl),
+              mimeType: input.photoMimeType,
             },
           ],
         });
-
-        // Upload preview to S3
-        const previewKey = `previews/${ctx.user.id}/${nanoid()}-preview.jpg`;
         if (!previewUrl) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
@@ -246,18 +260,10 @@ export const projectsRouter = router({
           });
         }
 
-        const response = await fetch(previewUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const previewBuffer = Buffer.from(arrayBuffer);
-        const { url: storedPreviewUrl } = await storagePut(
-          previewKey,
-          previewBuffer,
-          "image/jpeg"
-        );
-
         return {
-          previewUrl: storedPreviewUrl,
-          previewKey,
+          previewUrl,
+          previewKey: previewKey ?? null,
+          usedFallback: usedFallback ?? false,
         };
       } catch (error) {
         console.error("[Projects] Preview generation error:", error);
