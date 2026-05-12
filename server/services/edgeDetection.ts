@@ -1,5 +1,6 @@
 import { invokeLLM } from "../_core/llm";
 import { ENV } from "../_core/env";
+export { calculateSquareFeetFromCorners } from "../../shared/geometry";
 
 const LLM_TIMEOUT_MS = 15_000;
 
@@ -136,36 +137,4 @@ Return ONLY valid JSON in this exact format:
     confidence: parsed.confidence,
     description: parsed.description,
   };
-}
-
-/**
- * Calculate square footage from corner points and image dimensions.
- * Uses the Shoelace formula for polygon area.
- *
- * @param pixelsPerFoot  Real-world calibration: how many pixels equal 1 foot.
- *   Default 10 (≈ a 200px-wide driveway = 20 ft). Pass a measured value when
- *   a known reference object is visible in the photo.
- */
-export function calculateSquareFeetFromCorners(
-  corners: Array<{ x: number; y: number }>,
-  imageWidth: number,
-  imageHeight: number,
-  pixelsPerFoot: number = 10
-): number {
-  const pixelCorners = corners.map(c => ({
-    x: (c.x / 100) * imageWidth,
-    y: (c.y / 100) * imageHeight,
-  }));
-
-  // Shoelace formula
-  let area = 0;
-  for (let i = 0; i < pixelCorners.length; i++) {
-    const cur = pixelCorners[i];
-    const nxt = pixelCorners[(i + 1) % pixelCorners.length];
-    area += cur.x * nxt.y - nxt.x * cur.y;
-  }
-  const pixelArea = Math.abs(area) / 2;
-
-  const squareFeet = Math.round(pixelArea / (pixelsPerFoot * pixelsPerFoot));
-  return Math.max(squareFeet, 100);
 }

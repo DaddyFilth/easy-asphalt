@@ -4,6 +4,7 @@ import {
   useEffect,
   type ChangeEvent,
   type DragEvent,
+  type PointerEvent,
 } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -18,22 +19,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import {
+  calculateSquareFeetFromCorners,
+  type CornerPoint,
+} from "@shared/geometry";
 import { toast } from "sonner";
-import { Loader2, Upload, Camera, AlertCircle } from "lucide-react";
+import { Loader2, Upload, Camera } from "lucide-react";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
 type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-interface CornerPoint {
-  x: number;
-  y: number;
-}
-
 interface EstimatorState {
   photoUrl: string | null;
   photoKey: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
   corners: CornerPoint[];
   squareFeet: number | null;
   depthInches: number;
@@ -55,6 +57,8 @@ export default function Estimator() {
   const [state, setState] = useState<EstimatorState>({
     photoUrl: null,
     photoKey: null,
+    imageWidth: null,
+    imageHeight: null,
     corners: [],
     squareFeet: null,
     depthInches: 2,
@@ -74,7 +78,6 @@ export default function Estimator() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const uploadPhotoMutation =
@@ -94,6 +97,13 @@ export default function Estimator() {
   const generatePreviewMutation =
     trpc.projects.generateMaterialPreview.useMutation();
   const createProjectMutation = trpc.projects.create.useMutation();
+  const cornerPolygon = state.corners
+    .map(corner => `${corner.x},${corner.y}`)
+    .join(" ");
+  const photoAspectRatio =
+    state.imageWidth && state.imageHeight
+      ? `${state.imageWidth} / ${state.imageHeight}`
+      : "16 / 9";
 
   // Get user's geolocation on mount
   useEffect(() => {
@@ -172,8 +182,16 @@ export default function Estimator() {
         ...prev,
         photoUrl: result.photoUrl,
         photoKey: result.photoKey,
+        imageWidth: dimensions.width,
+        imageHeight: dimensions.height,
         corners: result.corners,
-        squareFeet: result.squareFeet,
+        squareFeet:
+          result.squareFeet ||
+          calculateSquareFeetFromCorners(
+            result.corners,
+            dimensions.width,
+            dimensions.height
+          ),
       }));
 
       toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
@@ -199,29 +217,61 @@ export default function Estimator() {
     if (file) void handlePhotoCapture(file);
   };
 
-  const handleCornerDragStart = (index: number) => {
-    setDraggingCorner(index);
-  };
-
-  const handleCornerDrag = (e: React.MouseEvent) => {
-    if (draggingCorner === null || !containerRef.current || !state.photoUrl)
-      return;
-
+  const updateCornerFromPointer = (
+    clientX: number,
+    clientY: number,
+    cornerIndex: number
+  ) => {
+    if (!containerRef.current || !state.photoUrl) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (!rect.width || !rect.height) return;
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
 
     setState(prev => {
       const newCorners = [...prev.corners];
-      newCorners[draggingCorner] = {
+      newCorners[cornerIndex] = {
         x: Math.max(0, Math.min(100, x)),
         y: Math.max(0, Math.min(100, y)),
       };
-      return { ...prev, corners: newCorners };
+
+      const squareFeet =
+        prev.imageWidth && prev.imageHeight
+          ? calculateSquareFeetFromCorners(
+              newCorners,
+              prev.imageWidth,
+              prev.imageHeight
+            )
+          : prev.squareFeet;
+
+      return { ...prev, corners: newCorners, squareFeet };
     });
   };
 
-  const handleCornerDragEnd = () => {
+  const handleCornerPointerDown = (
+    event: PointerEvent<HTMLButtonElement>,
+    index: number
+  ) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingCorner(index);
+    updateCornerFromPointer(event.clientX, event.clientY, index);
+  };
+
+  const handleCornerPointerMove = (
+    event: PointerEvent<HTMLButtonElement>,
+    index: number
+  ) => {
+    if (draggingCorner !== index) return;
+    event.preventDefault();
+    updateCornerFromPointer(event.clientX, event.clientY, index);
+  };
+
+  const handleCornerPointerEnd = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     setDraggingCorner(null);
   };
 
@@ -299,6 +349,8 @@ export default function Estimator() {
       setState({
         photoUrl: null,
         photoKey: null,
+        imageWidth: null,
+        imageHeight: null,
         corners: [],
         squareFeet: null,
         depthInches: 2,
@@ -462,24 +514,45 @@ export default function Estimator() {
             <CardContent className="space-y-4">
               <div
                 ref={containerRef}
-                className="relative w-full bg-black rounded-lg overflow-hidden"
-                style={{ aspectRatio: "16/9" }}
-                onMouseMove={handleCornerDrag}
-                onMouseUp={handleCornerDragEnd}
-                onMouseLeave={handleCornerDragEnd}
+                className="relative w-full touch-none overflow-hidden rounded-lg bg-black"
+                style={{ aspectRatio: photoAspectRatio }}
               >
                 <img
                   src={state.photoUrl}
                   alt="Driveway"
-                  className="w-full h-full object-cover"
+                  className="h-full w-full select-none object-cover"
+                  draggable={false}
                 />
+
+                {state.corners.length >= 3 && (
+                  <svg
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    preserveAspectRatio="none"
+                    viewBox="0 0 100 100"
+                  >
+                    <polygon
+                      points={cornerPolygon}
+                      fill="rgba(37, 99, 235, 0.16)"
+                      stroke="rgb(96, 165, 250)"
+                      strokeWidth="0.75"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </svg>
+                )}
 
                 {/* Corner Markers */}
                 {state.corners.map((corner, i) => (
-                  <div
+                  <button
                     key={i}
-                    onMouseDown={() => handleCornerDragStart(i)}
-                    className="absolute w-8 h-8 bg-blue-500 border-2 border-white rounded-full cursor-move transform -translate-x-1/2 -translate-y-1/2 hover:bg-blue-600"
+                    type="button"
+                    aria-label={`Adjust driveway corner ${i + 1}`}
+                    onPointerDown={event => handleCornerPointerDown(event, i)}
+                    onPointerMove={event => handleCornerPointerMove(event, i)}
+                    onPointerUp={handleCornerPointerEnd}
+                    onPointerCancel={handleCornerPointerEnd}
+                    onLostPointerCapture={() => setDraggingCorner(null)}
+                    className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
                     style={{ left: `${corner.x}%`, top: `${corner.y}%` }}
                   />
                 ))}
@@ -499,12 +572,15 @@ export default function Estimator() {
                     min="1"
                     max="12"
                     value={state.depthInches}
-                    onChange={e =>
+                    onChange={e => {
+                      const depth = Number(e.target.value);
                       setState(prev => ({
                         ...prev,
-                        depthInches: parseInt(e.target.value),
-                      }))
-                    }
+                        depthInches: Number.isFinite(depth)
+                          ? Math.min(12, Math.max(1, Math.round(depth)))
+                          : prev.depthInches,
+                      }));
+                    }}
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <p className="text-xs text-slate-400">inches</p>

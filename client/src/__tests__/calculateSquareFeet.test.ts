@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { calculateSquareFeetFromCorners } from "../../../server/services/edgeDetection";
+import { calculateSquareFeetFromCorners } from "@shared/geometry";
 
-// Client-side usage of the shared calculation — verifies the same function
-// works correctly when called from the frontend bundle.
-describe("calculateSquareFeetFromCorners (client-side import)", () => {
+describe("calculateSquareFeetFromCorners", () => {
   const square = [
     { x: 0, y: 0 },
     { x: 100, y: 0 },
@@ -44,10 +42,17 @@ describe("calculateSquareFeetFromCorners (client-side import)", () => {
 
   it("enforces 100 sq ft minimum for tiny corner selections", () => {
     const tiny = [
-      { x: 49, y: 49 }, { x: 51, y: 49 },
-      { x: 51, y: 51 }, { x: 49, y: 51 },
+      { x: 49, y: 49 },
+      { x: 51, y: 49 },
+      { x: 51, y: 51 },
+      { x: 49, y: 51 },
     ];
     const result = calculateSquareFeetFromCorners(tiny, 100, 100, 10);
     expect(result).toBeGreaterThanOrEqual(100);
+  });
+
+  it("returns the minimum area for invalid measurements", () => {
+    const result = calculateSquareFeetFromCorners(square, 0, 100, 10);
+    expect(result).toBe(100);
   });
 });
