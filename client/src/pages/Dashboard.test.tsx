@@ -1,7 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import Dashboard from "./Dashboard";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const dashboardState = vi.hoisted(() => ({
   data: [] as Array<Record<string, unknown>> | undefined,
@@ -13,7 +12,7 @@ const mutationState = vi.hoisted(() => ({
   shareMutate: vi.fn(),
 }));
 
-vi.mock("@/_core/hooks/useAuth", () => ({
+vi.mock("/home/filth/easy-asphalt/client/src/_core/hooks/useAuth.ts", () => ({
   useAuth: () => ({
     user: {
       id: 1,
@@ -25,7 +24,7 @@ vi.mock("@/_core/hooks/useAuth", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
+vi.mock("/home/filth/easy-asphalt/client/src/lib/trpc.ts", () => ({
   trpc: {
     projects: {
       list: {
@@ -66,11 +65,17 @@ vi.mock("wouter", async () => {
   };
 });
 
+let Dashboard: typeof import("./Dashboard").default;
+
 function renderDashboard() {
   return renderToStaticMarkup(React.createElement(Dashboard));
 }
 
 describe("Dashboard", () => {
+  beforeAll(async () => {
+    Dashboard = (await import("./Dashboard")).default;
+  });
+
   beforeEach(() => {
     dashboardState.data = [];
     dashboardState.isLoading = false;

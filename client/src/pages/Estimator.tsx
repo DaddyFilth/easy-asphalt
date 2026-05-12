@@ -240,7 +240,7 @@ export default function Estimator() {
         cornerPoints: state.corners,
         selectedMaterial: state.selectedMaterial,
         quantityNeeded: pricing.quantityNeeded,
-        pricePerUnit: pricing.pricePerTon,
+        pricePerUnit: `$${pricing.pricePerTon.toFixed(2)}`,
         totalCost: pricing.totalCost,
         zipCode: state.zipCode,
         latitude: state.latitude,

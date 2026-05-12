@@ -1,9 +1,13 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { afterAll, beforeAll, vi } from "vitest";
 
 // Suppress React act() warnings in test output
-if (typeof globalThis.IS_REACT_ACT_ENVIRONMENT === "undefined") {
-  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const reactTestGlobal = globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT?: boolean;
+};
+
+if (typeof reactTestGlobal.IS_REACT_ACT_ENVIRONMENT === "undefined") {
+  reactTestGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 }
 
 // Stub browser APIs not available in jsdom

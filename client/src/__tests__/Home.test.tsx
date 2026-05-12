@@ -1,78 +1,81 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const authState = vi.hoisted(() => ({
+  value: { user: null as unknown, isAuthenticated: false },
+}));
 
 // Mock routing and auth so the component renders in isolation
 vi.mock("wouter", () => ({
-  Link: ({ children, href }: any) => <a href={href}>{children}</a>,
+  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
   useLocation: () => ["/", vi.fn()],
 }));
 
-vi.mock("@/_core/hooks/useAuth", () => ({
-  useAuth: () => ({ user: null, isAuthenticated: false }),
+vi.mock("/home/filth/easy-asphalt/client/src/_core/hooks/useAuth.ts", () => ({
+  useAuth: () => authState.value,
 }));
 
-vi.mock("@/const", () => ({
+vi.mock("/home/filth/easy-asphalt/client/src/const.ts", () => ({
   getLoginUrl: () => "/auth/login",
 }));
 
 import Home from "../pages/Home";
 
+function renderHome() {
+  return renderToStaticMarkup(React.createElement(Home));
+}
+
 describe("Home landing page", () => {
+  beforeEach(() => {
+    authState.value = { user: null, isAuthenticated: false };
+  });
+
   it("renders without crashing", () => {
-    const { container } = render(<Home />);
-    expect(container).toBeTruthy();
+    expect(renderHome()).toBeTruthy();
   });
 
   it("shows brand name", () => {
-    render(<Home />);
-    expect(screen.getByText(/driveWayAI|driveway/i)).toBeTruthy();
+    expect(renderHome()).toMatch(/driveway/i);
   });
 
   it("shows sign in CTA for unauthenticated users", () => {
-    render(<Home />);
-    const ctaLinks = screen.getAllByRole("link");
-    const hasSignIn = ctaLinks.some(el =>
-      el.textContent?.toLowerCase().includes("sign in") ||
-      el.textContent?.toLowerCase().includes("get started")
-    );
-    expect(hasSignIn).toBe(true);
+    expect(renderHome().toLowerCase()).toMatch(/sign in|get started/);
   });
 
   it("links to auth login URL", () => {
-    render(<Home />);
-    const links = screen.getAllByRole("link");
-    const hasAuthLink = links.some(el => el.getAttribute("href") === "/auth/login");
-    expect(hasAuthLink).toBe(true);
+    expect(renderHome()).toContain('href="/auth/login"');
   });
 
   it("shows the four step titles", () => {
-    render(<Home />);
+    const html = renderHome();
     ["Capture", "Detect", "Price", "Share"].forEach(step => {
-      expect(screen.getByText(step)).toBeTruthy();
+      expect(html).toContain(step);
     });
   });
 
   it("shows all four material names", () => {
-    render(<Home />);
-    ["Hot Mix Asphalt", "Asphalt Millings", "Tar & Chip", "Gravel"].forEach(m => {
-      expect(screen.getByText(m)).toBeTruthy();
-    });
+    const html = renderHome();
+    expect(html).toContain("Hot Mix Asphalt");
+    expect(html).toContain("Asphalt Millings");
+    expect(html).toMatch(/Tar (&amp;|&) Chip/);
+    expect(html).toContain("Gravel");
   });
 });
 
 describe("Home landing page (authenticated)", () => {
   beforeEach(() => {
-    vi.mocked(require("@/_core/hooks/useAuth").useAuth).mockReturnValue({
+    authState.value = {
       user: { id: "u1", name: "Mike", email: "mike@test.com" },
       isAuthenticated: true,
-    });
+    };
   });
 
   it("shows dashboard and new estimate links when logged in", () => {
-    render(<Home />);
-    const links = screen.getAllByRole("link");
-    const texts = links.map(l => l.textContent?.toLowerCase());
-    expect(texts.some(t => t?.includes("dashboard"))).toBe(true);
-    expect(texts.some(t => t?.includes("estimate"))).toBe(true);
+    const html = renderHome().toLowerCase();
+    expect(html).toContain("dashboard");
+    expect(html).toContain("estimate");
   });
 });

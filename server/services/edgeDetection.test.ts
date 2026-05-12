@@ -12,7 +12,7 @@ describe("Edge Detection Service", () => {
       ];
       const imageWidth = 1000;
       const imageHeight = 1000;
-      const pixelsPerFoot = 0.1;
+      const pixelsPerFoot = 10;
 
       const squareFeet = calculateSquareFeetFromCorners(
         corners,
@@ -34,7 +34,7 @@ describe("Edge Detection Service", () => {
       ];
       const imageWidth = 1000;
       const imageHeight = 1000;
-      const pixelsPerFoot = 0.01; // Very small calibration
+      const pixelsPerFoot = 100; // Very small real-world area
 
       const squareFeet = calculateSquareFeetFromCorners(
         corners,
@@ -53,8 +53,8 @@ describe("Edge Detection Service", () => {
         { x: 10, y: 90 },
       ];
 
-      const result1 = calculateSquareFeetFromCorners(corners, 1000, 1000, 0.1);
-      const result2 = calculateSquareFeetFromCorners(corners, 2000, 2000, 0.1);
+      const result1 = calculateSquareFeetFromCorners(corners, 1000, 1000, 10);
+      const result2 = calculateSquareFeetFromCorners(corners, 2000, 2000, 10);
 
       // Larger image should give larger area
       expect(result2).toBeGreaterThan(result1);
@@ -74,17 +74,17 @@ describe("Edge Detection Service", () => {
         corners,
         imageWidth,
         imageHeight,
-        0.05
+        5
       );
       const result2 = calculateSquareFeetFromCorners(
         corners,
         imageWidth,
         imageHeight,
-        0.1
+        10
       );
 
-      // Higher calibration factor should give larger area
-      expect(result2).toBeGreaterThan(result1);
+      // Higher pixels-per-foot means the same pixel area covers fewer sq ft.
+      expect(result2).toBeLessThan(result1);
     });
 
     it("should handle non-rectangular shapes", () => {
@@ -102,7 +102,7 @@ describe("Edge Detection Service", () => {
         corners,
         imageWidth,
         imageHeight,
-        0.1
+        10
       );
       expect(squareFeet).toBeGreaterThan(0);
       expect(squareFeet).toBeLessThanOrEqual(10000);

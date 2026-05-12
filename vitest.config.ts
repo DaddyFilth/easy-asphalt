@@ -2,12 +2,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [react()],
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     include: ["server/**/*.test.ts", "client/src/**/*.test.{ts,tsx}"],
     exclude: [

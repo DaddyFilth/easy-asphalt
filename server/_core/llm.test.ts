@@ -1,22 +1,28 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Verify the LLM wrapper shapes a request correctly without making real API calls
-vi.mock("openai", () => {
-  const mockCreate = vi.fn().mockResolvedValue({
-    choices: [{ message: { content: '{"test":true}', role: "assistant" } }],
-    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-  });
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      chat: { completions: { create: mockCreate } },
-    })),
-    __mockCreate: mockCreate,
-  };
+vi.hoisted(() => {
+  process.env.BUILT_IN_FORGE_API_KEY = "test-key";
+  process.env.BUILT_IN_FORGE_API_URL = "https://api.example.test";
 });
 
 import { invokeLLM } from "./llm";
 
 describe("LLM Core", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [
+            { message: { content: '{"test":true}', role: "assistant" } },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      })
+    );
+  });
+
   it("returns choices array from provider", async () => {
     const result = await invokeLLM({
       messages: [{ role: "user", content: "hello" }],

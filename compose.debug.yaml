@@ -1,12 +1,24 @@
 services:
-  vite:
-    image: vite
+  app:
+    image: easy-asphalt-app:debug
     build:
-      context: node_modules/vite
-      dockerfile: ./Dockerfile
+      context: .
+      dockerfile: Dockerfile
+      target: deps
     environment:
       NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      VITE_APP_ID: ${VITE_APP_ID:-}
+      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL:-}
+      OWNER_OPEN_ID: ${OWNER_OPEN_ID:-}
+      BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL:-}
+      BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY:-}
     ports:
-      - 3000:3000
-      - 9229:9229
-    command: ["node", "--inspect=0.0.0.0:9229", "index.js"]
+      - "3000:3000"
+    command: pnpm dev
+    volumes:
+      - .:/app
+      - /app/node_modules
