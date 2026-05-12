@@ -16,11 +16,9 @@ export default function App() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/estimator"}>
-          <RequireAuth>
-            <DevicePermissionGate>
-              <Estimator />
-            </DevicePermissionGate>
-          </RequireAuth>
+          <DevicePermissionGate>
+            <Estimator />
+          </DevicePermissionGate>
         </Route>
         <Route path={"/dashboard"}>
           <RequireAuth>

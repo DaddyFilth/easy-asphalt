@@ -96,7 +96,11 @@ export default function Login() {
 
   const pending = loginMutation.isPending || registerMutation.isPending;
   const neonInputClassName =
-    "border-[#2b6e1b] bg-black/70 text-[#39ff14] placeholder:text-[#5e9f4d]";
+    "h-11 border-[#2b6e1b] bg-black/80 text-[#39ff14] placeholder:text-[#5e9f4d] focus-visible:border-[#39ff14] focus-visible:ring-[#39ff14]/20";
+  const neonButtonClassName =
+    "h-11 w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]";
+  const mutedCopyClassName = "text-[#9fe788]";
+  const helperCopyClassName = "text-[#78bf64]";
   const neonInputStyle = {
     color: "#39ff14",
     WebkitTextFillColor: "#39ff14",
@@ -129,19 +133,24 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#020b00] px-4 py-10 text-[#b9ff9a] [color-scheme:dark] sm:px-6">
-      <section className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-md items-center">
-        <div className="w-full rounded-xl border border-[#2b6e1b] bg-[#041103]/95 p-6 shadow-2xl shadow-black/50 sm:p-8">
+    <main className="min-h-dvh overflow-x-hidden overflow-y-auto bg-[#010400] px-4 py-8 text-[#d6ffcb] [color-scheme:dark] sm:px-6">
+      <section className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-lg items-center">
+        <div className="w-full rounded-2xl border border-[#246416] bg-[#041103]/96 p-6 shadow-[0_0_0_1px_rgba(57,255,20,0.12),0_24px_80px_rgba(0,0,0,0.6)] sm:p-8">
           <header className="mb-6 space-y-3 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#39ff14]/10 text-[#39ff14]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#39ff14]/12 text-[#39ff14] shadow-[0_0_22px_rgba(57,255,20,0.14)]">
               <ShieldCheck className="h-6 w-6" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold text-[#39ff14]">
+              <h1 className="text-3xl font-bold text-[#39ff14]">
                 Secure Sign In
               </h1>
-              <p className="text-sm text-[#8fd479]">
-                Sign in before using the estimator, dashboard, and device tools.
+              <p className={`text-sm leading-6 ${mutedCopyClassName}`}>
+                Sign in or create an account to unlock the full estimator,
+                dashboard, pricing, previews, and saved project tools.
+              </p>
+              <p className={`text-xs leading-5 ${helperCopyClassName}`}>
+                Want to test the capture flow first? The estimator demo works
+                without an account.
               </p>
             </div>
           </header>
@@ -152,34 +161,44 @@ export default function Login() {
               setMode(value as AuthMode);
               setErrorMessage("");
             }}
-            className="space-y-4"
+            className="space-y-5"
           >
-            <TabsList className="grid w-full grid-cols-2 border border-[#2b6e1b] bg-[#0a2107]">
+            <TabsList className="grid h-auto w-full grid-cols-2 border border-[#2b6e1b] bg-[#0a2107] p-1">
               <TabsTrigger
                 value="login"
-                className="text-[#8dff66] data-[state=active]:bg-[#39ff14]/15 data-[state=active]:text-[#d6ffcb]"
+                className="h-11 text-base text-[#afff98] data-[state=active]:border-[#39ff14]/25 data-[state=active]:bg-[#39ff14]/18 data-[state=active]:text-[#39ff14]"
               >
                 Sign In
               </TabsTrigger>
               <TabsTrigger
                 value="register"
-                className="text-[#8dff66] data-[state=active]:bg-[#39ff14]/15 data-[state=active]:text-[#d6ffcb]"
+                className="h-11 text-base text-[#afff98] data-[state=active]:border-[#39ff14]/25 data-[state=active]:bg-[#39ff14]/18 data-[state=active]:text-[#39ff14]"
               >
                 Create Account
               </TabsTrigger>
             </TabsList>
 
             {errorMessage && (
-              <Alert variant="destructive">
-                <AlertTitle>Authentication error</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
+              <Alert
+                variant="destructive"
+                className="border border-[#7a220f] bg-[#240903] text-[#ffd7cc]"
+              >
+                <AlertTitle className="text-[#ffd7cc]">
+                  Authentication error
+                </AlertTitle>
+                <AlertDescription className="text-[#ffb8a6]">
+                  {errorMessage}
+                </AlertDescription>
               </Alert>
             )}
 
-            <TabsContent value="login">
+            <TabsContent value="login" className="text-[#d6ffcb]">
               <form className="space-y-4" onSubmit={handleLoginSubmit}>
                 <div className="space-y-2">
-                  <Label htmlFor="login-email" className="text-[#9cff79]">
+                  <Label
+                    htmlFor="login-email"
+                    className="text-sm text-[#b9ff9a]"
+                  >
                     Email
                   </Label>
                   <Input
@@ -200,7 +219,10 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password" className="text-[#9cff79]">
+                  <Label
+                    htmlFor="login-password"
+                    className="text-sm text-[#b9ff9a]"
+                  >
                     Password
                   </Label>
                   <Input
@@ -222,7 +244,7 @@ export default function Login() {
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
+                  className={neonButtonClassName}
                 >
                   <LogIn className="h-4 w-4" />
                   {loginMutation.isPending ? "Signing in..." : "Sign In"}
@@ -230,10 +252,13 @@ export default function Login() {
               </form>
             </TabsContent>
 
-            <TabsContent value="register">
+            <TabsContent value="register" className="text-[#d6ffcb]">
               <form className="space-y-4" onSubmit={handleRegisterSubmit}>
                 <div className="space-y-2">
-                  <Label htmlFor="register-name" className="text-[#9cff79]">
+                  <Label
+                    htmlFor="register-name"
+                    className="text-sm text-[#b9ff9a]"
+                  >
                     Full name
                   </Label>
                   <Input
@@ -253,7 +278,10 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="register-email" className="text-[#9cff79]">
+                  <Label
+                    htmlFor="register-email"
+                    className="text-sm text-[#b9ff9a]"
+                  >
                     Email
                   </Label>
                   <Input
@@ -276,7 +304,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="register-password"
-                    className="text-[#9cff79]"
+                    className="text-sm text-[#b9ff9a]"
                   >
                     Password
                   </Label>
@@ -295,7 +323,7 @@ export default function Login() {
                     style={neonInputStyle}
                     required
                   />
-                  <p className="text-xs text-[#72b061]">
+                  <p className={`text-xs ${helperCopyClassName}`}>
                     Use at least 12 characters with uppercase, lowercase, and a
                     number.
                   </p>
@@ -303,7 +331,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="register-confirm-password"
-                    className="text-[#9cff79]"
+                    className="text-sm text-[#b9ff9a]"
                   >
                     Confirm password
                   </Label>
@@ -326,7 +354,7 @@ export default function Login() {
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="w-full border border-[#39ff14]/40 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
+                  className={neonButtonClassName}
                 >
                   <UserPlus className="h-4 w-4" />
                   {registerMutation.isPending
@@ -337,9 +365,13 @@ export default function Login() {
             </TabsContent>
           </Tabs>
 
-          <footer className="mt-6 text-center text-sm text-[#72b061]">
+          <footer className={`mt-6 text-center text-sm ${helperCopyClassName}`}>
             <Link href="/" className="transition hover:text-[#d6ffcb]">
               Back to home
+            </Link>
+            <span className="mx-2 text-[#2f621f]">•</span>
+            <Link href="/estimator" className="transition hover:text-[#d6ffcb]">
+              Open demo capture
             </Link>
           </footer>
         </div>

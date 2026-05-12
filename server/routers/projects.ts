@@ -86,6 +86,15 @@ const cornerPointSchema = z.object({
   x: z.number().finite().min(0).max(100),
   y: z.number().finite().min(0).max(100),
 });
+const uploadPhotoInputSchema = z.object({
+  photoBase64: z.string(),
+  photoName: z.string().min(1).max(160),
+  photoMimeType: z.string().refine(isSupportedPhotoMimeType, {
+    message: "Unsupported image type",
+  }),
+  imageWidth: z.number().int().positive().max(20_000),
+  imageHeight: z.number().int().positive().max(20_000),
+});
 const optionalCoordinateSchema = z
   .string()
   .trim()
@@ -101,6 +110,12 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+const DEMO_CAPTURE_LIMIT = 5;
+const DEMO_CAPTURE_WINDOW_MS = 15 * 60_000;
+const demoCaptureAttempts = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
 
 function formatUsd(value: number) {
   return currencyFormatter.format(value);
@@ -126,6 +141,115 @@ function getBaseUrl(req: Request) {
   if (envBaseUrl) return envBaseUrl.replace(/\/+$/, "");
 
   return getRequestOrigin(req) || "http://localhost:3000";
+}
+
+function getRequestAddress(req: Request) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const fromHeader = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]
+      : undefined;
+
+  return (fromHeader || req.ip || "guest").trim().slice(0, 128);
+}
+
+function buildMaterialPreviewPrompt(
+  material: (typeof MATERIALS)[number],
+  editPrompt?: string
+) {
+  const materialNames: Record<(typeof MATERIALS)[number], string> = {
+    hotmix: "hot mix asphalt",
+    millings: "asphalt millings",
+    tar_and_chip: "tar and chip",
+    gravel: "gravel",
+  };
+
+  const normalizedEditPrompt = editPrompt?.trim().replace(/\s+/g, " ");
+  const promptSections = [
+    "You are editing a real driveway photo for a contractor estimate.",
+    `Apply ${materialNames[material]} to the driveway surface only.`,
+    "Keep the same camera angle, home, lighting, shadows, lawn, and surroundings.",
+    "Make the result photorealistic and construction-ready.",
+  ];
+
+  if (normalizedEditPrompt) {
+    promptSections.push(
+      `Additional user instructions: ${normalizedEditPrompt}.`
+    );
+  }
+
+  promptSections.push(
+    "If any user instruction conflicts with preserving the original scene, preserve the original scene and only alter the driveway surface."
+  );
+
+  return promptSections.join(" ");
+}
+
+function assertDemoCaptureWithinLimit(req: Request) {
+  const requestAddress = getRequestAddress(req);
+  const now = Date.now();
+  const existing = demoCaptureAttempts.get(requestAddress);
+
+  if (!existing || existing.resetAt <= now) {
+    demoCaptureAttempts.set(requestAddress, {
+      count: 1,
+      resetAt: now + DEMO_CAPTURE_WINDOW_MS,
+    });
+    return;
+  }
+
+  if (existing.count >= DEMO_CAPTURE_LIMIT) {
+    const retryAfterMinutes = Math.max(
+      1,
+      Math.ceil((existing.resetAt - now) / 60_000)
+    );
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `Demo capture limit reached. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? "" : "s"}.`,
+    });
+  }
+
+  demoCaptureAttempts.set(requestAddress, {
+    count: existing.count + 1,
+    resetAt: existing.resetAt,
+  });
+}
+
+async function uploadPhotoAndDetectEdgesForOwner(
+  req: Request,
+  ownerKey: string,
+  input: z.infer<typeof uploadPhotoInputSchema>
+) {
+  const photoMimeType = input.photoMimeType;
+  if (!isSupportedPhotoMimeType(photoMimeType)) {
+    throw new Error("Unsupported image type");
+  }
+
+  const buffer = decodePhotoBase64(input.photoBase64, photoMimeType);
+  const storedPhotoName = buildStoredPhotoName(input.photoName, photoMimeType);
+  const requestedPhotoKey = `projects/${ownerKey}/${nanoid()}-${storedPhotoName}`;
+  const { key: photoKey, url: photoUrl } = await storagePut(
+    requestedPhotoKey,
+    buffer,
+    photoMimeType
+  );
+
+  const edgeDetection = await detectDrivewayEdges(toAbsoluteUrl(req, photoUrl));
+  const squareFeet = calculateSquareFeetFromCorners(
+    edgeDetection.corners,
+    input.imageWidth,
+    input.imageHeight
+  );
+
+  return {
+    photoUrl,
+    photoKey,
+    corners: edgeDetection.corners,
+    confidence: edgeDetection.confidence,
+    description: edgeDetection.description,
+    squareFeet,
+  };
 }
 
 function toSharedProject(project: Project) {
@@ -174,7 +298,8 @@ export const projectsRouter = router({
    * List all projects for the current user
    */
   list: protectedProcedure.query(async ({ ctx }) => {
-    const projects = await getUserProjects(ctx.user.id);
+    const currentUser = ctx.user!;
+    const projects = await getUserProjects(currentUser.id);
     return projects.map(p => ({
       ...p,
       cornerPoints: p.cornerPoints ? JSON.parse(p.cornerPoints) : null,
@@ -187,8 +312,9 @@ export const projectsRouter = router({
   getById: protectedProcedure
     .input(z.object({ projectId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
+      const currentUser = ctx.user!;
       const project = await getProjectById(input.projectId);
-      if (!project || project.userId !== ctx.user.id) {
+      if (!project || project.userId !== currentUser.id) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found",
@@ -206,60 +332,40 @@ export const projectsRouter = router({
    * Upload photo and detect driveway edges
    */
   uploadPhotoAndDetectEdges: protectedProcedure
-    .input(
-      z.object({
-        photoBase64: z.string(),
-        photoName: z.string().min(1).max(160),
-        photoMimeType: z.string().refine(isSupportedPhotoMimeType, {
-          message: "Unsupported image type",
-        }),
-        imageWidth: z.number().int().positive().max(20_000),
-        imageHeight: z.number().int().positive().max(20_000),
-      })
-    )
+    .input(uploadPhotoInputSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        const photoMimeType = input.photoMimeType;
-        if (!isSupportedPhotoMimeType(photoMimeType)) {
-          throw new Error("Unsupported image type");
-        }
-
-        const buffer = decodePhotoBase64(input.photoBase64, photoMimeType);
-        const storedPhotoName = buildStoredPhotoName(
-          input.photoName,
-          photoMimeType
+        const currentUser = ctx.user!;
+        return await uploadPhotoAndDetectEdgesForOwner(
+          ctx.req,
+          String(currentUser.id),
+          input
         );
-
-        // Upload to S3
-        const requestedPhotoKey = `projects/${ctx.user.id}/${nanoid()}-${storedPhotoName}`;
-        const { key: photoKey, url: photoUrl } = await storagePut(
-          requestedPhotoKey,
-          buffer,
-          photoMimeType
-        );
-
-        // Detect driveway edges using LLM vision
-        const edgeDetection = await detectDrivewayEdges(
-          toAbsoluteUrl(ctx.req, photoUrl)
-        );
-
-        // Calculate square footage from detected corners
-        const squareFeet = calculateSquareFeetFromCorners(
-          edgeDetection.corners,
-          input.imageWidth,
-          input.imageHeight
-        );
-
-        return {
-          photoUrl,
-          photoKey,
-          corners: edgeDetection.corners,
-          confidence: edgeDetection.confidence,
-          description: edgeDetection.description,
-          squareFeet,
-        };
       } catch (error) {
         console.error("[Projects] Edge detection error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to detect driveway edges",
+        });
+      }
+    }),
+
+  /**
+   * Guest demo capture: capture and edge detection only. Pricing, previews,
+   * and saved projects stay locked behind authenticated routes.
+   */
+  uploadPhotoAndDetectEdgesDemo: publicProcedure
+    .input(uploadPhotoInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        assertDemoCaptureWithinLimit(ctx.req);
+        return await uploadPhotoAndDetectEdgesForOwner(ctx.req, "demo", input);
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        console.error("[Projects] Demo edge detection error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to detect driveway edges",
@@ -323,18 +429,15 @@ export const projectsRouter = router({
           message: "Unsupported image type",
         }),
         material: z.enum(MATERIALS),
+        editPrompt: z.string().trim().min(1).max(500).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const materialNames: Record<string, string> = {
-          hotmix: "hot mix asphalt",
-          millings: "asphalt millings",
-          tar_and_chip: "tar and chip",
-          gravel: "gravel",
-        };
-
-        const prompt = `Take this driveway photo and generate a photorealistic preview showing what it would look like with ${materialNames[input.material]} applied. Keep the same perspective, lighting, and surroundings. Only modify the driveway surface itself.`;
+        const prompt = buildMaterialPreviewPrompt(
+          input.material,
+          input.editPrompt
+        );
 
         const {
           url: previewUrl,
@@ -400,6 +503,7 @@ export const projectsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
+        const currentUser = ctx.user!;
         const pricing = await getMaterialPricingForZip(
           input.zipCode,
           input.selectedMaterial
@@ -428,7 +532,7 @@ export const projectsRouter = router({
         );
         const normalizedZipCode = normalizeZipCode(input.zipCode);
         const project = await createProject({
-          userId: ctx.user.id,
+          userId: currentUser.id,
           projectName: input.projectName,
           photoUrl: input.photoUrl,
           photoKey: input.photoKey,
@@ -465,15 +569,15 @@ export const projectsRouter = router({
             shareToken,
             contractorEmail: input.contractorEmail,
           });
-        } else if (ctx.user.email || input.contractorEmail) {
+        } else if (currentUser.email || input.contractorEmail) {
           console.warn(
             "[Projects] Created project without returned id; notification share link skipped"
           );
         }
 
-        if (ctx.user.email && shareLink) {
+        if (currentUser.email && shareLink) {
           await sendEstimateNotification(
-            ctx.user.email,
+            currentUser.email,
             input.projectName,
             input.squareFeet,
             input.selectedMaterial,
@@ -485,7 +589,7 @@ export const projectsRouter = router({
         if (input.contractorEmail && shareLink) {
           await sendContractorNotification(
             input.contractorEmail,
-            ctx.user.name || "A homeowner",
+            currentUser.name || "A homeowner",
             input.projectName,
             input.squareFeet,
             input.selectedMaterial,
@@ -531,8 +635,9 @@ export const projectsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const currentUser = ctx.user!;
       const project = await getProjectById(input.projectId);
-      if (!project || project.userId !== ctx.user.id) {
+      if (!project || project.userId !== currentUser.id) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found",
@@ -549,8 +654,9 @@ export const projectsRouter = router({
   delete: protectedProcedure
     .input(z.object({ projectId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
+      const currentUser = ctx.user!;
       const project = await getProjectById(input.projectId);
-      if (!project || project.userId !== ctx.user.id) {
+      if (!project || project.userId !== currentUser.id) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found",
@@ -572,8 +678,9 @@ export const projectsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const currentUser = ctx.user!;
       const project = await getProjectById(input.projectId);
-      if (!project || project.userId !== ctx.user.id) {
+      if (!project || project.userId !== currentUser.id) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Project not found",
@@ -593,7 +700,7 @@ export const projectsRouter = router({
       if (input.contractorEmail) {
         await sendContractorNotification(
           input.contractorEmail,
-          ctx.user.name || "A homeowner",
+          currentUser.name || "A homeowner",
           project.projectName || "Driveway Project",
           project.squareFeet || 0,
           project.selectedMaterial || "unknown",
@@ -638,6 +745,7 @@ export const projectsRouter = router({
   downloadPDF: protectedProcedure
     .input(z.object({ projectId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
+      const currentUser = ctx.user!;
       const project = await getProjectById(input.projectId);
       if (!project) {
         throw new TRPCError({
@@ -645,7 +753,7 @@ export const projectsRouter = router({
           message: "Project not found",
         });
       }
-      if (project.userId !== ctx.user.id) {
+      if (project.userId !== currentUser.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 

@@ -193,18 +193,296 @@ const materials = [
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
+  const primaryCtaHref = isAuthenticated
+    ? "/estimator"
+    : getLoginUrl("/estimator");
+  const primaryCtaLabel = isAuthenticated
+    ? "Start Estimating"
+    : "Get Started Free";
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: "#060d1a",
-        color: "#e2e8f0",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      {/* ── Global keyframes ── */}
-      <style>{`
+    <>
+      <main className="min-[1120px]:hidden min-h-screen overflow-x-hidden bg-[#060d1a] text-slate-100">
+        <nav className="sticky top-0 z-50 border-b border-white/8 bg-[#060d1a]/92 backdrop-blur">
+          <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+                <rect width="32" height="32" rx="8" fill="#1d4ed8" />
+                <polygon
+                  points="8,24 16,8 24,24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <line
+                  x1="10"
+                  y1="19"
+                  x2="22"
+                  y2="19"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+              </svg>
+              <span className="text-base font-extrabold text-white">
+                Driveway<span className="text-blue-400">AI</span>
+              </span>
+            </div>
+            <a
+              href={isAuthenticated ? "/dashboard" : getLoginUrl("/estimator")}
+              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-slate-100"
+            >
+              {isAuthenticated ? "Dashboard" : "Sign In"}
+            </a>
+          </div>
+        </nav>
+
+        <section className="border-b border-white/6 px-4 pb-8 pt-8">
+          <div className="mx-auto flex max-w-xl flex-col gap-6">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-blue-200">
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Powered by OpenAI Vision
+            </div>
+
+            <div className="space-y-4">
+              <h1 className="text-4xl font-black leading-tight text-white">
+                Measure your driveway from one photo.
+              </h1>
+              <p className="text-base leading-7 text-slate-300">
+                Snap a picture, detect the driveway shape, estimate square
+                footage, and price materials in under 30 seconds.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <a
+                href={primaryCtaHref}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(59,130,246,0.35)]"
+              >
+                {primaryCtaLabel}
+                <ArrowRight size={18} />
+              </a>
+              <a
+                href="/estimator"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/6 px-5 py-3.5 text-base font-semibold text-slate-100"
+              >
+                See Demo
+                <Camera size={18} />
+              </a>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-blue-400/20 bg-[#0d1729] shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+              <div className="flex items-center gap-2 border-b border-white/6 bg-[#0f172a] px-4 py-3">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                <span className="ml-2 text-xs text-slate-500">
+                  drivewayai.app/estimator
+                </span>
+              </div>
+              <div className="bg-[#0d1729] p-3">
+                <div className="overflow-hidden rounded-2xl border border-blue-500/10">
+                  <DrivewaySVG />
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-slate-400">Detected area</span>
+                <span className="font-bold text-blue-300">640 sq ft</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map(item => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-white/8 bg-white/5 p-4"
+                >
+                  <div className="text-2xl font-black text-white">
+                    {item.value}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-400">
+                    {item.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-8">
+          <div className="mx-auto max-w-xl space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-300">
+                How It Works
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                Four fast steps to a clean estimate
+              </h2>
+            </div>
+            <ol className="space-y-3">
+              {steps.map(step => (
+                <li
+                  key={step.n}
+                  className="rounded-2xl border border-white/8 bg-white/5 p-4"
+                >
+                  <div className="mb-2 flex items-center gap-3">
+                    <span
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-black"
+                      style={{
+                        background: `${step.color}22`,
+                        color: step.color,
+                      }}
+                    >
+                      {step.n}
+                    </span>
+                    <span className="text-lg font-bold text-white">
+                      {step.title}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-6 text-slate-300">
+                    {step.desc}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section className="border-t border-white/6 px-4 py-8">
+          <div className="mx-auto max-w-xl space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                Materials
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                Instant material pricing
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {materials.map(material => (
+                <article
+                  key={material.name}
+                  className="rounded-2xl border bg-[#0d1729] p-4"
+                  style={{ borderColor: `${material.accent}33` }}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3 className="text-base font-bold text-white">
+                      {material.name}
+                    </h3>
+                    <span
+                      className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                      style={{
+                        background: `${material.accent}18`,
+                        border: `1px solid ${material.accent}33`,
+                        color: material.accent,
+                      }}
+                    >
+                      {material.tag}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-6 text-slate-300">
+                    {material.desc}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-8">
+          <div className="mx-auto grid max-w-xl gap-3 rounded-3xl border border-white/8 bg-white/5 p-4">
+            {[
+              {
+                icon: <MapPin size={18} />,
+                title: "Zip-aware pricing",
+                desc: "Material cost is based on regional pricing near the project.",
+              },
+              {
+                icon: <Clock size={18} />,
+                title: "Fast capture",
+                desc: "Demo mode lets you test photo capture before creating an account.",
+              },
+              {
+                icon: <Shield size={18} />,
+                title: "Signup unlocks full access",
+                desc: "Create an account to save jobs, generate previews, and share projects.",
+              },
+            ].map(item => (
+              <div
+                key={item.title}
+                className="flex gap-3 rounded-2xl border border-white/8 bg-[#0d1729] p-4"
+              >
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/12 text-blue-300">
+                  {item.icon}
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-white">{item.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-300">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-t border-white/6 px-4 py-10">
+          <div className="mx-auto max-w-xl rounded-3xl border border-white/8 bg-[#0d1729] p-6 text-center">
+            <h2 className="text-2xl font-black text-white">
+              Ready to measure your driveway?
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              Start with a demo capture or create an account to unlock the full
+              estimator, pricing, previews, and saved projects.
+            </p>
+            <div className="mt-5 flex flex-col gap-3">
+              <a
+                href={primaryCtaHref}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-base font-bold text-white"
+              >
+                {primaryCtaLabel}
+                <ArrowRight size={18} />
+              </a>
+              <a
+                href="/estimator"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/6 px-5 py-3.5 text-base font-semibold text-slate-100"
+              >
+                Open Demo
+                <Zap size={18} />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <footer className="border-t border-white/6 px-4 py-6">
+          <div className="mx-auto flex max-w-xl flex-col gap-2 text-sm text-slate-500">
+            <span className="font-semibold text-slate-400">
+              DrivewayAI © 2026
+            </span>
+            <span>Powered by OpenAI Vision and regional pricing data.</span>
+          </div>
+        </footer>
+      </main>
+
+      <div
+        className="hidden min-[1120px]:block min-h-screen overflow-x-auto"
+        style={{
+          background: "#060d1a",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+        }}
+      >
+        <div
+          className="min-h-screen"
+          style={{
+            background: "#060d1a",
+            color: "#e2e8f0",
+            fontFamily: "system-ui, sans-serif",
+            minWidth: 1120,
+          }}
+        >
+          {/* ── Global keyframes ── */}
+          <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -278,792 +556,833 @@ export default function Home() {
           width: calc(100% - 56px); height: 1px;
           background: linear-gradient(90deg, rgba(59,130,246,0.4), rgba(59,130,246,0.05));
         }
-      `}</style>
+        `}</style>
 
-      {/* ── NAV ── */}
-      <nav
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-          background: "rgba(6,13,26,0.85)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            padding: "0 24px",
-            height: 64,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#1d4ed8" />
-              <polygon
-                points="8,24 16,8 24,24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <line
-                x1="10"
-                y1="19"
-                x2="22"
-                y2="19"
-                stroke="white"
-                strokeWidth="2"
-              />
-              <circle cx="8" cy="24" r="2" fill="#60a5fa" />
-              <circle cx="24" cy="24" r="2" fill="#60a5fa" />
-              <circle cx="16" cy="8" r="2" fill="#60a5fa" />
-            </svg>
-            <span
-              style={{
-                fontWeight: 800,
-                fontSize: 18,
-                color: "white",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              Driveway<span style={{ color: "#3b82f6" }}>AI</span>
-            </span>
-          </div>
-          {/* Nav actions */}
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            {isAuthenticated ? (
-              <>
-                <a
-                  href="/dashboard"
-                  className="btn-secondary"
-                  style={{ padding: "9px 18px", fontSize: 14 }}
-                >
-                  Dashboard
-                </a>
-                <a
-                  href="/estimator"
-                  className="btn-primary"
-                  style={{ padding: "9px 20px", fontSize: 14 }}
-                >
-                  New Estimate <ArrowRight size={14} />
-                </a>
-              </>
-            ) : (
-              <a
-                href={getLoginUrl("/estimator")}
-                className="btn-primary"
-                style={{ padding: "9px 22px", fontSize: 14 }}
-              >
-                Sign In Free <ArrowRight size={14} />
-              </a>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      {/* ── HERO ── */}
-      <section
-        className="grid-dots noise"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          padding: "80px 24px 60px",
-        }}
-      >
-        {/* Glow orbs */}
-        <div
-          style={{
-            position: "absolute",
-            top: -100,
-            left: "20%",
-            width: 500,
-            height: 500,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(29,78,216,0.18) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -80,
-            right: "10%",
-            width: 400,
-            height: 400,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 48,
-            alignItems: "center",
-          }}
-        >
-          {/* Left — copy */}
-          <div>
-            <div
-              className="fade-up"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "rgba(59,130,246,0.12)",
-                border: "1px solid rgba(59,130,246,0.25)",
-                borderRadius: 99,
-                padding: "5px 14px",
-                marginBottom: 24,
-                fontSize: 13,
-                color: "#93c5fd",
-                fontWeight: 600,
-              }}
-            >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: "#3b82f6",
-                  display: "inline-block",
-                  position: "relative",
-                }}
-              >
-                <span
-                  style={{
-                    position: "absolute",
-                    inset: -3,
-                    borderRadius: "50%",
-                    background: "#3b82f6",
-                    animation: "pulse-ring 1.5s ease-out infinite",
-                  }}
-                />
-              </span>
-              Powered by OpenAI Vision
-            </div>
-
-            <h1
-              className="fade-up delay-1"
-              style={{
-                fontSize: "clamp(2rem, 4vw, 3.2rem)",
-                fontWeight: 900,
-                lineHeight: 1.1,
-                letterSpacing: "-1px",
-                color: "white",
-                marginBottom: 20,
-              }}
-            >
-              Measure any driveway
-              <br />
-              <span
-                style={{
-                  background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                in under 30 seconds.
-              </span>
-            </h1>
-
-            <p
-              className="fade-up delay-2"
-              style={{
-                fontSize: 17,
-                lineHeight: 1.7,
-                color: "#94a3b8",
-                maxWidth: 460,
-                marginBottom: 32,
-              }}
-            >
-              Snap a photo. AI detects your driveway boundary, calculates square
-              footage, fetches real material prices for your zip code, and
-              generates a contractor-ready estimate.
-            </p>
-
-            <div
-              className="fade-up delay-3"
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 40,
-              }}
-            >
-              {isAuthenticated ? (
-                <a href="/estimator" className="btn-primary">
-                  Start Estimating <ArrowRight size={16} />
-                </a>
-              ) : (
-                <a href={getLoginUrl("/estimator")} className="btn-primary">
-                  Get Started Free <ArrowRight size={16} />
-                </a>
-              )}
-              <a href="/estimator" className="btn-secondary">
-                See Demo
-              </a>
-            </div>
-
-            <div
-              className="fade-up delay-4"
-              style={{ display: "flex", gap: 20, flexWrap: "wrap" }}
-            >
-              {[
-                "No measurements needed",
-                "Works on any phone",
-                "Instant pricing",
-              ].map(t => (
-                <div
-                  key={t}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 13,
-                    color: "#64748b",
-                  }}
-                >
-                  <CheckCircle2 size={14} style={{ color: "#10b981" }} />
-                  {t}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right — SVG mockup */}
-          <div
-            className="fade-up delay-2 float-anim"
-            style={{ position: "relative" }}
-          >
-            <div
-              className="glow-blue"
-              style={{
-                borderRadius: 20,
-                overflow: "hidden",
-                border: "1px solid rgba(59,130,246,0.2)",
-                background: "#0d1729",
-              }}
-            >
-              {/* Mock phone chrome */}
-              <div
-                style={{
-                  background: "#0f172a",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid rgba(255,255,255,0.06)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#ef4444",
-                  }}
-                />
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#f59e0b",
-                  }}
-                />
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#10b981",
-                  }}
-                />
-                <div
-                  style={{
-                    flex: 1,
-                    background: "rgba(255,255,255,0.05)",
-                    borderRadius: 6,
-                    height: 20,
-                    marginLeft: 8,
-                    display: "flex",
-                    alignItems: "center",
-                    paddingLeft: 8,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: "#475569" }}>
-                    drivewayai.app/estimator
-                  </span>
-                </div>
-              </div>
-              {/* Scan line animation overlay */}
-              <div style={{ position: "relative" }}>
-                <div className="scan-line" />
-                <DrivewaySVG />
-              </div>
-              {/* Result badge */}
-              <div
-                style={{
-                  padding: "12px 16px",
-                  background: "#0d1729",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13, color: "#94a3b8" }}>
-                  Detected area
-                </div>
-                <div
-                  style={{ fontSize: 15, fontWeight: 700, color: "#3b82f6" }}
-                >
-                  640 sq ft — $2,180
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats bar */}
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "56px auto 0",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 1,
-            background: "rgba(255,255,255,0.05)",
-            borderRadius: 16,
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          {stats.map((s, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "24px",
-                background: "rgba(13,23,41,0.9)",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "clamp(1.4rem, 2.5vw, 2rem)",
-                  fontWeight: 900,
-                  color: "white",
-                  letterSpacing: "-0.5px",
-                }}
-              >
-                {s.value}
-              </div>
-              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: "96px 24px", position: "relative" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#3b82f6",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginBottom: 12,
-              }}
-            >
-              How it works
-            </div>
-            <h2
-              style={{
-                fontSize: "clamp(1.8rem, 3vw, 2.5rem)",
-                fontWeight: 900,
-                color: "white",
-                letterSpacing: "-0.5px",
-              }}
-            >
-              Four steps to your estimate
-            </h2>
-          </div>
-          <div
+          {/* ── NAV ── */}
+          <nav
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 24,
-              position: "relative",
+              position: "sticky",
+              top: 0,
+              zIndex: 50,
+              background: "rgba(6,13,26,0.85)",
+              backdropFilter: "blur(16px)",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            {steps.map((s, i) => (
-              <div
-                key={i}
-                className="card-hover"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 16,
-                  padding: "28px 24px",
-                  position: "relative",
-                  borderTop: `3px solid ${s.color}`,
-                }}
-              >
-                <div
+            <div
+              style={{
+                maxWidth: 1100,
+                margin: "0 auto",
+                padding: "0 24px",
+                height: 64,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* Logo */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="8" fill="#1d4ed8" />
+                  <polygon
+                    points="8,24 16,8 24,24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <line
+                    x1="10"
+                    y1="19"
+                    x2="22"
+                    y2="19"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  <circle cx="8" cy="24" r="2" fill="#60a5fa" />
+                  <circle cx="24" cy="24" r="2" fill="#60a5fa" />
+                  <circle cx="16" cy="8" r="2" fill="#60a5fa" />
+                </svg>
+                <span
                   style={{
-                    fontSize: 40,
-                    fontWeight: 900,
-                    color: s.color,
-                    opacity: 0.18,
-                    lineHeight: 1,
-                    marginBottom: 12,
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {s.n}
-                </div>
-                <h3
-                  style={{
-                    fontSize: 18,
                     fontWeight: 800,
+                    fontSize: 18,
                     color: "white",
-                    marginBottom: 10,
+                    letterSpacing: "-0.3px",
                   }}
                 >
-                  {s.title}
-                </h3>
-                <p style={{ fontSize: 14, lineHeight: 1.7, color: "#64748b" }}>
-                  {s.desc}
-                </p>
+                  Driveway<span style={{ color: "#3b82f6" }}>AI</span>
+                </span>
+              </div>
+              {/* Nav actions */}
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {isAuthenticated ? (
+                  <>
+                    <a
+                      href="/dashboard"
+                      className="btn-secondary"
+                      style={{ padding: "9px 18px", fontSize: 14 }}
+                    >
+                      Dashboard
+                    </a>
+                    <a
+                      href="/estimator"
+                      className="btn-primary"
+                      style={{ padding: "9px 20px", fontSize: 14 }}
+                    >
+                      New Estimate <ArrowRight size={14} />
+                    </a>
+                  </>
+                ) : (
+                  <a
+                    href={getLoginUrl("/estimator")}
+                    className="btn-primary"
+                    style={{ padding: "9px 22px", fontSize: 14 }}
+                  >
+                    Sign In Free <ArrowRight size={14} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </nav>
+
+          {/* ── HERO ── */}
+          <section
+            className="grid-dots noise"
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              padding: "80px 24px 60px",
+            }}
+          >
+            {/* Glow orbs */}
+            <div
+              style={{
+                position: "absolute",
+                top: -100,
+                left: "20%",
+                width: 500,
+                height: 500,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(29,78,216,0.18) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: -80,
+                right: "10%",
+                width: 400,
+                height: 400,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }}
+            />
+
+            <div
+              style={{
+                maxWidth: 1100,
+                margin: "0 auto",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 48,
+                alignItems: "center",
+              }}
+            >
+              {/* Left — copy */}
+              <div>
                 <div
+                  className="fade-up"
                   style={{
-                    position: "absolute",
-                    top: 20,
-                    right: 20,
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: `${s.color}22`,
-                    display: "flex",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
+                    gap: 8,
+                    background: "rgba(59,130,246,0.12)",
+                    border: "1px solid rgba(59,130,246,0.25)",
+                    borderRadius: 99,
+                    padding: "5px 14px",
+                    marginBottom: 24,
+                    fontSize: 13,
+                    color: "#93c5fd",
+                    fontWeight: 600,
                   }}
                 >
                   <span
-                    style={{ fontSize: 13, fontWeight: 800, color: s.color }}
-                  >
-                    {i + 1}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── MATERIALS ── */}
-      <section style={{ padding: "0 24px 96px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#10b981",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginBottom: 12,
-              }}
-            >
-              Materials
-            </div>
-            <h2
-              style={{
-                fontSize: "clamp(1.8rem, 3vw, 2.5rem)",
-                fontWeight: 900,
-                color: "white",
-                letterSpacing: "-0.5px",
-              }}
-            >
-              Every surface, priced instantly
-            </h2>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 20,
-            }}
-          >
-            {materials.map((m, i) => (
-              <div
-                key={i}
-                className="card-hover"
-                style={{
-                  background: "#0d1729",
-                  border: `1px solid ${m.accent}33`,
-                  borderRadius: 16,
-                  padding: "28px",
-                  display: "flex",
-                  gap: 20,
-                  alignItems: "flex-start",
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: `${m.accent}18`,
-                    border: `1px solid ${m.accent}40`,
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
                     style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: 4,
-                      background: m.accent,
-                      opacity: 0.8,
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      marginBottom: 6,
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#3b82f6",
+                      display: "inline-block",
+                      position: "relative",
                     }}
                   >
-                    <span
-                      style={{ fontSize: 16, fontWeight: 800, color: "white" }}
-                    >
-                      {m.name}
-                    </span>
                     <span
                       style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: m.accent,
-                        background: `${m.accent}18`,
-                        padding: "2px 8px",
-                        borderRadius: 99,
-                        border: `1px solid ${m.accent}33`,
+                        position: "absolute",
+                        inset: -3,
+                        borderRadius: "50%",
+                        background: "#3b82f6",
+                        animation: "pulse-ring 1.5s ease-out infinite",
                       }}
-                    >
-                      {m.tag}
-                    </span>
-                  </div>
-                  <p
-                    style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6 }}
-                  >
-                    {m.desc}
-                  </p>
+                    />
+                  </span>
+                  Powered by OpenAI Vision
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ── TRUST BADGES ── */}
-      <section style={{ padding: "0 24px 96px" }}>
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            background: "linear-gradient(135deg, #0d1729, #0a1628)",
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: 24,
-            padding: "48px",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 40,
-              alignItems: "center",
-            }}
-          >
-            {[
-              {
-                icon: <Zap size={22} style={{ color: "#f59e0b" }} />,
-                title: "Instant results",
-                desc: "AI processes your photo in seconds — no waiting, no back-and-forth.",
-              },
-              {
-                icon: <MapPin size={22} style={{ color: "#3b82f6" }} />,
-                title: "Local pricing",
-                desc: "Material costs are fetched for your exact zip code in real-time.",
-              },
-              {
-                icon: <Shield size={22} style={{ color: "#10b981" }} />,
-                title: "Contractor-ready",
-                desc: "Shareable links with full measurement breakdowns professionals trust.",
-              },
-            ].map((item, i) => (
-              <div
-                key={i}
-                style={{ display: "flex", gap: 16, alignItems: "flex-start" }}
-              >
-                <div
+                <h1
+                  className="fade-up delay-1"
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
+                    fontSize: "clamp(2rem, 4vw, 3.2rem)",
+                    fontWeight: 900,
+                    lineHeight: 1.1,
+                    letterSpacing: "-1px",
+                    color: "white",
+                    marginBottom: 20,
                   }}
                 >
-                  {item.icon}
+                  Measure any driveway
+                  <br />
+                  <span
+                    style={{
+                      background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    in under 30 seconds.
+                  </span>
+                </h1>
+
+                <p
+                  className="fade-up delay-2"
+                  style={{
+                    fontSize: 17,
+                    lineHeight: 1.7,
+                    color: "#94a3b8",
+                    maxWidth: 460,
+                    marginBottom: 32,
+                  }}
+                >
+                  Snap a photo. AI detects your driveway boundary, calculates
+                  square footage, fetches real material prices for your zip
+                  code, and generates a contractor-ready estimate.
+                </p>
+
+                <div
+                  className="fade-up delay-3"
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    marginBottom: 40,
+                  }}
+                >
+                  {isAuthenticated ? (
+                    <a href="/estimator" className="btn-primary">
+                      Start Estimating <ArrowRight size={16} />
+                    </a>
+                  ) : (
+                    <a href={getLoginUrl("/estimator")} className="btn-primary">
+                      Get Started Free <ArrowRight size={16} />
+                    </a>
+                  )}
+                  <a href="/estimator" className="btn-secondary">
+                    See Demo
+                  </a>
                 </div>
-                <div>
+
+                <div
+                  className="fade-up delay-4"
+                  style={{ display: "flex", gap: 20, flexWrap: "wrap" }}
+                >
+                  {[
+                    "No measurements needed",
+                    "Works on any phone",
+                    "Instant pricing",
+                  ].map(t => (
+                    <div
+                      key={t}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 13,
+                        color: "#64748b",
+                      }}
+                    >
+                      <CheckCircle2 size={14} style={{ color: "#10b981" }} />
+                      {t}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right — SVG mockup */}
+              <div
+                className="fade-up delay-2 float-anim"
+                style={{ position: "relative" }}
+              >
+                <div
+                  className="glow-blue"
+                  style={{
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    border: "1px solid rgba(59,130,246,0.2)",
+                    background: "#0d1729",
+                  }}
+                >
+                  {/* Mock phone chrome */}
                   <div
-                    style={{ fontWeight: 700, color: "white", marginBottom: 4 }}
+                    style={{
+                      background: "#0f172a",
+                      padding: "10px 16px",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
                   >
-                    {item.title}
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#ef4444",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#f59e0b",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#10b981",
+                      }}
+                    />
+                    <div
+                      style={{
+                        flex: 1,
+                        background: "rgba(255,255,255,0.05)",
+                        borderRadius: 6,
+                        height: 20,
+                        marginLeft: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        paddingLeft: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 11, color: "#475569" }}>
+                        drivewayai.app/estimator
+                      </span>
+                    </div>
                   </div>
+                  {/* Scan line animation overlay */}
+                  <div style={{ position: "relative" }}>
+                    <div className="scan-line" />
+                    <DrivewaySVG />
+                  </div>
+                  {/* Result badge */}
                   <div
-                    style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}
+                    style={{
+                      padding: "12px 16px",
+                      background: "#0d1729",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
                   >
-                    {item.desc}
+                    <div style={{ fontSize: 13, color: "#94a3b8" }}>
+                      Detected area
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#3b82f6",
+                      }}
+                    >
+                      640 sq ft — $2,180
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* ── CTA ── */}
-      <section style={{ padding: "0 24px 96px" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
-          <h2
-            style={{
-              fontSize: "clamp(2rem, 4vw, 3rem)",
-              fontWeight: 900,
-              color: "white",
-              letterSpacing: "-0.5px",
-              marginBottom: 16,
-            }}
-          >
-            Ready to measure your driveway?
-          </h2>
-          <p
-            style={{
-              fontSize: 17,
-              color: "#64748b",
-              marginBottom: 36,
-              lineHeight: 1.7,
-            }}
-          >
-            No tape measure. No contractor visit. Just a photo and 30 seconds.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              justifyContent: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            {isAuthenticated ? (
-              <a
-                href="/estimator"
-                className="btn-primary"
-                style={{ fontSize: 17, padding: "16px 36px" }}
-              >
-                Start Estimating <ArrowRight size={18} />
-              </a>
-            ) : (
-              <a
-                href={getLoginUrl("/estimator")}
-                className="btn-primary"
-                style={{ fontSize: 17, padding: "16px 36px" }}
-              >
-                Get Started Free <ArrowRight size={18} />
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
+            {/* Stats bar */}
+            <div
+              style={{
+                maxWidth: 1100,
+                margin: "56px auto 0",
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 1,
+                background: "rgba(255,255,255,0.05)",
+                borderRadius: 16,
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              {stats.map((s, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: "24px",
+                    background: "rgba(13,23,41,0.9)",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "clamp(1.4rem, 2.5vw, 2rem)",
+                      fontWeight: 900,
+                      color: "white",
+                      letterSpacing: "-0.5px",
+                    }}
+                  >
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-      {/* ── FOOTER ── */}
-      <footer
-        style={{
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          padding: "28px 24px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#1d4ed8" />
-              <polygon
-                points="8,24 16,8 24,24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <line
-                x1="10"
-                y1="19"
-                x2="22"
-                y2="19"
-                stroke="white"
-                strokeWidth="2"
-              />
-            </svg>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#475569" }}>
-              DriveWayAI &copy; 2026
-            </span>
-          </div>
-          <span style={{ fontSize: 13, color: "#334155" }}>
-            Powered by OpenAI Vision &amp; real-time regional pricing
-          </span>
+          {/* ── HOW IT WORKS ── */}
+          <section style={{ padding: "96px 24px", position: "relative" }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <div style={{ textAlign: "center", marginBottom: 64 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#3b82f6",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    marginBottom: 12,
+                  }}
+                >
+                  How it works
+                </div>
+                <h2
+                  style={{
+                    fontSize: "clamp(1.8rem, 3vw, 2.5rem)",
+                    fontWeight: 900,
+                    color: "white",
+                    letterSpacing: "-0.5px",
+                  }}
+                >
+                  Four steps to your estimate
+                </h2>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 24,
+                  position: "relative",
+                }}
+              >
+                {steps.map((s, i) => (
+                  <div
+                    key={i}
+                    className="card-hover"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 16,
+                      padding: "28px 24px",
+                      position: "relative",
+                      borderTop: `3px solid ${s.color}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 40,
+                        fontWeight: 900,
+                        color: s.color,
+                        opacity: 0.18,
+                        lineHeight: 1,
+                        marginBottom: 12,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {s.n}
+                    </div>
+                    <h3
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: "white",
+                        marginBottom: 10,
+                      }}
+                    >
+                      {s.title}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.7,
+                        color: "#64748b",
+                      }}
+                    >
+                      {s.desc}
+                    </p>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 20,
+                        right: 20,
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: `${s.color}22`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 800,
+                          color: s.color,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── MATERIALS ── */}
+          <section style={{ padding: "0 24px 96px" }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <div style={{ textAlign: "center", marginBottom: 56 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#10b981",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    marginBottom: 12,
+                  }}
+                >
+                  Materials
+                </div>
+                <h2
+                  style={{
+                    fontSize: "clamp(1.8rem, 3vw, 2.5rem)",
+                    fontWeight: 900,
+                    color: "white",
+                    letterSpacing: "-0.5px",
+                  }}
+                >
+                  Every surface, priced instantly
+                </h2>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: 20,
+                }}
+              >
+                {materials.map((m, i) => (
+                  <div
+                    key={i}
+                    className="card-hover"
+                    style={{
+                      background: "#0d1729",
+                      border: `1px solid ${m.accent}33`,
+                      borderRadius: 16,
+                      padding: "28px",
+                      display: "flex",
+                      gap: 20,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        background: `${m.accent}18`,
+                        border: `1px solid ${m.accent}40`,
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 4,
+                          background: m.accent,
+                          opacity: 0.8,
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 800,
+                            color: "white",
+                          }}
+                        >
+                          {m.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: m.accent,
+                            background: `${m.accent}18`,
+                            padding: "2px 8px",
+                            borderRadius: 99,
+                            border: `1px solid ${m.accent}33`,
+                          }}
+                        >
+                          {m.tag}
+                        </span>
+                      </div>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          color: "#64748b",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {m.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── TRUST BADGES ── */}
+          <section style={{ padding: "0 24px 96px" }}>
+            <div
+              style={{
+                maxWidth: 1100,
+                margin: "0 auto",
+                background: "linear-gradient(135deg, #0d1729, #0a1628)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 24,
+                padding: "48px",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 40,
+                  alignItems: "center",
+                }}
+              >
+                {[
+                  {
+                    icon: <Zap size={22} style={{ color: "#f59e0b" }} />,
+                    title: "Instant results",
+                    desc: "AI processes your photo in seconds — no waiting, no back-and-forth.",
+                  },
+                  {
+                    icon: <MapPin size={22} style={{ color: "#3b82f6" }} />,
+                    title: "Local pricing",
+                    desc: "Material costs are fetched for your exact zip code in real-time.",
+                  },
+                  {
+                    icon: <Shield size={22} style={{ color: "#10b981" }} />,
+                    title: "Contractor-ready",
+                    desc: "Shareable links with full measurement breakdowns professionals trust.",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.icon}
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          color: "white",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {item.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#64748b",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {item.desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── CTA ── */}
+          <section style={{ padding: "0 24px 96px" }}>
+            <div
+              style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }}
+            >
+              <h2
+                style={{
+                  fontSize: "clamp(2rem, 4vw, 3rem)",
+                  fontWeight: 900,
+                  color: "white",
+                  letterSpacing: "-0.5px",
+                  marginBottom: 16,
+                }}
+              >
+                Ready to measure your driveway?
+              </h2>
+              <p
+                style={{
+                  fontSize: 17,
+                  color: "#64748b",
+                  marginBottom: 36,
+                  lineHeight: 1.7,
+                }}
+              >
+                No tape measure. No contractor visit. Just a photo and 30
+                seconds.
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {isAuthenticated ? (
+                  <a
+                    href="/estimator"
+                    className="btn-primary"
+                    style={{ fontSize: 17, padding: "16px 36px" }}
+                  >
+                    Start Estimating <ArrowRight size={18} />
+                  </a>
+                ) : (
+                  <a
+                    href={getLoginUrl("/estimator")}
+                    className="btn-primary"
+                    style={{ fontSize: 17, padding: "16px 36px" }}
+                  >
+                    Get Started Free <ArrowRight size={18} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* ── FOOTER ── */}
+          <footer
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              padding: "28px 24px",
+            }}
+          >
+            <div
+              style={{
+                maxWidth: 1100,
+                margin: "0 auto",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="8" fill="#1d4ed8" />
+                  <polygon
+                    points="8,24 16,8 24,24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <line
+                    x1="10"
+                    y1="19"
+                    x2="22"
+                    y2="19"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <span
+                  style={{ fontWeight: 700, fontSize: 15, color: "#475569" }}
+                >
+                  DriveWayAI &copy; 2026
+                </span>
+              </div>
+              <span style={{ fontSize: 13, color: "#334155" }}>
+                Powered by OpenAI Vision &amp; real-time regional pricing
+              </span>
+            </div>
+          </footer>
         </div>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }

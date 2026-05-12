@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { getLoginUrl } from "@/const";
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  consumePendingCameraLaunch,
   captureDeviceOrientation,
   chooseDrivewayPhotoFromGallery,
   getBluetoothAvailability,
@@ -34,13 +36,35 @@ import {
   type CornerPoint,
 } from "@shared/geometry";
 import { toast } from "sonner";
-import { Loader2, Upload, Camera } from "lucide-react";
+import { Loader2, Upload, Camera, Lock } from "lucide-react";
 import { useLocation } from "wouter";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
 type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const materialDisplayNames: Record<Material, string> = {
+  hotmix: "Hot Mix Asphalt",
+  millings: "Asphalt Millings",
+  tar_and_chip: "Tar & Chip",
+  gravel: "Gravel",
+};
+const defaultPreviewPromptByMaterial: Record<Material, string> = {
+  hotmix:
+    "Fresh black asphalt with a smooth sealed finish and realistic texture.",
+  millings:
+    "Compacted asphalt millings with a darker recycled texture and clean edges.",
+  tar_and_chip:
+    "Tar and chip finish with visible aggregate texture and a natural contractor-grade spread.",
+  gravel:
+    "Fresh gravel surface with balanced stone texture, even coverage, and realistic depth.",
+};
+const previewPromptSuggestions = [
+  "Keep the driveway darker and freshly finished.",
+  "Make the texture more compact and uniform.",
+  "Clean up the driveway edges without changing the yard.",
+  "Preserve the same lighting and home details.",
+];
 const usdFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -57,10 +81,14 @@ interface EstimatorState {
   imageHeight: number | null;
   corners: CornerPoint[];
   squareFeet: number | null;
+  detectionConfidence: number | null;
+  detectionDescription: string;
   depthInches: number;
   selectedMaterial: Material | null;
   previewUrl: string | null;
   previewKey: string | null;
+  previewPrompt: string;
+  previewUsedFallback: boolean;
   projectName: string;
   contractorEmail: string;
   contractorPricePerSquareFoot: string;
@@ -80,7 +108,7 @@ type DeviceReadiness = {
 };
 
 export default function Estimator() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("upload");
   const [state, setState] = useState<EstimatorState>({
@@ -91,16 +119,20 @@ export default function Estimator() {
     imageHeight: null,
     corners: [],
     squareFeet: null,
+    detectionConfidence: null,
+    detectionDescription: "",
     depthInches: 2,
     selectedMaterial: null,
     previewUrl: null,
     previewKey: null,
-      projectName: "",
-      contractorEmail: "",
-      contractorPricePerSquareFoot: "",
-      notes: "",
-      zipCode: "",
-      latitude: "",
+    previewPrompt: "",
+    previewUsedFallback: false,
+    projectName: "",
+    contractorEmail: "",
+    contractorPricePerSquareFoot: "",
+    notes: "",
+    zipCode: "",
+    latitude: "",
     longitude: "",
   });
 
@@ -121,6 +153,8 @@ export default function Estimator() {
 
   const uploadPhotoMutation =
     trpc.projects.uploadPhotoAndDetectEdges.useMutation();
+  const uploadPhotoDemoMutation =
+    trpc.projects.uploadPhotoAndDetectEdgesDemo.useMutation();
   const getPricingQuery = trpc.projects.getPricing.useQuery(
     {
       zipCode: state.zipCode,
@@ -130,7 +164,10 @@ export default function Estimator() {
     },
     {
       enabled:
-        !!state.zipCode && !!state.selectedMaterial && !!state.squareFeet,
+        isAuthenticated &&
+        !!state.zipCode &&
+        !!state.selectedMaterial &&
+        !!state.squareFeet,
     }
   );
   const generatePreviewMutation =
@@ -145,7 +182,9 @@ export default function Estimator() {
       : "16 / 9";
   const nativeMobileApp = isNativeMobileApp();
   const materialCost =
-    getPricingQuery.data?.materialCost ?? getPricingQuery.data?.totalCost ?? null;
+    getPricingQuery.data?.materialCost ??
+    getPricingQuery.data?.totalCost ??
+    null;
   const materialCostValue = materialCost ? parseCurrency(materialCost) : null;
   const contractorRateValue =
     state.contractorPricePerSquareFoot.trim() === ""
@@ -159,11 +198,12 @@ export default function Estimator() {
     materialCostValue !== null
       ? materialCostValue + (laborCostValue ?? 0)
       : null;
+  const hasToolAccess = isAuthenticated;
+  const unlockUrl = getLoginUrl("/estimator");
+  const unlockCtaLabel = "Sign In to Unlock More";
 
   // Capture device context that can improve field accuracy and capture quality.
   useEffect(() => {
-    if (!user) return;
-
     let cancelled = false;
 
     void (async () => {
@@ -200,7 +240,18 @@ export default function Estimator() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, []);
+
+  useEffect(() => {
+    if (!hasToolAccess) {
+      if (step === "upload" || step === "adjust") return;
+
+      setStep(state.photoUrl ? "adjust" : "upload");
+      return;
+    }
+
+    if (step === "upload" || step === "adjust") return;
+  }, [hasToolAccess, state.photoUrl, step]);
 
   const readFileAsDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -244,7 +295,10 @@ export default function Estimator() {
       if (!base64) throw new Error("Image file did not contain base64 data");
 
       const dimensions = await loadImageDimensions(dataUrl);
-      const result = await uploadPhotoMutation.mutateAsync({
+      const captureMutation = isAuthenticated
+        ? uploadPhotoMutation
+        : uploadPhotoDemoMutation;
+      const result = await captureMutation.mutateAsync({
         photoBase64: base64,
         photoName: file.name,
         photoMimeType: file.type,
@@ -260,6 +314,8 @@ export default function Estimator() {
         imageWidth: dimensions.width,
         imageHeight: dimensions.height,
         corners: result.corners,
+        detectionConfidence: result.confidence ?? null,
+        detectionDescription: result.description ?? "",
         squareFeet:
           result.squareFeet ||
           calculateSquareFeetFromCorners(
@@ -267,9 +323,16 @@ export default function Estimator() {
             dimensions.width,
             dimensions.height
           ),
+        previewUrl: null,
+        previewKey: null,
+        previewUsedFallback: false,
       }));
 
-      toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
+      toast.success(
+        isAuthenticated
+          ? `Driveway detected! ${result.squareFeet} sq ft`
+          : `Demo capture complete: ${result.squareFeet} sq ft detected`
+      );
       setStep("adjust");
     } catch (error) {
       toast.error("Failed to process photo");
@@ -316,6 +379,16 @@ export default function Estimator() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    if (!nativeMobileApp || loading || state.photoUrl || step !== "upload") {
+      return;
+    }
+
+    if (!consumePendingCameraLaunch()) return;
+
+    void handleTakePhoto();
+  }, [loading, nativeMobileApp, state.photoUrl, step]);
 
   const handlePhotoDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -383,10 +456,40 @@ export default function Estimator() {
   };
 
   const handleMaterialSelect = (material: Material) => {
-    setState(prev => ({ ...prev, selectedMaterial: material }));
+    setState(prev => {
+      const previousDefaultPrompt = prev.selectedMaterial
+        ? defaultPreviewPromptByMaterial[prev.selectedMaterial]
+        : "";
+      const nextDefaultPrompt = defaultPreviewPromptByMaterial[material];
+      const shouldReplacePrompt =
+        prev.previewPrompt.trim() === "" ||
+        prev.previewPrompt === previousDefaultPrompt;
+
+      return {
+        ...prev,
+        selectedMaterial: material,
+        previewPrompt: shouldReplacePrompt
+          ? nextDefaultPrompt
+          : prev.previewPrompt,
+      };
+    });
+  };
+
+  const applyPreviewPromptSuggestion = (suggestion: string) => {
+    setState(prev => ({
+      ...prev,
+      previewPrompt: prev.previewPrompt.trim()
+        ? `${prev.previewPrompt.trim()} ${suggestion}`
+        : suggestion,
+    }));
   };
 
   const handleGeneratePreview = async () => {
+    if (!hasToolAccess) {
+      toast.error("Sign in to generate material previews");
+      return;
+    }
+
     if (!state.photoUrl || !state.selectedMaterial) return;
 
     setLoading(true);
@@ -395,12 +498,14 @@ export default function Estimator() {
         photoUrl: state.photoUrl,
         photoMimeType: state.photoMimeType || "image/jpeg",
         material: state.selectedMaterial,
+        editPrompt: state.previewPrompt.trim() || undefined,
       });
 
       setState(prev => ({
         ...prev,
         previewUrl: result.previewUrl,
         previewKey: result.previewKey ?? null,
+        previewUsedFallback: result.usedFallback ?? false,
       }));
 
       toast.success(
@@ -418,6 +523,11 @@ export default function Estimator() {
   };
 
   const handleSaveProject = async () => {
+    if (!hasToolAccess) {
+      toast.error("Sign in to save this project");
+      return;
+    }
+
     if (
       !state.photoUrl ||
       !state.photoKey ||
@@ -476,10 +586,14 @@ export default function Estimator() {
         imageHeight: null,
         corners: [],
         squareFeet: null,
+        detectionConfidence: null,
+        detectionDescription: "",
         depthInches: 2,
         selectedMaterial: null,
         previewUrl: null,
         previewKey: null,
+        previewPrompt: "",
+        previewUsedFallback: false,
         projectName: "",
         contractorEmail: "",
         contractorPricePerSquareFoot: "",
@@ -500,10 +614,14 @@ export default function Estimator() {
   };
 
   const materials: Array<{ id: Material; name: string; icon: string }> = [
-    { id: "hotmix", name: "Hot Mix Asphalt", icon: "🛣️" },
-    { id: "millings", name: "Asphalt Millings", icon: "♻️" },
-    { id: "tar_and_chip", name: "Tar & Chip", icon: "🪨" },
-    { id: "gravel", name: "Gravel", icon: "⚫" },
+    { id: "hotmix", name: materialDisplayNames.hotmix, icon: "🛣️" },
+    { id: "millings", name: materialDisplayNames.millings, icon: "♻️" },
+    {
+      id: "tar_and_chip",
+      name: materialDisplayNames.tar_and_chip,
+      icon: "🪨",
+    },
+    { id: "gravel", name: materialDisplayNames.gravel, icon: "⚫" },
   ];
 
   return (
@@ -563,9 +681,22 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!hasToolAccess && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
+                  <p className="font-semibold text-amber-50">Demo mode</p>
+                  <p className="mt-1">
+                    Capture and AI driveway detection are open without an
+                    account. Sign in to adjust corners, load pricing, generate
+                    material previews, and save projects.
+                  </p>
+                </div>
+              )}
+
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
-                  <p className="font-semibold text-white">Field accuracy signals</p>
+                  <p className="font-semibold text-white">
+                    Field accuracy signals
+                  </p>
                   <p className="mt-2">
                     GPS:{" "}
                     <span className="text-blue-300">
@@ -613,7 +744,7 @@ export default function Estimator() {
                   </p>
                   <p className="mt-2 text-slate-400">
                     A level phone and a strong GPS lock help produce cleaner
-                    capture data and more reliable local pricing context.
+                    capture data and more reliable project data.
                   </p>
                 </div>
               </div>
@@ -713,7 +844,9 @@ export default function Estimator() {
                 Step 2: Adjust Driveway Corners
               </CardTitle>
               <CardDescription>
-                Drag the corners to match your driveway edges
+                {hasToolAccess
+                  ? "Drag the corners to match your driveway edges"
+                  : "Demo capture shows the detected driveway boundary"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -752,12 +885,31 @@ export default function Estimator() {
                     key={i}
                     type="button"
                     aria-label={`Adjust driveway corner ${i + 1}`}
-                    onPointerDown={event => handleCornerPointerDown(event, i)}
-                    onPointerMove={event => handleCornerPointerMove(event, i)}
-                    onPointerUp={handleCornerPointerEnd}
-                    onPointerCancel={handleCornerPointerEnd}
-                    onLostPointerCapture={() => setDraggingCorner(null)}
-                    className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
+                    onPointerDown={
+                      hasToolAccess
+                        ? event => handleCornerPointerDown(event, i)
+                        : undefined
+                    }
+                    onPointerMove={
+                      hasToolAccess
+                        ? event => handleCornerPointerMove(event, i)
+                        : undefined
+                    }
+                    onPointerUp={
+                      hasToolAccess ? handleCornerPointerEnd : undefined
+                    }
+                    onPointerCancel={
+                      hasToolAccess ? handleCornerPointerEnd : undefined
+                    }
+                    onLostPointerCapture={
+                      hasToolAccess ? () => setDraggingCorner(null) : undefined
+                    }
+                    disabled={!hasToolAccess}
+                    className={`absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 ${
+                      hasToolAccess
+                        ? "hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
+                        : "cursor-not-allowed opacity-80"
+                    }`}
                     style={{ left: `${corner.x}%`, top: `${corner.y}%` }}
                   />
                 ))}
@@ -769,6 +921,25 @@ export default function Estimator() {
                   <p className="text-2xl font-bold text-white">
                     {state.squareFeet} sq ft
                   </p>
+                  {(state.detectionDescription ||
+                    state.detectionConfidence != null) && (
+                    <div className="mt-3 rounded-md border border-blue-400/20 bg-slate-900/70 p-3 text-sm text-slate-200">
+                      <p className="font-semibold text-white">
+                        AI boundary read
+                      </p>
+                      {state.detectionDescription && (
+                        <p className="mt-1 leading-6 text-slate-300">
+                          {state.detectionDescription}
+                        </p>
+                      )}
+                      {state.detectionConfidence != null && (
+                        <p className="mt-2 text-blue-300">
+                          Confidence:{" "}
+                          {Math.round(state.detectionConfidence * 100)}%
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-slate-300">Depth</Label>
@@ -777,6 +948,7 @@ export default function Estimator() {
                     min="1"
                     max="12"
                     value={state.depthInches}
+                    disabled={!hasToolAccess}
                     onChange={e => {
                       const depth = Number(e.target.value);
                       setState(prev => ({
@@ -792,12 +964,49 @@ export default function Estimator() {
                 </div>
               </div>
 
-              <Button
-                onClick={() => setStep("material")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Continue to Materials
-              </Button>
+              {!hasToolAccess && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-amber-400/10 text-amber-200">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-amber-50">
+                        Capture is unlocked. The rest is protected.
+                      </p>
+                      <p className="mt-1">
+                        Sign in to refine the outline, pull local pricing,
+                        generate material previews, and save or share projects.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {hasToolAccess ? (
+                <Button
+                  onClick={() => setStep("material")}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Continue to Materials
+                </Button>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    asChild
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <a href={unlockUrl}>{unlockCtaLabel}</a>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep("upload")}
+                  >
+                    Capture Another Photo
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -859,7 +1068,8 @@ export default function Estimator() {
                     {state.selectedMaterial === material.id &&
                       getPricingQuery.data && (
                         <p className="text-blue-400 text-xs mt-2">
-                          {formatUsd(getPricingQuery.data.pricePerSquareFoot)} material/sq ft
+                          {formatUsd(getPricingQuery.data.pricePerSquareFoot)}{" "}
+                          material/sq ft
                         </p>
                       )}
                   </button>
@@ -905,9 +1115,10 @@ export default function Estimator() {
                         </span>
                       </div>
                       <div className="rounded-md border border-blue-400/20 bg-slate-800/70 p-3 text-sm text-slate-200">
-                        Material pricing covers asphalt or aggregate only. Labor,
-                        equipment, taxes, and contractor markup are not included
-                        unless you add a contractor quote in the summary step.
+                        Material pricing covers asphalt or aggregate only.
+                        Labor, equipment, taxes, and contractor markup are not
+                        included unless you add a contractor quote in the
+                        summary step.
                       </div>
                       <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
                         <span>Estimated Material Cost:</span>
@@ -918,6 +1129,62 @@ export default function Estimator() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
+
+              {state.selectedMaterial && (
+                <div className="rounded-xl border border-emerald-500/25 bg-[#020b00] shadow-[0_0_0_1px_rgba(16,185,129,0.08)]">
+                  <div className="flex items-center justify-between border-b border-emerald-500/15 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
+                    </div>
+                    <span className="font-mono text-xs uppercase tracking-[0.08em] text-emerald-300">
+                      ai-preview-terminal
+                    </span>
+                  </div>
+                  <div className="space-y-4 px-4 py-4">
+                    <div>
+                      <Label
+                        htmlFor="preview-prompt"
+                        className="text-sm text-emerald-100"
+                      >
+                        AI edit prompt
+                      </Label>
+                      <p className="mt-1 text-xs leading-5 text-emerald-300/80">
+                        Material comes from the selector above. Use this prompt
+                        to describe finish, texture, cleanliness, and the exact
+                        look you want the AI preview to generate.
+                      </p>
+                    </div>
+                    <Textarea
+                      id="preview-prompt"
+                      value={state.previewPrompt}
+                      onChange={event =>
+                        setState(prev => ({
+                          ...prev,
+                          previewPrompt: event.target.value.slice(0, 500),
+                        }))
+                      }
+                      placeholder="Example: Keep the same camera angle, make the asphalt darker, and clean up the driveway edges."
+                      className="min-h-28 border-emerald-500/20 bg-black/75 font-mono text-sm text-emerald-200 placeholder:text-emerald-400/45"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {previewPromptSuggestions.map(suggestion => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() =>
+                            applyPreviewPromptSuggestion(suggestion)
+                          }
+                          className="rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:bg-emerald-500/14"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
 
               <Button
@@ -934,10 +1201,10 @@ export default function Estimator() {
                 {!state.zipCode
                   ? "Enter ZIP to Load Pricing"
                   : getPricingQuery.isLoading
-                  ? "Checking Pricing..."
-                  : loading
-                    ? "Generating Preview..."
-                    : "Generate Material Preview"}
+                    ? "Checking Pricing..."
+                    : loading
+                      ? "Generating Preview..."
+                      : "Generate Material Preview"}
               </Button>
             </CardContent>
           </Card>
@@ -966,12 +1233,119 @@ export default function Estimator() {
                 />
               </div>
 
-              <Button
-                onClick={() => setStep("summary")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Continue to Summary
-              </Button>
+              {state.previewUsedFallback && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
+                  <p className="font-semibold text-amber-50">
+                    AI preview service is not available right now
+                  </p>
+                  <p className="mt-1 leading-6">
+                    You are seeing the original driveway photo because the live
+                    image generation service did not return an edited result.
+                    Once the AI service is configured, this panel will show the
+                    generated material preview.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-slate-200">
+                    Change material and regenerate
+                  </Label>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Switch materials here or refine the AI prompt below to make
+                    another preview pass from the original driveway photo.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {materials.map(material => (
+                    <button
+                      key={`preview-${material.id}`}
+                      type="button"
+                      aria-pressed={state.selectedMaterial === material.id}
+                      onClick={() => handleMaterialSelect(material.id)}
+                      className={`rounded-lg border-2 p-3 text-left transition ${
+                        state.selectedMaterial === material.id
+                          ? "border-blue-500 bg-blue-500/10"
+                          : "border-slate-600 bg-slate-700/40 hover:border-slate-500"
+                      }`}
+                    >
+                      <div className="text-2xl">{material.icon}</div>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {material.name}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-500/25 bg-[#020b00] shadow-[0_0_0_1px_rgba(16,185,129,0.08)]">
+                <div className="flex items-center justify-between border-b border-emerald-500/15 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
+                  </div>
+                  <span className="font-mono text-xs uppercase tracking-[0.08em] text-emerald-300">
+                    ai-preview-terminal
+                  </span>
+                </div>
+                <div className="space-y-4 px-4 py-4">
+                  <div>
+                    <Label
+                      htmlFor="preview-prompt-regenerate"
+                      className="text-sm text-emerald-100"
+                    >
+                      Prompt edits
+                    </Label>
+                    <p className="mt-1 text-xs leading-5 text-emerald-300/80">
+                      Tell the AI exactly what finish you want while preserving
+                      the same house, perspective, and surroundings.
+                    </p>
+                  </div>
+                  <Textarea
+                    id="preview-prompt-regenerate"
+                    value={state.previewPrompt}
+                    onChange={event =>
+                      setState(prev => ({
+                        ...prev,
+                        previewPrompt: event.target.value.slice(0, 500),
+                      }))
+                    }
+                    placeholder="Example: Make the gravel more compact, keep the same shadows, and avoid changing the lawn."
+                    className="min-h-28 border-emerald-500/20 bg-black/75 font-mono text-sm text-emerald-200 placeholder:text-emerald-400/45"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {previewPromptSuggestions.map(suggestion => (
+                      <button
+                        key={`preview-suggestion-${suggestion}`}
+                        type="button"
+                        onClick={() => applyPreviewPromptSuggestion(suggestion)}
+                        className="rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-xs font-medium text-emerald-200 transition hover:bg-emerald-500/14"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button
+                  onClick={handleGeneratePreview}
+                  disabled={!state.selectedMaterial || loading}
+                  variant="outline"
+                >
+                  {loading ? "Regenerating Preview..." : "Regenerate with AI"}
+                </Button>
+                <Button
+                  onClick={() => setStep("summary")}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Continue to Summary
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -1041,8 +1415,8 @@ export default function Estimator() {
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <p className="mt-2 text-xs text-slate-400">
-                    Add a contractor&apos;s quoted rate per square foot to see an
-                    estimated labor line and installed total.
+                    Add a contractor&apos;s quoted rate per square foot to see
+                    an estimated labor line and installed total.
                   </p>
                 </div>
 
@@ -1103,7 +1477,9 @@ export default function Estimator() {
                             <div className="flex justify-between">
                               <span>Estimated Labor:</span>
                               <span className="font-bold text-amber-300">
-                                {laborCostValue ? formatUsd(laborCostValue) : "--"}
+                                {laborCostValue
+                                  ? formatUsd(laborCostValue)
+                                  : "--"}
                               </span>
                             </div>
                           </>

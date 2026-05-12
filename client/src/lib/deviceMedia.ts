@@ -26,9 +26,27 @@ export type DeviceConnectionSnapshot = {
 };
 
 const PHOTO_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PENDING_CAMERA_LAUNCH_KEY = "easy-asphalt:pending-camera-launch";
 
 export function isNativeMobileApp() {
   return Capacitor.isNativePlatform();
+}
+
+export function schedulePendingCameraLaunch() {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(PENDING_CAMERA_LAUNCH_KEY, "true");
+}
+
+export function consumePendingCameraLaunch() {
+  if (typeof window === "undefined") return false;
+
+  const shouldLaunch =
+    window.sessionStorage.getItem(PENDING_CAMERA_LAUNCH_KEY) === "true";
+  if (shouldLaunch) {
+    window.sessionStorage.removeItem(PENDING_CAMERA_LAUNCH_KEY);
+  }
+
+  return shouldLaunch;
 }
 
 export function isAllowedPermissionState(
@@ -182,7 +200,9 @@ type MotionPermissionRequester = {
   requestPermission?: () => Promise<"granted" | "denied">;
 };
 
-function getMotionPermissionRequester(name: "DeviceMotionEvent" | "DeviceOrientationEvent") {
+function getMotionPermissionRequester(
+  name: "DeviceMotionEvent" | "DeviceOrientationEvent"
+) {
   return (
     globalThis as typeof globalThis & {
       DeviceMotionEvent?: MotionPermissionRequester;
@@ -276,11 +296,17 @@ export async function captureDeviceOrientation(): Promise<DeviceOrientationSnaps
     const handleOrientation = (event: DeviceOrientationEvent) => {
       finish({
         heading:
-          typeof event.alpha === "number" ? Math.round(event.alpha * 10) / 10 : null,
+          typeof event.alpha === "number"
+            ? Math.round(event.alpha * 10) / 10
+            : null,
         pitch:
-          typeof event.beta === "number" ? Math.round(event.beta * 10) / 10 : null,
+          typeof event.beta === "number"
+            ? Math.round(event.beta * 10) / 10
+            : null,
         roll:
-          typeof event.gamma === "number" ? Math.round(event.gamma * 10) / 10 : null,
+          typeof event.gamma === "number"
+            ? Math.round(event.gamma * 10) / 10
+            : null,
       });
     };
 

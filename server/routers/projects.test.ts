@@ -16,7 +16,10 @@ vi.mock("../db", () => ({
 vi.mock("../storage", () => ({
   storagePut: vi
     .fn()
-    .mockResolvedValue({ url: "https://s3.example.com/photo.jpg" }),
+    .mockResolvedValue({
+      key: "projects/demo/demo-photo.jpg",
+      url: "https://s3.example.com/photo.jpg",
+    }),
 }));
 
 vi.mock("../_core/llm", () => ({
@@ -87,7 +90,7 @@ function createAuthedCaller() {
       name: "Owner Name",
       email: "owner@example.com",
       role: "user",
-    } as any,
+      } as any,
     req: {
       headers: {
         host: "app.example.com",
@@ -100,13 +103,14 @@ function createAuthedCaller() {
   });
 }
 
-function createPublicCaller() {
+function createPublicCaller(ip = "127.0.0.1") {
   return appRouter.createCaller({
     user: null,
     req: {
       headers: {
         host: "app.example.com",
       },
+      ip,
       protocol: "https",
     } as any,
     res: {
@@ -246,6 +250,39 @@ describe("projects.create", () => {
       "$3,224.05",
       expect.stringContaining("/share/")
     );
+  });
+});
+
+describe("guest demo capture", () => {
+  it("allows unauthenticated driveway capture and edge detection", async () => {
+    const caller = createPublicCaller("127.0.0.21");
+
+    const result = await caller.projects.uploadPhotoAndDetectEdgesDemo({
+      photoBase64:
+        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAVEAEBAAAAAAAAAAAAAAAAAAAAEf/aAAwDAQACEAMQAAAB6A//xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAEDAQE/AR//xAAUEQEAAAAAAAAAAAAAAAAAAAAQ/9oACAECAQE/AR//2Q==",
+      photoName: "demo-driveway.jpg",
+      photoMimeType: "image/jpeg",
+      imageWidth: 1280,
+      imageHeight: 720,
+    });
+
+    expect(result.photoUrl).toBe("https://s3.example.com/photo.jpg");
+    expect(result.photoKey).toBe("projects/demo/demo-photo.jpg");
+    expect(result.corners).toHaveLength(4);
+    expect(result.squareFeet).toBeGreaterThan(0);
+  });
+
+  it("keeps pricing locked for unauthenticated callers", async () => {
+    const caller = createPublicCaller("127.0.0.22");
+
+    await expect(
+      caller.projects.getPricing({
+        zipCode: "10001",
+        material: "hotmix",
+        squareFeet: 640,
+        depthInches: 2,
+      })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
 

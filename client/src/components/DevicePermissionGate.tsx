@@ -5,6 +5,7 @@ import {
   requestDeviceLocationPermission,
   requestNativeCameraPermission,
   requestNativePhotoPermission,
+  schedulePendingCameraLaunch,
 } from "@/lib/deviceMedia";
 import {
   Camera,
@@ -48,14 +49,14 @@ function PermissionRow({
           : "Waiting";
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/70 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-[#204f17] bg-[#020b00] px-4 py-3">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-500/10 text-blue-300">
+        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#39ff14]/10 text-[#39ff14]">
           {icon}
         </span>
-        <span className="font-medium text-white">{label}</span>
+        <span className="font-medium text-[#e2ffd8]">{label}</span>
       </div>
-      <span className="text-sm text-slate-300">{statusText}</span>
+      <span className="text-sm text-[#9fe788]">{statusText}</span>
     </div>
   );
 }
@@ -72,6 +73,7 @@ export default function DevicePermissionGate({
   const [location, setLocation] = useState<PermissionResult>("idle");
   const [motion, setMotion] = useState<PermissionResult>("idle");
   const [requesting, setRequesting] = useState(false);
+  const [cameraReadyForLaunch, setCameraReadyForLaunch] = useState(false);
   const storageKey = useMemo(() => getPermissionStorageKey(user), [user]);
 
   useEffect(() => {
@@ -80,9 +82,14 @@ export default function DevicePermissionGate({
     setReviewed(localStorage.getItem(storageKey) === "reviewed");
   }, [storageKey]);
 
-  const finishReview = () => {
+  const finishReview = ({
+    launchCamera = false,
+  }: { launchCamera?: boolean } = {}) => {
     if (typeof window !== "undefined") {
       localStorage.setItem(storageKey, "reviewed");
+    }
+    if (launchCamera) {
+      schedulePendingCameraLaunch();
     }
     setReviewed(true);
   };
@@ -103,15 +110,11 @@ export default function DevicePermissionGate({
     setPhotos(photosResult);
     setLocation(locationResult);
     setMotion(motionResult);
+    setCameraReadyForLaunch(cameraResult === "granted");
     setRequesting(false);
 
-    if (
-      cameraResult === "granted" &&
-      photosResult === "granted" &&
-      locationResult === "granted" &&
-      motionResult === "granted"
-    ) {
-      finishReview();
+    if (cameraResult === "granted") {
+      finishReview({ launchCamera: true });
     }
   };
 
@@ -124,16 +127,22 @@ export default function DevicePermissionGate({
     motion === "denied";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-white">
-      <section className="w-full max-w-lg rounded-lg border border-slate-800 bg-slate-900 p-8 shadow-xl">
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
+    <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-[#010400] px-4 py-8 text-[#c7ffb5] [color-scheme:dark]">
+      <section className="w-full max-w-lg rounded-2xl border border-[#246416] bg-[#041103]/95 p-6 shadow-[0_0_0_1px_rgba(57,255,20,0.12),0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#39ff14]/12 text-[#39ff14]">
           <ShieldCheck className="h-5 w-5" />
         </div>
-        <h1 className="mb-3 text-2xl font-semibold">Allow device access</h1>
-        <p className="mb-6 text-sm leading-6 text-slate-300">
+        <h1 className="mb-3 text-2xl font-semibold text-[#39ff14]">
+          Allow device access
+        </h1>
+        <p className="mb-3 text-sm leading-6 text-[#9fe788]">
           The estimator needs camera access for driveway photos, photo library
           access for uploads, location access for local material pricing, and
           motion sensors to help keep capture angle and phone alignment stable.
+        </p>
+        <p className="mb-6 text-xs leading-5 text-[#78bf64]">
+          After camera access is granted, the app will open the capture screen
+          automatically, including demo mode.
         </p>
 
         <div className="mb-7 space-y-3">
@@ -161,7 +170,7 @@ export default function DevicePermissionGate({
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="flex-1 border border-[#39ff14]/35 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
             disabled={requesting}
             onClick={requestDeviceAccess}
           >
@@ -173,7 +182,13 @@ export default function DevicePermissionGate({
             Allow access
           </Button>
           {hasDeniedPermission && (
-            <Button className="flex-1" onClick={finishReview} variant="outline">
+            <Button
+              className="flex-1 border-[#2b6e1b] bg-transparent text-[#afff98] hover:bg-[#0d220a] hover:text-[#d7ffcd]"
+              onClick={() =>
+                finishReview({ launchCamera: cameraReadyForLaunch })
+              }
+              variant="outline"
+            >
               Continue with limited access
             </Button>
           )}
