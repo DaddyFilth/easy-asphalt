@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { calculateMaterialQuantity, calculateTotalCost } from "./pricing";
+import {
+  calculateMaterialQuantity,
+  calculateTotalCost,
+  normalizeZipCode,
+} from "./pricing";
 
 describe("Pricing Service", () => {
   describe("calculateMaterialQuantity", () => {
@@ -30,6 +34,15 @@ describe("Pricing Service", () => {
       const large = calculateMaterialQuantity(2000, 2, "hotmix");
       expect(large.quantity).toBeGreaterThan(small.quantity);
     });
+
+    it("rejects unsafe quote measurements", () => {
+      expect(() => calculateMaterialQuantity(-1, 2, "hotmix")).toThrow(
+        RangeError
+      );
+      expect(() => calculateMaterialQuantity(1000, 24, "hotmix")).toThrow(
+        RangeError
+      );
+    });
   });
 
   describe("calculateTotalCost", () => {
@@ -59,6 +72,21 @@ describe("Pricing Service", () => {
     it("should round to two decimal places", () => {
       const cost = calculateTotalCost(3, 33.333);
       expect(cost).toBe("$100.00");
+    });
+
+    it("rejects invalid cost inputs", () => {
+      expect(() => calculateTotalCost(Number.NaN, 45)).toThrow(RangeError);
+      expect(() => calculateTotalCost(1, -45)).toThrow(RangeError);
+    });
+  });
+
+  describe("normalizeZipCode", () => {
+    it("normalizes ZIP+4 values to the base ZIP", () => {
+      expect(normalizeZipCode("10001-1234")).toBe("10001");
+    });
+
+    it("rejects invalid ZIP code input", () => {
+      expect(() => normalizeZipCode("../10001")).toThrow("Invalid ZIP code");
     });
   });
 });

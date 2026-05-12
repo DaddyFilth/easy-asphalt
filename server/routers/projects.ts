@@ -20,6 +20,7 @@ import {
   getMaterialPricingForZip,
   calculateMaterialQuantity,
   calculateTotalCost,
+  MATERIALS,
 } from "../services/pricing";
 import {
   buildStoredPhotoName,
@@ -57,6 +58,11 @@ function toAbsoluteUrl(req: Request, url: string) {
 
   return `${origin}${url.startsWith("/") ? url : `/${url}`}`;
 }
+
+const usZipCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{5}(?:-\d{4})?$/, "Enter a valid US ZIP code");
 
 export const projectsRouter = router({
   /**
@@ -99,11 +105,9 @@ export const projectsRouter = router({
       z.object({
         photoBase64: z.string(),
         photoName: z.string().min(1).max(160),
-        photoMimeType: z
-          .string()
-          .refine(isSupportedPhotoMimeType, {
-            message: "Unsupported image type",
-          }),
+        photoMimeType: z.string().refine(isSupportedPhotoMimeType, {
+          message: "Unsupported image type",
+        }),
         imageWidth: z.number().int().positive().max(20_000),
         imageHeight: z.number().int().positive().max(20_000),
       })
@@ -164,10 +168,10 @@ export const projectsRouter = router({
   getPricing: protectedProcedure
     .input(
       z.object({
-        zipCode: z.string(),
-        material: z.enum(["hotmix", "millings", "tar_and_chip", "gravel"]),
-        squareFeet: z.number(),
-        depthInches: z.number(),
+        zipCode: usZipCodeSchema,
+        material: z.enum(MATERIALS),
+        squareFeet: z.number().finite().positive().max(1_000_000),
+        depthInches: z.number().finite().min(1).max(12),
       })
     )
     .query(async ({ input }) => {

@@ -30,6 +30,11 @@ type Step = "upload" | "adjust" | "material" | "preview" | "summary";
 type Material = "hotmix" | "millings" | "tar_and_chip" | "gravel";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+const formatUsd = (value: number) => usdFormatter.format(value);
 
 interface EstimatorState {
   photoUrl: string | null;
@@ -40,7 +45,6 @@ interface EstimatorState {
   squareFeet: number | null;
   depthInches: number;
   selectedMaterial: Material | null;
-  pricing: any | null;
   previewUrl: string | null;
   previewKey: string | null;
   projectName: string;
@@ -63,7 +67,6 @@ export default function Estimator() {
     squareFeet: null,
     depthInches: 2,
     selectedMaterial: null,
-    pricing: null,
     previewUrl: null,
     previewKey: null,
     projectName: "",
@@ -355,7 +358,6 @@ export default function Estimator() {
         squareFeet: null,
         depthInches: 2,
         selectedMaterial: null,
-        pricing: null,
         previewUrl: null,
         previewKey: null,
         projectName: "",
@@ -613,6 +615,8 @@ export default function Estimator() {
                 {materials.map(material => (
                   <button
                     key={material.id}
+                    type="button"
+                    aria-pressed={state.selectedMaterial === material.id}
                     onClick={() => handleMaterialSelect(material.id)}
                     className={`p-4 rounded-lg border-2 transition ${
                       state.selectedMaterial === material.id
@@ -624,14 +628,32 @@ export default function Estimator() {
                     <p className="text-white font-semibold text-sm">
                       {material.name}
                     </p>
-                    {getPricingQuery.data && (
-                      <p className="text-blue-400 text-xs mt-2">
-                        {getPricingQuery.data.pricePerSquareFoot}/sq ft
-                      </p>
-                    )}
+                    {state.selectedMaterial === material.id &&
+                      getPricingQuery.data && (
+                        <p className="text-blue-400 text-xs mt-2">
+                          {formatUsd(getPricingQuery.data.pricePerSquareFoot)}
+                          /sq ft
+                        </p>
+                      )}
                   </button>
                 ))}
               </div>
+
+              {state.selectedMaterial && getPricingQuery.isLoading && (
+                <div className="flex items-center gap-2 rounded-md border border-slate-600 bg-slate-700/50 p-3 text-sm text-slate-200">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-300" />
+                  Checking local material pricing...
+                </div>
+              )}
+
+              {state.selectedMaterial && getPricingQuery.isError && (
+                <div
+                  role="alert"
+                  className="rounded-md border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-100"
+                >
+                  Pricing is unavailable for this ZIP code right now.
+                </div>
+              )}
 
               {getPricingQuery.data && state.selectedMaterial && (
                 <Card className="bg-slate-700 border-slate-600">
@@ -646,7 +668,7 @@ export default function Estimator() {
                       <div className="flex justify-between">
                         <span>Price per Ton:</span>
                         <span className="font-bold">
-                          {getPricingQuery.data.pricePerTon}
+                          {formatUsd(getPricingQuery.data.pricePerTon)}
                         </span>
                       </div>
                       <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
@@ -662,12 +684,19 @@ export default function Estimator() {
 
               <Button
                 onClick={handleGeneratePreview}
-                disabled={!state.selectedMaterial || loading}
+                disabled={
+                  !state.selectedMaterial ||
+                  loading ||
+                  getPricingQuery.isLoading ||
+                  getPricingQuery.isError
+                }
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {loading
-                  ? "Generating Preview..."
-                  : "Generate Material Preview"}
+                {getPricingQuery.isLoading
+                  ? "Checking Pricing..."
+                  : loading
+                    ? "Generating Preview..."
+                    : "Generate Material Preview"}
               </Button>
             </CardContent>
           </Card>
