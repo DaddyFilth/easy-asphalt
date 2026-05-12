@@ -46,5 +46,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true />
-<key>NSCameraUsageDescription</key><string>We need camera access to capture photos of your driveway for measurement and estimation.</string><key>NSLocationWhenInUseUsageDescription</key><string>We need your location to provide accurate material pricing based on your local area.</string><key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>We need your location to provide accurate material pricing based on your local area.</string><key>NSPhotoLibraryUsageDescription</key><string>We need access to your photo library to upload existing driveway photos.</string></dict>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to capture photos of your driveway for measurement and estimation.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to provide accurate material pricing based on your local area.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to upload existing driveway photos.</string>
+</dict>
 </plist>

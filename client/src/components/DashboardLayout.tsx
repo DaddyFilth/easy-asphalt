@@ -74,7 +74,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            <a href={getLoginUrl()}>Sign in with Google</a>
+            <a href={getLoginUrl()}>Go to sign in</a>
           </Button>
         </div>
       </div>

@@ -36,7 +36,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
             stay locked until you sign in.
           </p>
           <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-            <a href={loginUrl}>Continue with Google</a>
+            <a href={loginUrl}>Go to sign in</a>
           </Button>
         </section>
       </main>

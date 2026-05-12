@@ -6,20 +6,8 @@ const authState = vi.hoisted(() => ({
   value: { user: null as unknown, isAuthenticated: false },
 }));
 
-// Mock routing and auth so the component renders in isolation
-vi.mock("wouter", () => ({
-  Link: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  ),
-  useLocation: () => ["/", vi.fn()],
-}));
-
 vi.mock("/home/filth/easy-asphalt/client/src/_core/hooks/useAuth.ts", () => ({
   useAuth: () => authState.value,
-}));
-
-vi.mock("/home/filth/easy-asphalt/client/src/const.ts", () => ({
-  getLoginUrl: () => "/auth/login",
 }));
 
 import Home from "../pages/Home";
@@ -45,8 +33,8 @@ describe("Home landing page", () => {
     expect(renderHome().toLowerCase()).toMatch(/sign in|get started/);
   });
 
-  it("links to auth login URL", () => {
-    expect(renderHome()).toContain('href="/auth/login"');
+  it("links landing CTAs to the login page", () => {
+    expect(renderHome()).toContain('href="/login?returnTo=%2Festimator"');
   });
 
   it("shows the four step titles", () => {
@@ -77,5 +65,7 @@ describe("Home landing page (authenticated)", () => {
     const html = renderHome().toLowerCase();
     expect(html).toContain("dashboard");
     expect(html).toContain("estimate");
+    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('href="/estimator"');
   });
 });

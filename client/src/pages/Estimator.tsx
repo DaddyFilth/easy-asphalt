@@ -18,6 +18,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  chooseDrivewayPhotoFromGallery,
+  isMediaSelectionCanceled,
+  isNativeMobileApp,
+  takeDrivewayPhotoWithCamera,
+} from "@/lib/deviceMedia";
 import { trpc } from "@/lib/trpc";
 import {
   calculateSquareFeetFromCorners,
@@ -83,6 +89,7 @@ export default function Estimator() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const uploadPhotoMutation =
@@ -109,6 +116,7 @@ export default function Estimator() {
     state.imageWidth && state.imageHeight
       ? `${state.imageWidth} / ${state.imageHeight}`
       : "16 / 9";
+  const nativeMobileApp = isNativeMobileApp();
 
   // Get user's geolocation on mount
   useEffect(() => {
@@ -214,6 +222,38 @@ export default function Estimator() {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (file) void handlePhotoCapture(file);
+  };
+
+  const handleTakePhoto = async () => {
+    if (!nativeMobileApp) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    try {
+      const file = await takeDrivewayPhotoWithCamera();
+      if (file) await handlePhotoCapture(file);
+    } catch (error) {
+      if (isMediaSelectionCanceled(error)) return;
+      toast.error("Camera access is required to take a driveway photo");
+      console.error(error);
+    }
+  };
+
+  const handleUploadPhoto = async () => {
+    if (!nativeMobileApp) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    try {
+      const file = await chooseDrivewayPhotoFromGallery();
+      if (file) await handlePhotoCapture(file);
+    } catch (error) {
+      if (isMediaSelectionCanceled(error)) return;
+      toast.error("Photo library access is required to upload an image");
+      console.error(error);
+    }
   };
 
   const handlePhotoDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -470,17 +510,18 @@ export default function Estimator() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
                   capture="environment"
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={loading}
-                  className="flex flex-col items-center gap-4 w-full"
-                  aria-label="Capture or upload a driveway photo"
-                >
+                <div className="flex w-full flex-col items-center gap-4">
                   {loading ? (
                     <>
                       <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
@@ -497,7 +538,7 @@ export default function Estimator() {
                         <p className="text-white font-semibold">
                           {isDraggingOver
                             ? "Drop image to upload"
-                            : "Click to capture or upload"}
+                            : "Take a photo or upload an image"}
                         </p>
                         <p className="text-slate-400 text-sm">
                           JPG, PNG, or WebP up to 10 MB
@@ -505,7 +546,27 @@ export default function Estimator() {
                       </div>
                     </>
                   )}
-                </button>
+                  <div className="grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Button
+                      type="button"
+                      onClick={handleTakePhoto}
+                      disabled={loading}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Take Photo
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleUploadPhoto}
+                      disabled={loading}
+                      variant="outline"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Image
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
