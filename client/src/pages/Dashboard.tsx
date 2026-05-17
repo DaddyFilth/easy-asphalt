@@ -97,27 +97,28 @@ export default function Dashboard() {
         )}
 
         {/* Projects Grid */}
-        {projectsQuery.isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          </div>
-        ) : !projectsQuery.data || projectsQuery.data.length === 0 ? (
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-400 mb-4">
-                No projects yet. Create your first driveway estimate!
-              </p>
-              <Button
-                asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <a href="/estimator">Start Estimating</a>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projectsQuery.data.map(project => (
+            {/* Projects Grid */}
+            {projectsQuery.isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            ) : !projectsQuery.data || projectsQuery.data.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="pt-12 pb-12 text-center">
+                  <p className="text-slate-400 mb-4">
+                    No projects yet. Create your first driveway estimate!
+                  </p>
+                  <Button
+                    asChild
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <a href="/estimator">Start Estimating</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projectsQuery.data?.map(project => (
               <Card
                 key={project.id}
                 className="bg-slate-800 border-slate-700 hover:border-blue-500 transition"
