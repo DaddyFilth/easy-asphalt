@@ -9,7 +9,9 @@ import {
   schedulePendingCameraLaunch,
 } from "@/lib/deviceMedia";
 import {
+  AlertTriangle,
   Camera,
+  CheckCircle2,
   Compass,
   Loader2,
   MapPin,
@@ -20,7 +22,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 type PermissionResult = "idle" | "requesting" | "granted" | "denied";
 
-const PERMISSION_REVIEW_PREFIX = "easy-asphalt-device-permissions-v3";
+const PERMISSION_REVIEW_PREFIX = "easy-asphalt-device-permissions-v4";
 
 function getPermissionStorageKey() {
   return PERMISSION_REVIEW_PREFIX;
@@ -29,11 +31,19 @@ function getPermissionStorageKey() {
 function PermissionRow({
   icon,
   label,
+  description,
   result,
+  requesting,
+  required = false,
+  onRequest,
 }: {
   icon: ReactNode;
   label: string;
+  description: string;
   result: PermissionResult;
+  requesting: boolean;
+  required?: boolean;
+  onRequest: () => void;
 }) {
   const statusText =
     result === "granted"
@@ -43,16 +53,55 @@ function PermissionRow({
         : result === "requesting"
           ? "Requesting"
           : "Waiting";
+  const statusClass =
+    result === "granted"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : result === "denied"
+        ? "border-red-200 bg-red-50 text-red-800"
+        : result === "requesting"
+          ? "border-amber-200 bg-amber-50 text-amber-800"
+          : "border-slate-200 bg-slate-50 text-slate-700";
 
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#204f17] bg-[#020b00] px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#39ff14]/10 text-[#39ff14]">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-900 text-emerald-300">
           {icon}
         </span>
-        <span className="font-medium text-[#e2ffd8]">{label}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-slate-950">{label}</span>
+            {required && (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800">
+                Required
+              </span>
+            )}
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusClass}`}
+            >
+              {statusText}
+            </span>
+          </div>
+          <p className="mt-1 text-sm leading-5 text-slate-700">
+            {description}
+          </p>
+        </div>
       </div>
-      <span className="text-sm text-[#9fe788]">{statusText}</span>
+      <Button
+        className="mt-4 w-full bg-slate-950 text-white hover:bg-slate-800"
+        disabled={requesting || result === "requesting" || result === "granted"}
+        onClick={onRequest}
+        type="button"
+      >
+        {result === "requesting" ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : result === "granted" ? (
+          <CheckCircle2 className="h-4 w-4" />
+        ) : (
+          icon
+        )}
+        {result === "granted" ? "Allowed" : `Allow ${label}`}
+      </Button>
     </div>
   );
 }
@@ -71,6 +120,7 @@ export default function DevicePermissionGate({
   const [motion, setMotion] = useState<PermissionResult>("idle");
   const [requesting, setRequesting] = useState(false);
   const [cameraReadyForLaunch, setCameraReadyForLaunch] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const storageKey = useMemo(() => getPermissionStorageKey(), []);
   const bootstrapMutation = trpc.auth.bootstrap.useMutation({
     onSuccess: deviceUser => {
@@ -120,55 +170,102 @@ export default function DevicePermissionGate({
     user,
   ]);
 
-  const requestDeviceAccess = async () => {
-    setRequesting(true);
-    setCamera("requesting");
-    setPhotos("requesting");
-    setLocation("requesting");
-    setMotion("requesting");
+  const requestPermission = async (
+    key: "camera" | "photos" | "location" | "motion"
+  ) => {
+    setPermissionError(null);
 
-    const cameraResult = await requestNativeCameraPermission();
-    const photosResult = await requestNativePhotoPermission();
-    const locationResult = await requestDeviceLocationPermission();
-    const motionResult = await requestMotionSensorPermission();
+    const setters = {
+      camera: setCamera,
+      photos: setPhotos,
+      location: setLocation,
+      motion: setMotion,
+    };
+    const requesters = {
+      camera: requestNativeCameraPermission,
+      photos: requestNativePhotoPermission,
+      location: requestDeviceLocationPermission,
+      motion: requestMotionSensorPermission,
+    };
 
-    setCamera(cameraResult);
-    setPhotos(photosResult);
-    setLocation(locationResult);
-    setMotion(motionResult);
-    setCameraReadyForLaunch(cameraResult === "granted");
+    setters[key]("requesting");
 
-    if (cameraResult === "granted") {
-      try {
-        await ensureDeviceWorkspace();
-      } finally {
-        setRequesting(false);
+    try {
+      const result = await requesters[key]();
+      setters[key](result);
+      if (key === "camera") {
+        setCameraReadyForLaunch(result === "granted");
       }
-      finishReview({ launchCamera: true });
+      return result;
+    } catch {
+      setters[key]("denied");
+      if (key === "camera") {
+        setCameraReadyForLaunch(false);
+      }
+      return "denied" as const;
+    }
+  };
+
+  const requestAllDeviceAccess = async () => {
+    setRequesting(true);
+    setPermissionError(null);
+
+    try {
+      const cameraResult = await requestPermission("camera");
+      await requestPermission("photos");
+      await requestPermission("location");
+      await requestPermission("motion");
+
+      if (cameraResult === "granted") {
+        await ensureDeviceWorkspace();
+        finishReview({ launchCamera: true });
+        return;
+      }
+
+      setPermissionError(
+        "Camera access is required before the estimator can capture a driveway."
+      );
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const openEstimator = async () => {
+    if (camera !== "granted") {
+      setPermissionError(
+        "Allow Camera first so the estimator can open the capture screen."
+      );
       return;
     }
 
-    setRequesting(false);
+    setRequesting(true);
+    setPermissionError(null);
+    try {
+      await ensureDeviceWorkspace();
+      finishReview({ launchCamera: true });
+    } finally {
+      setRequesting(false);
+    }
   };
 
   if (reviewed && (authLoading || bootstrapMutation.isPending || !user)) {
     return (
-      <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-[#010400] px-4 py-8 text-[#c7ffb5] [color-scheme:dark]">
-        <section className="w-full max-w-lg rounded-2xl border border-[#246416] bg-[#041103]/95 p-6 text-center shadow-[0_0_0_1px_rgba(57,255,20,0.12),0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#39ff14]/12 text-[#39ff14]">
+      <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-slate-100 px-4 py-8 text-slate-950">
+        <section className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 text-center shadow-xl sm:p-8">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-emerald-300">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
-          <h1 className="mb-3 text-2xl font-semibold text-[#39ff14]">
+          <h1 className="mb-3 text-2xl font-semibold text-slate-950">
             Preparing your device workspace
           </h1>
-          <p className="text-sm leading-6 text-[#9fe788]">
+          <p className="text-sm leading-6 text-slate-700">
             Permissions are saved. We are finishing setup so your saved
             projects, estimates, and contractor tools are ready on this device.
           </p>
           {bootstrapMutation.error && (
             <div className="mt-6">
               <Button
-                className="border border-[#39ff14]/35 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
+                className="bg-slate-950 text-white hover:bg-slate-800"
                 disabled={bootstrapMutation.isPending}
                 onClick={() => void ensureDeviceWorkspace()}
               >
@@ -188,74 +285,106 @@ export default function DevicePermissionGate({
     photos === "denied" ||
     location === "denied" ||
     motion === "denied";
+  const canOpenEstimator = camera === "granted";
 
   return (
-    <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-[#010400] px-4 py-8 text-[#c7ffb5] [color-scheme:dark]">
-      <section className="w-full max-w-lg rounded-2xl border border-[#246416] bg-[#041103]/95 p-6 shadow-[0_0_0_1px_rgba(57,255,20,0.12),0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#39ff14]/12 text-[#39ff14]">
-          <ShieldCheck className="h-5 w-5" />
+    <main className="min-h-screen overflow-x-hidden bg-slate-100 px-4 py-6 text-slate-950">
+      <section className="mx-auto w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl sm:p-7">
+        <div className="mb-5 flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-emerald-300">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-950">
+              Set up device access
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Turn on each feature the sales estimator can use. Camera is
+              required for capture; uploads, location, and motion make field
+              estimates easier and more accurate.
+            </p>
+          </div>
         </div>
-        <h1 className="mb-3 text-2xl font-semibold text-[#39ff14]">
-          Allow device access
-        </h1>
-        <p className="mb-3 text-sm leading-6 text-[#9fe788]">
-          The estimator needs camera access for driveway photos, photo library
-          access for uploads, location access for local material pricing, and
-          motion sensors to help keep capture angle and phone alignment stable.
-        </p>
-        <p className="mb-6 text-xs leading-5 text-[#78bf64]">
-          After camera access is granted, the app will open the capture screen
-          automatically.
-        </p>
 
-        <div className="mb-7 space-y-3">
+        {permissionError && (
+          <div
+            className="mb-4 flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm leading-5 text-red-800"
+            role="alert"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{permissionError}</span>
+          </div>
+        )}
+
+        <div className="mb-5 grid gap-3">
           <PermissionRow
             icon={<Camera className="h-4 w-4" />}
             label="Camera"
+            description="Capture the driveway and open the live camera view."
+            onRequest={() => void requestPermission("camera")}
+            requesting={requesting}
             result={camera}
+            required
           />
           <PermissionRow
             icon={<Upload className="h-4 w-4" />}
-            label="Photo Library"
+            label="Uploads"
+            description="Choose driveway photos from the device gallery."
+            onRequest={() => void requestPermission("photos")}
+            requesting={requesting}
             result={photos}
           />
           <PermissionRow
             icon={<MapPin className="h-4 w-4" />}
             label="Location"
+            description="Use the job-site position for local pricing context."
+            onRequest={() => void requestPermission("location")}
+            requesting={requesting}
             result={location}
           />
           <PermissionRow
             icon={<Compass className="h-4 w-4" />}
-            label="Motion Sensors"
+            label="Motion"
+            description="Read phone angle to help keep capture alignment steady."
+            onRequest={() => void requestPermission("motion")}
+            requesting={requesting}
             result={motion}
           />
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button
-            className="flex-1 border border-[#39ff14]/35 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
+            className="bg-slate-950 text-white hover:bg-slate-800"
             disabled={requesting}
-            onClick={requestDeviceAccess}
+            onClick={requestAllDeviceAccess}
+            type="button"
           >
             {requesting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ShieldCheck className="h-4 w-4" />
             )}
-            Allow access
+            Allow all features
           </Button>
-          {hasDeniedPermission && (
-            <Button
-              className="flex-1 border-[#2b6e1b] bg-transparent text-[#afff98] hover:bg-[#0d220a] hover:text-[#d7ffcd]"
-              onClick={() =>
-                finishReview({ launchCamera: cameraReadyForLaunch })
-              }
-              variant="outline"
-            >
-              Continue with limited access
-            </Button>
-          )}
+          <Button
+            className="border-slate-300 bg-white text-slate-950 hover:bg-slate-100"
+            disabled={requesting || !canOpenEstimator}
+            onClick={openEstimator}
+            type="button"
+            variant="outline"
+          >
+            <Camera className="h-4 w-4" />
+            Open estimator
+          </Button>
         </div>
+
+        {hasDeniedPermission && (
+          <p className="mt-4 text-xs leading-5 text-slate-600">
+            If Android shows a denied permission, open system settings for this
+            app and enable that feature there. Camera must be allowed before the
+            estimator can start capture.
+          </p>
+        )}
       </section>
     </main>
   );
