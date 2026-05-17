@@ -11,6 +11,7 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 import { Trash2, Share2, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
+import ProjectTodoPanel from "@/components/ProjectTodoPanel";
 
 export default function Dashboard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -96,28 +97,31 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Projects Grid */}
-        {projectsQuery.isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          </div>
-        ) : !projectsQuery.data || projectsQuery.data.length === 0 ? (
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="pt-12 pb-12 text-center">
-              <p className="text-slate-400 mb-4">
-                No projects yet. Create your first driveway estimate!
-              </p>
-              <Button
-                asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <a href="/estimator">Start Estimating</a>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projectsQuery.data.map(project => (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Projects Section */}
+          <div className="lg:col-span-2">
+            {/* Projects Grid */}
+            {projectsQuery.isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+            ) : !projectsQuery.data || projectsQuery.data.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="pt-12 pb-12 text-center">
+                  <p className="text-slate-400 mb-4">
+                    No projects yet. Create your first driveway estimate!
+                  </p>
+                  <Button
+                    asChild
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <a href="/estimator">Start Estimating</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {projectsQuery.data?.map(project => (
               <Card
                 key={project.id}
                 className="bg-slate-800 border-slate-700 hover:border-blue-500 transition"
@@ -214,9 +218,16 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))}
+            </div>
+            )}
           </div>
-        )}
+
+          {/* TODO Panel Section */}
+          <div className="lg:col-span-1">
+            <ProjectTodoPanel />
+          </div>
+        </div>
       </div>
     </div>
   );
