@@ -1,0 +1,25 @@
+client/src/lib/estimatorModel.test.ts
+  s_a4c8f007732535::t_d3a60d2fbd2ca5 1-48
+client/src/App.tsx
+  s_a4c8f007732535::t_77f02ccd513759 2,7-21,26-48,50-53
+client/src/lib/estimatorModel.ts
+  s_a4c8f007732535::t_e126282e196ab0 1-190
+client/src/pages/Estimator.tsx
+  s_a4c8f007732535::t_8067b0dc5974ee 29-48,73-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a73f7b0b617993a3a896d1dd7f50b83b80404296",
+  "prompts": {},
+  "sessions": {
+    "s_a4c8f007732535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e1103-8e3e-7be0-ba16-d430303c6a1e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "DaddyFilth <daddyfilthie@proton.me>"
+    }
+  }
+}
