@@ -29,11 +29,6 @@ export default function App() {
           </DevicePermissionGate>
         </Route>
         <Route path={"/share/:shareToken"} component={SharedProject} />
-        <Route path={"/login"}>
-          <DevicePermissionGate>
-            <Estimator />
-          </DevicePermissionGate>
-        </Route>
 
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

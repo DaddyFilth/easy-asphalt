@@ -62,12 +62,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = [
-      "name",
-      "email",
-      "loginMethod",
-      "passwordHash",
-    ] as const;
+    const textFields = ["name", "email"] as const;
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -91,15 +86,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = "admin";
       updateSet.role = "admin";
     }
-    if (user.failedLoginAttempts !== undefined) {
-      values.failedLoginAttempts = user.failedLoginAttempts;
-      updateSet.failedLoginAttempts = user.failedLoginAttempts;
-    }
-    if (user.lockedUntil !== undefined) {
-      values.lockedUntil = user.lockedUntil;
-      updateSet.lockedUntil = user.lockedUntil;
-    }
-
     if (!values.lastSignedIn) {
       values.lastSignedIn = new Date();
     }
@@ -148,37 +134,6 @@ export async function getUserById(userId: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getUserByEmail(email: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user by email: database not available");
-    return undefined;
-  }
-
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-export async function hasAdminUser() {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot check admin users: database not available");
-    return false;
-  }
-
-  const result = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.role, "admin"))
-    .limit(1);
-
-  return result.length > 0;
-}
-
 export async function createUser(user: InsertUser): Promise<User> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -195,16 +150,6 @@ export async function createUser(user: InsertUser): Promise<User> {
   }
 
   return createdUser;
-}
-
-export async function updateUserById(
-  userId: number,
-  updates: Partial<InsertUser>
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return db.update(users).set(updates).where(eq(users.id, userId));
 }
 
 export async function getUserProjects(userId: number) {

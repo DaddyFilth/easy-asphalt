@@ -15,7 +15,7 @@ vi.mock("../db", () => ({
 
 vi.mock("../storage", () => ({
   storagePut: vi.fn().mockResolvedValue({
-    key: "projects/demo/demo-photo.jpg",
+    key: "projects/captures/driveway-photo.jpg",
     url: "https://s3.example.com/photo.jpg",
   }),
 }));
@@ -265,7 +265,7 @@ describe("projects.uploadPhotoAndDetectEdges", () => {
     });
 
     expect(result.photoUrl).toBe("https://s3.example.com/photo.jpg");
-    expect(result.photoKey).toBe("projects/demo/demo-photo.jpg");
+    expect(result.photoKey).toBe("projects/captures/driveway-photo.jpg");
     expect(result.corners).toHaveLength(4);
     expect(result.squareFeet).toBeGreaterThan(0);
   });
