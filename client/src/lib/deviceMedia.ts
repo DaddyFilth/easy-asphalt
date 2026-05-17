@@ -24,29 +24,37 @@ export type DeviceConnectionSnapshot = {
   online: boolean;
   label: string;
 };
+export type PendingEstimatorAction = "gallery";
 
 const PHOTO_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const PENDING_CAMERA_LAUNCH_KEY = "easy-asphalt:pending-camera-launch";
+const PENDING_ESTIMATOR_ACTION_KEY = "easy-asphalt:pending-estimator-action";
 
 export function isNativeMobileApp() {
   return Capacitor.isNativePlatform();
 }
 
-export function schedulePendingCameraLaunch() {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(PENDING_CAMERA_LAUNCH_KEY, "true");
+export function schedulePendingGalleryLaunch() {
+  schedulePendingEstimatorAction("gallery");
 }
 
-export function consumePendingCameraLaunch() {
-  if (typeof window === "undefined") return false;
+export function schedulePendingEstimatorAction(action: PendingEstimatorAction) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(PENDING_ESTIMATOR_ACTION_KEY, action);
+}
 
-  const shouldLaunch =
-    window.sessionStorage.getItem(PENDING_CAMERA_LAUNCH_KEY) === "true";
-  if (shouldLaunch) {
-    window.sessionStorage.removeItem(PENDING_CAMERA_LAUNCH_KEY);
+export function consumePendingEstimatorAction(): PendingEstimatorAction | null {
+  if (typeof window === "undefined") return null;
+
+  const pendingAction = window.sessionStorage.getItem(
+    PENDING_ESTIMATOR_ACTION_KEY
+  );
+  window.sessionStorage.removeItem(PENDING_ESTIMATOR_ACTION_KEY);
+
+  if (pendingAction === "gallery") {
+    return pendingAction;
   }
 
-  return shouldLaunch;
+  return null;
 }
 
 export function isAllowedPermissionState(
@@ -343,6 +351,12 @@ export function getDeviceConnectionSnapshot(): DeviceConnectionSnapshot {
   };
 }
 
+export async function requestNetworkAccessPermission(): Promise<DevicePermissionResult> {
+  if (typeof navigator === "undefined") return "denied";
+
+  return navigator.onLine ? "granted" : "denied";
+}
+
 export async function getBluetoothAvailability(): Promise<boolean | null> {
   if (typeof navigator === "undefined") return null;
 
@@ -359,6 +373,38 @@ export async function getBluetoothAvailability(): Promise<boolean | null> {
   } catch {
     return null;
   }
+}
+
+export async function requestBluetoothAccessPermission(): Promise<DevicePermissionResult> {
+  if (typeof navigator === "undefined") return "denied";
+
+  const bluetooth = (
+    navigator as Navigator & {
+      bluetooth?: {
+        getAvailability?: () => Promise<boolean>;
+        requestDevice?: (options: {
+          acceptAllDevices: boolean;
+        }) => Promise<unknown>;
+      };
+    }
+  ).bluetooth;
+
+  if (!bluetooth) return "denied";
+
+  try {
+    if (typeof bluetooth.requestDevice === "function") {
+      await bluetooth.requestDevice({ acceptAllDevices: true });
+      return "granted";
+    }
+
+    if (typeof bluetooth.getAvailability === "function") {
+      return (await bluetooth.getAvailability()) ? "granted" : "denied";
+    }
+  } catch {
+    return "denied";
+  }
+
+  return "denied";
 }
 
 export async function takeDrivewayPhotoWithCamera() {

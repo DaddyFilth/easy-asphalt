@@ -12,7 +12,11 @@ export default function App() {
   return (
     <>
       <Switch>
-        <Route path={"/"} component={Home} />
+        <Route path={"/"}>
+          <DevicePermissionGate>
+            <Home />
+          </DevicePermissionGate>
+        </Route>
         <Route path={"/estimator"}>
           <DevicePermissionGate>
             <Estimator />

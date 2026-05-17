@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  consumePendingCameraLaunch,
+  consumePendingEstimatorAction,
   captureDeviceOrientation,
   chooseDrivewayPhotoFromGallery,
   getBluetoothAvailability,
@@ -568,13 +568,48 @@ export default function Estimator() {
   };
 
   useEffect(() => {
-    if (!nativeMobileApp || loading || state.photoUrl || step !== "upload") {
+    if (loading || state.photoUrl || step !== "upload") {
       return;
     }
 
-    if (!consumePendingCameraLaunch()) return;
+    let routeFeature: string | null = null;
+    let routeAction: "gallery" | null = null;
 
-    void handleTakePhoto();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const startAction = params.get("start");
+      routeFeature = params.get("feature");
+
+      if (startAction === "upload") routeAction = "gallery";
+
+      if (routeAction || routeFeature) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+
+    const pendingAction =
+      routeAction ?? (nativeMobileApp ? consumePendingEstimatorAction() : null);
+    if (pendingAction === "gallery") {
+      void handleUploadPhoto();
+      return;
+    }
+
+    if (routeFeature === "capture") {
+      toast.info(
+        "Use Take Photo inside the estimator for camera or live view."
+      );
+    }
+    if (routeFeature === "measure") {
+      toast.info("Capture or upload a driveway photo to start AI measuring.");
+    }
+    if (routeFeature === "preview") {
+      toast.info(
+        "Capture a driveway first, then choose live or static preview."
+      );
+    }
+    if (routeFeature === "quote") {
+      toast.info("Capture and price the driveway to build the final quote.");
+    }
   }, [loading, nativeMobileApp, state.photoUrl, step]);
 
   const handlePhotoDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -1333,7 +1368,7 @@ export default function Estimator() {
                       <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
                       <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
                     </div>
-                    <span className="font-mono text-xs uppercase tracking-[0.08em] text-emerald-300">
+                    <span className="font-mono text-xs uppercase text-emerald-300">
                       ai-preview-terminal
                     </span>
                   </div>
@@ -1432,7 +1467,7 @@ export default function Estimator() {
                     onClick={() => setPreviewMode("static")}
                     className={`rounded-md px-3 py-2 text-sm font-medium transition ${
                       previewMode === "static"
-                        ? "bg-emerald-500 text-slate-950"
+                        ? "bg-emerald-600 text-white"
                         : "text-slate-200 hover:bg-slate-800"
                     }`}
                   >
@@ -1443,7 +1478,7 @@ export default function Estimator() {
                     onClick={() => setPreviewMode("live")}
                     className={`rounded-md px-3 py-2 text-sm font-medium transition ${
                       previewMode === "live"
-                        ? "bg-emerald-500 text-slate-950"
+                        ? "bg-emerald-600 text-white"
                         : "text-slate-200 hover:bg-slate-800"
                     }`}
                   >
@@ -1469,8 +1504,8 @@ export default function Estimator() {
                         {state.previewMaterial
                           ? materialDisplayNames[state.previewMaterial]
                           : "a previous material"}
-                        . Regenerate before saving to attach a matching
-                        project preview.
+                        . Regenerate before saving to attach a matching project
+                        preview.
                       </div>
                     )}
                   </>
@@ -1524,10 +1559,10 @@ export default function Estimator() {
                       </svg>
                     )}
 
-                    <div className="absolute left-3 top-3 rounded-full border border-emerald-400/30 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                    <div className="absolute left-3 top-3 rounded-full border border-emerald-400/30 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase text-emerald-300">
                       Live overlay
                     </div>
-                    <div className="absolute right-3 top-3 rounded-full border border-slate-200/15 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-200">
+                    <div className="absolute right-3 top-3 rounded-full border border-slate-200/15 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase text-slate-200">
                       {state.selectedMaterial
                         ? materialDisplayNames[state.selectedMaterial]
                         : "Mapped material"}
@@ -1635,7 +1670,7 @@ export default function Estimator() {
                     <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
                     <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
                   </div>
-                  <span className="font-mono text-xs uppercase tracking-[0.08em] text-emerald-300">
+                  <span className="font-mono text-xs uppercase text-emerald-300">
                     preview controls
                   </span>
                 </div>
