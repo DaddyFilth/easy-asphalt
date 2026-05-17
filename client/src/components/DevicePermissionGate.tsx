@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import {
   requestMotionSensorPermission,
   requestDeviceLocationPermission,
@@ -21,13 +22,8 @@ type PermissionResult = "idle" | "requesting" | "granted" | "denied";
 
 const PERMISSION_REVIEW_PREFIX = "easy-asphalt-device-permissions-v3";
 
-function getPermissionStorageKey(user: unknown) {
-  if (!user || typeof user !== "object") return PERMISSION_REVIEW_PREFIX;
-
-  const maybeUser = user as { openId?: unknown; email?: unknown; id?: unknown };
-  const userKey = maybeUser.openId ?? maybeUser.email ?? maybeUser.id ?? "user";
-
-  return `${PERMISSION_REVIEW_PREFIX}:${String(userKey)}`;
+function getPermissionStorageKey() {
+  return PERMISSION_REVIEW_PREFIX;
 }
 
 function PermissionRow({
@@ -66,7 +62,8 @@ export default function DevicePermissionGate({
 }: {
   children: ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const utils = trpc.useUtils();
   const [reviewed, setReviewed] = useState(false);
   const [camera, setCamera] = useState<PermissionResult>("idle");
   const [photos, setPhotos] = useState<PermissionResult>("idle");
@@ -74,7 +71,12 @@ export default function DevicePermissionGate({
   const [motion, setMotion] = useState<PermissionResult>("idle");
   const [requesting, setRequesting] = useState(false);
   const [cameraReadyForLaunch, setCameraReadyForLaunch] = useState(false);
-  const storageKey = useMemo(() => getPermissionStorageKey(user), [user]);
+  const storageKey = useMemo(() => getPermissionStorageKey(), []);
+  const bootstrapMutation = trpc.auth.bootstrap.useMutation({
+    onSuccess: deviceUser => {
+      utils.auth.me.setData(undefined, deviceUser);
+    },
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -94,6 +96,30 @@ export default function DevicePermissionGate({
     setReviewed(true);
   };
 
+  const ensureDeviceWorkspace = async () => {
+    if (user) return user;
+
+    return bootstrapMutation.mutateAsync();
+  };
+
+  useEffect(() => {
+    if (!reviewed || user || authLoading || bootstrapMutation.isPending) {
+      return;
+    }
+
+    if (bootstrapMutation.error) {
+      return;
+    }
+
+    void ensureDeviceWorkspace();
+  }, [
+    authLoading,
+    bootstrapMutation.error,
+    bootstrapMutation.isPending,
+    reviewed,
+    user,
+  ]);
+
   const requestDeviceAccess = async () => {
     setRequesting(true);
     setCamera("requesting");
@@ -111,12 +137,49 @@ export default function DevicePermissionGate({
     setLocation(locationResult);
     setMotion(motionResult);
     setCameraReadyForLaunch(cameraResult === "granted");
-    setRequesting(false);
 
     if (cameraResult === "granted") {
+      try {
+        await ensureDeviceWorkspace();
+      } finally {
+        setRequesting(false);
+      }
       finishReview({ launchCamera: true });
+      return;
     }
+
+    setRequesting(false);
   };
+
+  if (reviewed && (authLoading || bootstrapMutation.isPending || !user)) {
+    return (
+      <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-[#010400] px-4 py-8 text-[#c7ffb5] [color-scheme:dark]">
+        <section className="w-full max-w-lg rounded-2xl border border-[#246416] bg-[#041103]/95 p-6 text-center shadow-[0_0_0_1px_rgba(57,255,20,0.12),0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#39ff14]/12 text-[#39ff14]">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+          <h1 className="mb-3 text-2xl font-semibold text-[#39ff14]">
+            Preparing your device workspace
+          </h1>
+          <p className="text-sm leading-6 text-[#9fe788]">
+            Permissions are saved. We are finishing setup so your saved
+            projects, estimates, and contractor tools are ready on this device.
+          </p>
+          {bootstrapMutation.error && (
+            <div className="mt-6">
+              <Button
+                className="border border-[#39ff14]/35 bg-[#123c0f] text-[#39ff14] hover:bg-[#195314]"
+                disabled={bootstrapMutation.isPending}
+                onClick={() => void ensureDeviceWorkspace()}
+              >
+                Retry Setup
+              </Button>
+            </div>
+          )}
+        </section>
+      </main>
+    );
+  }
 
   if (reviewed) return <>{children}</>;
 
@@ -142,7 +205,7 @@ export default function DevicePermissionGate({
         </p>
         <p className="mb-6 text-xs leading-5 text-[#78bf64]">
           After camera access is granted, the app will open the capture screen
-          automatically, including demo mode.
+          automatically.
         </p>
 
         <div className="mb-7 space-y-3">

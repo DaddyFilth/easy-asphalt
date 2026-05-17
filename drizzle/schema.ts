@@ -57,6 +57,9 @@ export const projects = mysqlTable("projects", {
   }), // e.g., "$4.25"
   laborCost: varchar("laborCost", { length: 50 }), // e.g., "$720.00"
   totalCost: varchar("totalCost", { length: 50 }), // e.g., "$832.50"
+  additionalCostsJson: text("additionalCostsJson"),
+  finalInvoiceTotal: varchar("finalInvoiceTotal", { length: 50 }),
+  acceptedAt: timestamp("acceptedAt"),
   zipCode: varchar("zipCode", { length: 10 }),
   latitude: varchar("latitude", { length: 20 }),
   longitude: varchar("longitude", { length: 20 }),

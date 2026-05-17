@@ -120,10 +120,45 @@ async function createSessionForUser(
   });
 }
 
+async function createDeviceSession(ctx: {
+  req: Parameters<typeof getSessionCookieOptions>[0];
+  res: {
+    cookie: (
+      name: string,
+      value: string,
+      options: Record<string, unknown>
+    ) => void;
+  };
+}) {
+  await requireAuthDatabase();
+
+  const createdUser = await db.createUser({
+    openId: createLocalOpenId(),
+    name: "Device Workspace",
+    email: null,
+    loginMethod: "device",
+    passwordHash: null,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+    role: "user",
+    lastSignedIn: new Date(),
+  });
+
+  await createSessionForUser(ctx, createdUser);
+  return createdUser;
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    bootstrap: publicProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user) {
+        return ctx.user;
+      }
+
+      return createDeviceSession(ctx);
+    }),
     login: publicProcedure
       .input(loginInputSchema)
       .mutation(async ({ ctx, input }) => {

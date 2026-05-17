@@ -1,6 +1,34 @@
 import { jsPDF } from "jspdf";
 import type { Project } from "../../drizzle/schema";
 
+type AdditionalCost = {
+  label: string;
+  amount: number;
+};
+
+function isAdditionalCost(value: unknown): value is AdditionalCost {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { label?: unknown }).label === "string" &&
+    typeof (value as { amount?: unknown }).amount === "number"
+  );
+}
+
+function parseAdditionalCosts(additionalCostsJson: string | null | undefined) {
+  if (!additionalCostsJson) return [];
+
+  try {
+    const parsed = JSON.parse(additionalCostsJson) as unknown;
+
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(isAdditionalCost);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Generate a PDF summary of a driveway project
  * Includes: project name, photo, measurements, material, pricing, notes
@@ -127,6 +155,38 @@ export async function generateProjectPDF(project: Project): Promise<Buffer> {
     margin + 5,
     yPosition
   );
+
+  const additionalCosts = parseAdditionalCosts(project.additionalCostsJson);
+  if (additionalCosts.length > 0) {
+    yPosition += 12;
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Accepted Job Add-ons", margin, yPosition);
+
+    yPosition += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+
+    additionalCosts.forEach(item => {
+      doc.text(
+        `${item.label}: $${item.amount.toFixed(2)}`,
+        margin + 5,
+        yPosition
+      );
+      yPosition += 6;
+    });
+
+    if (project.finalInvoiceTotal) {
+      yPosition += 2;
+      doc.setFontSize(11);
+      doc.setTextColor(0, 128, 0);
+      doc.text(
+        `Final Invoice Total: ${project.finalInvoiceTotal}`,
+        margin + 5,
+        yPosition
+      );
+    }
+  }
 
   yPosition += 15;
 

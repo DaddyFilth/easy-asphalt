@@ -171,7 +171,7 @@ export default function Dashboard() {
                     <div className="flex justify-between">
                       <span className="text-slate-400">Cost:</span>
                       <span className="text-green-400 font-semibold">
-                        {project.totalCost}
+                        {project.finalInvoiceTotal || project.totalCost}
                       </span>
                     </div>
                   </div>

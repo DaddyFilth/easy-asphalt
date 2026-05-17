@@ -1,8 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Route, Switch } from "wouter";
 import DevicePermissionGate from "./components/DevicePermissionGate";
-import RequireAuth from "./components/RequireAuth";
-import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Estimator from "./pages/Estimator";
 import Home from "./pages/Home";
@@ -21,18 +19,21 @@ export default function App() {
           </DevicePermissionGate>
         </Route>
         <Route path={"/dashboard"}>
-          <RequireAuth>
+          <DevicePermissionGate>
             <Dashboard />
-          </RequireAuth>
+          </DevicePermissionGate>
         </Route>
         <Route path={"/project/:projectId"}>
-          <RequireAuth>
+          <DevicePermissionGate>
             <ProjectDetail />
-          </RequireAuth>
+          </DevicePermissionGate>
         </Route>
         <Route path={"/share/:shareToken"} component={SharedProject} />
-
-        <Route path={"/login"} component={Login} />
+        <Route path={"/login"}>
+          <DevicePermissionGate>
+            <Estimator />
+          </DevicePermissionGate>
+        </Route>
 
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

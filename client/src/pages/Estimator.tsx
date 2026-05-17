@@ -2,13 +2,13 @@ import {
   useState,
   useRef,
   useEffect,
+  type CSSProperties,
   type ChangeEvent,
   type DragEvent,
   type PointerEvent,
 } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { getLoginUrl } from "@/const";
 import {
   Card,
   CardContent,
@@ -16,6 +16,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +43,7 @@ import {
   type CornerPoint,
 } from "@shared/geometry";
 import { toast } from "sonner";
-import { Loader2, Upload, Camera, Lock } from "lucide-react";
+import { Loader2, Upload, Camera, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 type Step = "upload" | "adjust" | "material" | "preview" | "summary";
@@ -87,6 +94,7 @@ interface EstimatorState {
   selectedMaterial: Material | null;
   previewUrl: string | null;
   previewKey: string | null;
+  previewMaterial: Material | null;
   previewPrompt: string;
   previewUsedFallback: boolean;
   projectName: string;
@@ -107,8 +115,90 @@ type DeviceReadiness = {
   roll: number | null;
 };
 
+type PreviewMode = "static" | "live";
+type LivePreviewStatus =
+  | "idle"
+  | "starting"
+  | "ready"
+  | "unsupported"
+  | "error";
+type EstimateExitAction = "dashboard" | "material" | "project";
+type AdditionalCostItem = {
+  id: string;
+  label: string;
+  amount: string;
+};
+
+function createAdditionalCostItem(): AdditionalCostItem {
+  return {
+    id: `cost-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    label: "",
+    amount: "",
+  };
+}
+
+function buildPolygonClipPath(corners: CornerPoint[]) {
+  if (corners.length < 3) {
+    return "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
+  }
+
+  return `polygon(${corners.map(corner => `${corner.x}% ${corner.y}%`).join(", ")})`;
+}
+
+function getLiveOverlayStyle(material: Material | null): CSSProperties {
+  if (material === "millings") {
+    return {
+      backgroundColor: "rgba(52, 58, 62, 0.76)",
+      backgroundImage: [
+        "linear-gradient(160deg, rgba(33, 38, 43, 0.94), rgba(82, 88, 92, 0.68))",
+        "radial-gradient(circle at 18% 20%, rgba(255,255,255,0.14) 0 1px, transparent 1.6px)",
+        "radial-gradient(circle at 68% 62%, rgba(0,0,0,0.34) 0 2px, transparent 2.7px)",
+      ].join(", "),
+      backgroundSize: "cover, 18px 18px, 26px 26px",
+      backgroundBlendMode: "normal, screen, multiply",
+    };
+  }
+
+  if (material === "tar_and_chip") {
+    return {
+      backgroundColor: "rgba(72, 76, 69, 0.72)",
+      backgroundImage: [
+        "linear-gradient(155deg, rgba(48, 49, 40, 0.92), rgba(120, 120, 102, 0.55))",
+        "radial-gradient(circle at 22% 30%, rgba(228, 218, 190, 0.46) 0 2px, transparent 2.8px)",
+        "radial-gradient(circle at 70% 68%, rgba(51, 46, 36, 0.36) 0 2.4px, transparent 3px)",
+      ].join(", "),
+      backgroundSize: "cover, 22px 22px, 28px 28px",
+      backgroundBlendMode: "normal, screen, multiply",
+    };
+  }
+
+  if (material === "gravel") {
+    return {
+      backgroundColor: "rgba(108, 112, 118, 0.7)",
+      backgroundImage: [
+        "linear-gradient(155deg, rgba(76, 79, 84, 0.86), rgba(167, 172, 178, 0.58))",
+        "radial-gradient(circle at 16% 24%, rgba(235,238,241,0.42) 0 2px, transparent 2.6px)",
+        "radial-gradient(circle at 72% 64%, rgba(53,56,61,0.32) 0 2.4px, transparent 3px)",
+      ].join(", "),
+      backgroundSize: "cover, 20px 20px, 30px 30px",
+      backgroundBlendMode: "normal, screen, multiply",
+    };
+  }
+
+  return {
+    backgroundColor: "rgba(28, 32, 37, 0.76)",
+    backgroundImage: [
+      "linear-gradient(150deg, rgba(19, 23, 28, 0.96), rgba(66, 71, 78, 0.7))",
+      "radial-gradient(circle at 18% 24%, rgba(255,255,255,0.12) 0 1px, transparent 1.5px)",
+      "radial-gradient(circle at 74% 70%, rgba(0,0,0,0.32) 0 2px, transparent 2.6px)",
+    ].join(", "),
+    backgroundSize: "cover, 18px 18px, 26px 26px",
+    backgroundBlendMode: "normal, screen, multiply",
+  };
+}
+
 export default function Estimator() {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("upload");
   const [state, setState] = useState<EstimatorState>({
@@ -125,6 +215,7 @@ export default function Estimator() {
     selectedMaterial: null,
     previewUrl: null,
     previewKey: null,
+    previewMaterial: null,
     previewPrompt: "",
     previewUsedFallback: false,
     projectName: "",
@@ -139,6 +230,18 @@ export default function Estimator() {
   const [loading, setLoading] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("static");
+  const [livePreviewStatus, setLivePreviewStatus] =
+    useState<LivePreviewStatus>("idle");
+  const [livePreviewError, setLivePreviewError] = useState<string | null>(null);
+  const [estimateDecisionOpen, setEstimateDecisionOpen] = useState(false);
+  const [estimateDecisionMode, setEstimateDecisionMode] = useState<
+    "decision" | "accepted"
+  >("decision");
+  const [savedProjectId, setSavedProjectId] = useState<number | null>(null);
+  const [additionalCosts, setAdditionalCosts] = useState<AdditionalCostItem[]>([
+    createAdditionalCostItem(),
+  ]);
   const [deviceReadiness, setDeviceReadiness] = useState<DeviceReadiness>({
     gpsAccuracyFeet: null,
     connectionLabel: "Unknown connection",
@@ -150,11 +253,11 @@ export default function Estimator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const livePreviewVideoRef = useRef<HTMLVideoElement>(null);
+  const livePreviewStreamRef = useRef<MediaStream | null>(null);
 
   const uploadPhotoMutation =
     trpc.projects.uploadPhotoAndDetectEdges.useMutation();
-  const uploadPhotoDemoMutation =
-    trpc.projects.uploadPhotoAndDetectEdgesDemo.useMutation();
   const getPricingQuery = trpc.projects.getPricing.useQuery(
     {
       zipCode: state.zipCode,
@@ -164,7 +267,7 @@ export default function Estimator() {
     },
     {
       enabled:
-        isAuthenticated &&
+        !!user &&
         !!state.zipCode &&
         !!state.selectedMaterial &&
         !!state.squareFeet,
@@ -173,9 +276,14 @@ export default function Estimator() {
   const generatePreviewMutation =
     trpc.projects.generateMaterialPreview.useMutation();
   const createProjectMutation = trpc.projects.create.useMutation();
+  const finalizeInvoiceMutation = trpc.projects.finalizeInvoice.useMutation();
   const cornerPolygon = state.corners
     .map(corner => `${corner.x},${corner.y}`)
     .join(" ");
+  const polygonClipPath = buildPolygonClipPath(state.corners);
+  const liveOverlayStyle = getLiveOverlayStyle(state.selectedMaterial);
+  const previewMatchesSelectedMaterial =
+    state.previewMaterial === state.selectedMaterial;
   const photoAspectRatio =
     state.imageWidth && state.imageHeight
       ? `${state.imageWidth} / ${state.imageHeight}`
@@ -198,9 +306,105 @@ export default function Estimator() {
     materialCostValue !== null
       ? materialCostValue + (laborCostValue ?? 0)
       : null;
-  const hasToolAccess = isAuthenticated;
-  const unlockUrl = getLoginUrl("/estimator");
-  const unlockCtaLabel = "Sign In to Unlock More";
+  const normalizedAdditionalCosts = additionalCosts
+    .map(item => ({
+      ...item,
+      label: item.label.trim(),
+      amountValue:
+        item.amount.trim() === ""
+          ? null
+          : Number.parseFloat(item.amount.replace(/[^0-9.]/g, "")),
+    }))
+    .filter(
+      item =>
+        item.label.length > 0 &&
+        item.amountValue !== null &&
+        Number.isFinite(item.amountValue) &&
+        item.amountValue >= 0
+    );
+  const additionalCostsTotalValue = normalizedAdditionalCosts.reduce(
+    (sum, item) => sum + (item.amountValue ?? 0),
+    0
+  );
+  const finalInvoiceTotalValue =
+    estimatedProjectTotalValue !== null
+      ? estimatedProjectTotalValue + additionalCostsTotalValue
+      : null;
+
+  useEffect(() => {
+    const stopLiveStream = () => {
+      if (livePreviewStreamRef.current) {
+        livePreviewStreamRef.current.getTracks().forEach(track => track.stop());
+        livePreviewStreamRef.current = null;
+      }
+
+      if (livePreviewVideoRef.current) {
+        livePreviewVideoRef.current.srcObject = null;
+      }
+    };
+
+    if (step !== "preview" || previewMode !== "live") {
+      stopLiveStream();
+      setLivePreviewStatus(current =>
+        current === "unsupported" || current === "error" ? current : "idle"
+      );
+      return;
+    }
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      setLivePreviewStatus("unsupported");
+      setLivePreviewError(
+        "Live camera preview is not available on this device. Static AI preview is still available."
+      );
+      return;
+    }
+
+    let cancelled = false;
+
+    setLivePreviewStatus("starting");
+    setLivePreviewError(null);
+
+    void (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+          },
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        livePreviewStreamRef.current = stream;
+
+        if (livePreviewVideoRef.current) {
+          livePreviewVideoRef.current.srcObject = stream;
+          await livePreviewVideoRef.current.play().catch(() => undefined);
+        }
+
+        setLivePreviewStatus("ready");
+      } catch (error) {
+        console.error(error);
+        if (cancelled) return;
+
+        setLivePreviewStatus("error");
+        setLivePreviewError(
+          "We could not start the rear camera for live overlay. You can keep using the static AI preview."
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopLiveStream();
+    };
+  }, [previewMode, step]);
 
   // Capture device context that can improve field accuracy and capture quality.
   useEffect(() => {
@@ -241,17 +445,6 @@ export default function Estimator() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!hasToolAccess) {
-      if (step === "upload" || step === "adjust") return;
-
-      setStep(state.photoUrl ? "adjust" : "upload");
-      return;
-    }
-
-    if (step === "upload" || step === "adjust") return;
-  }, [hasToolAccess, state.photoUrl, step]);
 
   const readFileAsDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -295,10 +488,7 @@ export default function Estimator() {
       if (!base64) throw new Error("Image file did not contain base64 data");
 
       const dimensions = await loadImageDimensions(dataUrl);
-      const captureMutation = isAuthenticated
-        ? uploadPhotoMutation
-        : uploadPhotoDemoMutation;
-      const result = await captureMutation.mutateAsync({
+      const result = await uploadPhotoMutation.mutateAsync({
         photoBase64: base64,
         photoName: file.name,
         photoMimeType: file.type,
@@ -325,14 +515,11 @@ export default function Estimator() {
           ),
         previewUrl: null,
         previewKey: null,
+        previewMaterial: null,
         previewUsedFallback: false,
       }));
 
-      toast.success(
-        isAuthenticated
-          ? `Driveway detected! ${result.squareFeet} sq ft`
-          : `Demo capture complete: ${result.squareFeet} sq ft detected`
-      );
+      toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
       setStep("adjust");
     } catch (error) {
       toast.error("Failed to process photo");
@@ -484,12 +671,57 @@ export default function Estimator() {
     }));
   };
 
-  const handleGeneratePreview = async () => {
-    if (!hasToolAccess) {
-      toast.error("Sign in to generate material previews");
+  const addAdditionalCostRow = () => {
+    setAdditionalCosts(prev => [...prev, createAdditionalCostItem()]);
+  };
+
+  const updateAdditionalCostRow = (
+    id: string,
+    field: "label" | "amount",
+    value: string
+  ) => {
+    setAdditionalCosts(prev =>
+      prev.map(item => {
+        if (item.id !== id) return item;
+
+        if (field === "amount") {
+          const sanitized = value.replace(/[^0-9.]/g, "");
+          if (!/^\d*(?:\.\d{0,2})?$/.test(sanitized)) {
+            return item;
+          }
+
+          return { ...item, amount: sanitized };
+        }
+
+        return { ...item, label: value };
+      })
+    );
+  };
+
+  const removeAdditionalCostRow = (id: string) => {
+    setAdditionalCosts(prev =>
+      prev.length === 1 ? prev : prev.filter(item => item.id !== id)
+    );
+  };
+
+  const exitEstimateFlow = (action: EstimateExitAction) => {
+    setEstimateDecisionOpen(false);
+    setEstimateDecisionMode("decision");
+
+    if (action === "material") {
+      setStep("material");
       return;
     }
 
+    if (action === "project" && savedProjectId) {
+      navigate(`/project/${savedProjectId}`);
+      return;
+    }
+
+    navigate("/dashboard");
+  };
+
+  const handleGeneratePreview = async () => {
     if (!state.photoUrl || !state.selectedMaterial) return;
 
     setLoading(true);
@@ -505,8 +737,12 @@ export default function Estimator() {
         ...prev,
         previewUrl: result.previewUrl,
         previewKey: result.previewKey ?? null,
+        previewMaterial: state.selectedMaterial,
         previewUsedFallback: result.usedFallback ?? false,
       }));
+      if (step !== "preview") {
+        setPreviewMode("static");
+      }
 
       toast.success(
         result.usedFallback
@@ -523,11 +759,6 @@ export default function Estimator() {
   };
 
   const handleSaveProject = async () => {
-    if (!hasToolAccess) {
-      toast.error("Sign in to save this project");
-      return;
-    }
-
     if (
       !state.photoUrl ||
       !state.photoKey ||
@@ -544,6 +775,14 @@ export default function Estimator() {
 
     if (!projectName) {
       toast.error("Please enter a project name");
+      return;
+    }
+
+    if (!contractorRateValue || contractorRateValue <= 0) {
+      toast.error(
+        "Enter the labor rate per sq ft before producing an estimate"
+      );
+      setStep("summary");
       return;
     }
 
@@ -566,8 +805,14 @@ export default function Estimator() {
         zipCode: state.zipCode,
         latitude: state.latitude || undefined,
         longitude: state.longitude || undefined,
-        previewImageUrl: state.previewUrl || undefined,
-        previewImageKey: state.previewKey || undefined,
+        previewImageUrl:
+          state.previewUrl && previewMatchesSelectedMaterial
+            ? state.previewUrl
+            : undefined,
+        previewImageKey:
+          state.previewKey && previewMatchesSelectedMaterial
+            ? state.previewKey
+            : undefined,
         contractorEmail: contractorEmail || undefined,
         contractorPricePerSquareFoot:
           contractorRateValue && contractorRateValue > 0
@@ -576,37 +821,46 @@ export default function Estimator() {
         notes: notes || undefined,
       });
 
-      toast.success("Project saved successfully!");
-      // Reset form
-      setState({
-        photoUrl: null,
-        photoKey: null,
-        photoMimeType: null,
-        imageWidth: null,
-        imageHeight: null,
-        corners: [],
-        squareFeet: null,
-        detectionConfidence: null,
-        detectionDescription: "",
-        depthInches: 2,
-        selectedMaterial: null,
-        previewUrl: null,
-        previewKey: null,
-        previewPrompt: "",
-        previewUsedFallback: false,
-        projectName: "",
-        contractorEmail: "",
-        contractorPricePerSquareFoot: "",
-        notes: "",
-        zipCode: state.zipCode,
-        latitude: state.latitude,
-        longitude: state.longitude,
-      });
-      navigate(
-        result.projectId ? `/project/${result.projectId}` : "/dashboard"
+      if (!result.projectId) {
+        toast.error("Estimate was created but no project id was returned");
+        return;
+      }
+
+      setSavedProjectId(result.projectId);
+      setEstimateDecisionMode("decision");
+      setAdditionalCosts([createAdditionalCostItem()]);
+      setEstimateDecisionOpen(true);
+      toast.success(
+        "Estimate created. Ask the client what they want to do next."
       );
     } catch (error) {
       toast.error("Failed to save project");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFinalizeInvoice = async () => {
+    if (!savedProjectId) {
+      toast.error("No saved estimate was found for the invoice");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await finalizeInvoiceMutation.mutateAsync({
+        projectId: savedProjectId,
+        additionalCosts: normalizedAdditionalCosts.map(item => ({
+          label: item.label,
+          amount: item.amountValue ?? 0,
+        })),
+      });
+
+      toast.success("Final invoice created");
+      exitEstimateFlow("project");
+    } catch (error) {
+      toast.error("Failed to finalize the invoice");
       console.error(error);
     } finally {
       setLoading(false);
@@ -625,15 +879,16 @@ export default function Estimator() {
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-[#08110d] via-[#0f1b15] to-[#18281e] p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
-            Driveway Estimator Pro
+            Driveway Sales Estimator
           </h1>
           <p className="text-slate-300">
-            Measure, visualize, and estimate your driveway project
+            Measure, visualize, and quote driveway installs right at the job
+            site
           </p>
         </div>
 
@@ -681,17 +936,6 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!hasToolAccess && (
-                <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
-                  <p className="font-semibold text-amber-50">Demo mode</p>
-                  <p className="mt-1">
-                    Capture and AI driveway detection are open without an
-                    account. Sign in to adjust corners, load pricing, generate
-                    material previews, and save projects.
-                  </p>
-                </div>
-              )}
-
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
                   <p className="font-semibold text-white">
@@ -844,9 +1088,7 @@ export default function Estimator() {
                 Step 2: Adjust Driveway Corners
               </CardTitle>
               <CardDescription>
-                {hasToolAccess
-                  ? "Drag the corners to match your driveway edges"
-                  : "Demo capture shows the detected driveway boundary"}
+                Drag the corners to match your driveway edges
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -885,31 +1127,12 @@ export default function Estimator() {
                     key={i}
                     type="button"
                     aria-label={`Adjust driveway corner ${i + 1}`}
-                    onPointerDown={
-                      hasToolAccess
-                        ? event => handleCornerPointerDown(event, i)
-                        : undefined
-                    }
-                    onPointerMove={
-                      hasToolAccess
-                        ? event => handleCornerPointerMove(event, i)
-                        : undefined
-                    }
-                    onPointerUp={
-                      hasToolAccess ? handleCornerPointerEnd : undefined
-                    }
-                    onPointerCancel={
-                      hasToolAccess ? handleCornerPointerEnd : undefined
-                    }
-                    onLostPointerCapture={
-                      hasToolAccess ? () => setDraggingCorner(null) : undefined
-                    }
-                    disabled={!hasToolAccess}
-                    className={`absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 ${
-                      hasToolAccess
-                        ? "hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
-                        : "cursor-not-allowed opacity-80"
-                    }`}
+                    onPointerDown={event => handleCornerPointerDown(event, i)}
+                    onPointerMove={event => handleCornerPointerMove(event, i)}
+                    onPointerUp={handleCornerPointerEnd}
+                    onPointerCancel={handleCornerPointerEnd}
+                    onLostPointerCapture={() => setDraggingCorner(null)}
+                    className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
                     style={{ left: `${corner.x}%`, top: `${corner.y}%` }}
                   />
                 ))}
@@ -948,7 +1171,6 @@ export default function Estimator() {
                     min="1"
                     max="12"
                     value={state.depthInches}
-                    disabled={!hasToolAccess}
                     onChange={e => {
                       const depth = Number(e.target.value);
                       setState(prev => ({
@@ -964,49 +1186,21 @@ export default function Estimator() {
                 </div>
               </div>
 
-              {!hasToolAccess && (
-                <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-amber-400/10 text-amber-200">
-                      <Lock className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="font-semibold text-amber-50">
-                        Capture is unlocked. The rest is protected.
-                      </p>
-                      <p className="mt-1">
-                        Sign in to refine the outline, pull local pricing,
-                        generate material previews, and save or share projects.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {hasToolAccess ? (
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Button
                   onClick={() => setStep("material")}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Continue to Materials
                 </Button>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Button
-                    asChild
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <a href={unlockUrl}>{unlockCtaLabel}</a>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setStep("upload")}
-                  >
-                    Capture Another Photo
-                  </Button>
-                </div>
-              )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep("upload")}
+                >
+                  Capture Another Photo
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -1218,22 +1412,176 @@ export default function Estimator() {
                 Step 4: Preview Your Driveway
               </CardTitle>
               <CardDescription>
-                See how your driveway will look with the selected material
+                Switch between a static AI render and a live walk-around overlay
+                to match the current sales conversation
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div
-                className="relative w-full bg-black rounded-lg overflow-hidden"
-                style={{ aspectRatio: "16/9" }}
-              >
-                <img
-                  src={state.previewUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Label className="text-slate-200">Preview mode</Label>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Static preview is best for quoting. Live overlay is best
+                    when you want to walk the site and compare the material in
+                    context.
+                  </p>
+                </div>
+                <div className="inline-flex rounded-lg border border-slate-600 bg-slate-950/70 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("static")}
+                    className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                      previewMode === "static"
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-slate-200 hover:bg-slate-800"
+                    }`}
+                  >
+                    Static AI Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("live")}
+                    className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                      previewMode === "live"
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-slate-200 hover:bg-slate-800"
+                    }`}
+                  >
+                    Live Camera Overlay
+                  </button>
+                </div>
               </div>
 
-              {state.previewUsedFallback && (
+              <div
+                className="relative w-full overflow-hidden rounded-lg bg-black"
+                style={{ aspectRatio: photoAspectRatio }}
+              >
+                {previewMode === "static" ? (
+                  <>
+                    <img
+                      src={state.previewUrl}
+                      alt="Driveway material preview"
+                      className="h-full w-full object-cover"
+                    />
+                    {!previewMatchesSelectedMaterial && (
+                      <div className="absolute inset-x-3 bottom-3 rounded-lg border border-amber-400/35 bg-black/70 p-3 text-xs leading-5 text-amber-100">
+                        This image was generated for{" "}
+                        {state.previewMaterial
+                          ? materialDisplayNames[state.previewMaterial]
+                          : "a previous material"}
+                        . Regenerate before saving to attach a matching
+                        project preview.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <video
+                      ref={livePreviewVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+
+                    <div
+                      className="absolute inset-0"
+                      style={{ clipPath: polygonClipPath }}
+                    >
+                      <div
+                        className="absolute inset-0 opacity-75"
+                        style={liveOverlayStyle}
+                      />
+                      {!state.previewUsedFallback && (
+                        <div
+                          className="absolute inset-0 opacity-25"
+                          style={{
+                            backgroundImage: `url(${state.previewUrl})`,
+                            backgroundPosition: "center",
+                            backgroundSize: "cover",
+                            mixBlendMode: "soft-light",
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_46%,rgba(0,0,0,0.18)_100%)]" />
+
+                    {state.corners.length >= 3 && (
+                      <svg
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 h-full w-full"
+                        preserveAspectRatio="none"
+                        viewBox="0 0 100 100"
+                      >
+                        <polygon
+                          points={cornerPolygon}
+                          fill="rgba(16, 185, 129, 0.14)"
+                          stroke="rgb(52, 211, 153)"
+                          strokeWidth="0.8"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </svg>
+                    )}
+
+                    <div className="absolute left-3 top-3 rounded-full border border-emerald-400/30 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                      Live overlay
+                    </div>
+                    <div className="absolute right-3 top-3 rounded-full border border-slate-200/15 bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-200">
+                      {state.selectedMaterial
+                        ? materialDisplayNames[state.selectedMaterial]
+                        : "Mapped material"}
+                    </div>
+                    <div className="absolute bottom-3 left-3 max-w-xs rounded-lg border border-slate-200/10 bg-black/60 p-3 text-xs leading-5 text-slate-100">
+                      Walk the job with the client while keeping the phone close
+                      to the original capture angle. The highlighted polygon is
+                      the previously mapped driveway area.
+                    </div>
+                    {state.photoUrl && (
+                      <div className="absolute bottom-3 right-3 overflow-hidden rounded-lg border border-slate-200/10 bg-black/70 shadow-lg">
+                        <img
+                          src={state.photoUrl}
+                          alt="Original mapped driveway"
+                          className="h-20 w-28 object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {livePreviewStatus !== "ready" && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/45 p-6 text-center">
+                        <div className="max-w-sm rounded-xl border border-slate-200/10 bg-slate-950/80 p-4 text-sm text-slate-100">
+                          <p className="font-semibold text-white">
+                            {livePreviewStatus === "starting"
+                              ? "Starting rear camera..."
+                              : "Live overlay unavailable"}
+                          </p>
+                          <p className="mt-2 leading-6 text-slate-300">
+                            {livePreviewStatus === "starting"
+                              ? "We are opening the live camera so you can compare the selected surface while walking the site."
+                              : (livePreviewError ??
+                                "Switch back to Static AI Preview if this device does not expose live video in the app.")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {previewMode === "live" && (
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/20 p-4 text-sm text-emerald-100">
+                  <p className="font-semibold text-emerald-50">
+                    Live walk-around overlay
+                  </p>
+                  <p className="mt-1 leading-6">
+                    The selected surface is clipped to the mapped driveway area
+                    so you can compare the material in the field. Use the static
+                    preview when you need the polished AI render for the quote.
+                  </p>
+                </div>
+              )}
+
+              {previewMode === "static" && state.previewUsedFallback && (
                 <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 p-4 text-sm text-amber-100">
                   <p className="font-semibold text-amber-50">
                     AI preview service is not available right now
@@ -1253,8 +1601,8 @@ export default function Estimator() {
                     Change material and regenerate
                   </Label>
                   <p className="mt-1 text-xs text-slate-400">
-                    Switch materials here or refine the AI prompt below to make
-                    another preview pass from the original driveway photo.
+                    Switch materials here, then refine the AI prompt below to
+                    make another preview pass from the original driveway photo.
                   </p>
                 </div>
 
@@ -1288,7 +1636,7 @@ export default function Estimator() {
                     <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
                   </div>
                   <span className="font-mono text-xs uppercase tracking-[0.08em] text-emerald-300">
-                    ai-preview-terminal
+                    preview controls
                   </span>
                 </div>
                 <div className="space-y-4 px-4 py-4">
@@ -1337,7 +1685,11 @@ export default function Estimator() {
                   disabled={!state.selectedMaterial || loading}
                   variant="outline"
                 >
-                  {loading ? "Regenerating Preview..." : "Regenerate with AI"}
+                  {loading
+                    ? "Regenerating Preview..."
+                    : previewMatchesSelectedMaterial
+                      ? "Regenerate with AI"
+                      : "Generate Matching Preview"}
                 </Button>
                 <Button
                   onClick={() => setStep("summary")}
@@ -1358,7 +1710,7 @@ export default function Estimator() {
                 Step 5: Project Summary
               </CardTitle>
               <CardDescription>
-                Review and save your driveway estimate
+                Review and save your driveway sales estimate
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1397,9 +1749,7 @@ export default function Estimator() {
                 </div>
 
                 <div>
-                  <Label className="text-slate-300">
-                    Contractor Quote Per Sq Ft (Optional)
-                  </Label>
+                  <Label className="text-slate-300">Labor Rate Per Sq Ft</Label>
                   <Input
                     inputMode="decimal"
                     value={state.contractorPricePerSquareFoot}
@@ -1415,8 +1765,9 @@ export default function Estimator() {
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                   <p className="mt-2 text-xs text-slate-400">
-                    Add a contractor&apos;s quoted rate per square foot to see
-                    an estimated labor line and installed total.
+                    Required for the sales estimate. Enter the contractor&apos;s
+                    labor or installed-rate quote per square foot before
+                    producing the final estimate.
                   </p>
                 </div>
 
@@ -1466,10 +1817,10 @@ export default function Estimator() {
                             {materialCost}
                           </span>
                         </div>
-                        {contractorRateValue && contractorRateValue > 0 && (
+                        {contractorRateValue && contractorRateValue > 0 ? (
                           <>
                             <div className="flex justify-between">
-                              <span>Contractor Rate:</span>
+                              <span>Labor Rate:</span>
                               <span className="font-bold">
                                 {formatUsd(contractorRateValue)}/sq ft
                               </span>
@@ -1483,21 +1834,28 @@ export default function Estimator() {
                               </span>
                             </div>
                           </>
+                        ) : (
+                          <div className="rounded-md border border-amber-500/40 bg-amber-950/30 p-3 text-sm text-amber-100">
+                            Enter the labor rate above to produce the installed
+                            sales estimate.
+                          </div>
                         )}
                         <div className="flex justify-between text-lg border-t border-slate-600 pt-2 mt-2">
                           <span>
                             {contractorRateValue && contractorRateValue > 0
-                              ? "Estimated Total"
-                              : "Material-Only Total"}
+                              ? "Installed Estimate Total"
+                              : "Awaiting Labor Rate"}
                           </span>
                           <span className="font-bold text-green-400">
-                            {estimatedProjectTotalValue !== null
+                            {contractorRateValue &&
+                            estimatedProjectTotalValue !== null
                               ? formatUsd(estimatedProjectTotalValue)
-                              : materialCost}
+                              : "--"}
                           </span>
                         </div>
                         <p className="text-xs text-slate-400">
-                          Material pricing excludes labor by default.
+                          Material pricing and labor are shown separately so the
+                          final estimate reflects the quoted installed price.
                         </p>
                       </>
                     )}
@@ -1508,16 +1866,179 @@ export default function Estimator() {
               <Button
                 onClick={handleSaveProject}
                 disabled={
-                  loading || !state.projectName.trim() || !getPricingQuery.data
+                  loading ||
+                  !state.projectName.trim() ||
+                  !getPricingQuery.data ||
+                  !contractorRateValue ||
+                  contractorRateValue <= 0
                 }
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
-                {loading ? "Saving..." : "Save Project"}
+                {loading ? "Saving..." : "Generate & Save Estimate"}
               </Button>
             </CardContent>
           </Card>
         )}
       </div>
+
+      <Dialog
+        open={estimateDecisionOpen}
+        onOpenChange={open => {
+          if (open) {
+            setEstimateDecisionOpen(true);
+            return;
+          }
+
+          exitEstimateFlow("dashboard");
+        }}
+      >
+        <DialogContent className="border-slate-700 bg-slate-900 text-white sm:max-w-md">
+          {estimateDecisionMode === "decision" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-white">
+                  Estimate created
+                </DialogTitle>
+                <DialogDescription className="text-slate-300">
+                  Ask the client what they want to do next with this estimate.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="w-full bg-green-600 text-white hover:bg-green-700"
+                  onClick={() => setEstimateDecisionMode("accepted")}
+                >
+                  Client accepts the job
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-slate-600 text-slate-200 hover:bg-slate-800"
+                  onClick={() => exitEstimateFlow("material")}
+                >
+                  Show a different material
+                </Button>
+                <p className="text-xs leading-5 text-slate-400">
+                  Use the X in the corner to close the estimator if the client
+                  is not interested.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-white">
+                  Accepted job add-ons
+                </DialogTitle>
+                <DialogDescription className="text-slate-300">
+                  Add any extra charges before creating the final invoice.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  {additionalCosts.map(item => (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-[1fr_auto_auto] items-start gap-2"
+                    >
+                      <Input
+                        value={item.label}
+                        onChange={event =>
+                          updateAdditionalCostRow(
+                            item.id,
+                            "label",
+                            event.target.value
+                          )
+                        }
+                        placeholder="Add-on label"
+                        className="border-slate-600 bg-slate-800 text-white"
+                      />
+                      <Input
+                        inputMode="decimal"
+                        value={item.amount}
+                        onChange={event =>
+                          updateAdditionalCostRow(
+                            item.id,
+                            "amount",
+                            event.target.value
+                          )
+                        }
+                        placeholder="0.00"
+                        className="w-28 border-slate-600 bg-slate-800 text-white"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-slate-600 text-slate-200 hover:bg-slate-800"
+                        onClick={() => removeAdditionalCostRow(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-slate-600 text-slate-200 hover:bg-slate-800"
+                  onClick={addAdditionalCostRow}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add cost line
+                </Button>
+
+                <div className="rounded-lg border border-slate-700 bg-slate-800/80 p-4 text-sm">
+                  <div className="flex justify-between text-slate-200">
+                    <span>Installed estimate</span>
+                    <span>
+                      {estimatedProjectTotalValue !== null
+                        ? formatUsd(estimatedProjectTotalValue)
+                        : "--"}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex justify-between text-slate-200">
+                    <span>Additional costs</span>
+                    <span>{formatUsd(additionalCostsTotalValue)}</span>
+                  </div>
+                  <div className="mt-3 flex justify-between border-t border-slate-700 pt-3 text-base font-semibold text-emerald-300">
+                    <span>Final invoice total</span>
+                    <span>
+                      {finalInvoiceTotalValue !== null
+                        ? formatUsd(finalInvoiceTotalValue)
+                        : "--"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-slate-600 text-slate-200 hover:bg-slate-800"
+                    onClick={() => setEstimateDecisionMode("decision")}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    className="bg-green-600 text-white hover:bg-green-700"
+                    disabled={loading || finalizeInvoiceMutation.isPending}
+                    onClick={handleFinalizeInvoice}
+                  >
+                    {loading || finalizeInvoiceMutation.isPending
+                      ? "Creating Invoice..."
+                      : "Create Final Invoice"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

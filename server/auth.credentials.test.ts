@@ -59,6 +59,40 @@ describe("credential auth", () => {
     sdkMock.createSessionToken.mockResolvedValue("session-token");
   });
 
+  it("bootstraps a device workspace and sets a session cookie", async () => {
+    const deviceUser = {
+      id: 11,
+      openId: "local:device-user",
+      name: "Device Workspace",
+      email: null,
+      loginMethod: "device",
+      passwordHash: null,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      role: "user" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    };
+
+    dbMock.createUser.mockResolvedValue(deviceUser);
+
+    const { ctx, cookies } = createContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.auth.bootstrap();
+
+    expect(result).toEqual(deviceUser);
+    expect(dbMock.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Device Workspace",
+        loginMethod: "device",
+        role: "user",
+      })
+    );
+    expect(cookies[0]?.name).toBe(COOKIE_NAME);
+    expect(cookies[0]?.value).toBe("session-token");
+  });
+
   it("registers a new user, hashes the password, and sets a session cookie", async () => {
     const createdUser = {
       id: 1,

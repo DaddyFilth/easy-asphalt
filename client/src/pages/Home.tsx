@@ -1,7 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import {
-  Camera,
   Zap,
   Share2,
   BarChart3,
@@ -192,22 +189,18 @@ const materials = [
 ];
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
-  const primaryCtaHref = isAuthenticated
-    ? "/estimator"
-    : getLoginUrl("/estimator");
-  const primaryCtaLabel = isAuthenticated
-    ? "Start Estimating"
-    : "Get Started Free";
+  const primaryCtaHref = "/estimator";
+  const primaryCtaLabel = "Open Estimator";
+  const secondaryCtaHref = "/dashboard";
 
   return (
     <>
-      <main className="min-[1120px]:hidden min-h-screen overflow-x-hidden bg-[#060d1a] text-slate-100">
-        <nav className="sticky top-0 z-50 border-b border-white/8 bg-[#060d1a]/92 backdrop-blur">
+      <main className="min-[1120px]:hidden min-h-screen overflow-x-hidden bg-[#0c120f] text-slate-100">
+        <nav className="sticky top-0 z-50 border-b border-white/8 bg-[#0c120f]/92 backdrop-blur">
           <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
-                <rect width="32" height="32" rx="8" fill="#1d4ed8" />
+                <rect width="32" height="32" rx="8" fill="#059669" />
                 <polygon
                   points="8,24 16,8 24,24"
                   fill="none"
@@ -225,22 +218,22 @@ export default function Home() {
                 />
               </svg>
               <span className="text-base font-extrabold text-white">
-                Driveway<span className="text-blue-400">AI</span>
+                Driveway<span className="text-emerald-400">AI</span>
               </span>
             </div>
             <a
-              href={isAuthenticated ? "/dashboard" : getLoginUrl("/estimator")}
+              href={secondaryCtaHref}
               className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-slate-100"
             >
-              {isAuthenticated ? "Dashboard" : "Sign In"}
+              Saved Projects
             </a>
           </div>
         </nav>
 
         <section className="border-b border-white/6 px-4 pb-8 pt-8">
           <div className="mx-auto flex max-w-xl flex-col gap-6">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-blue-200">
-              <span className="h-2 w-2 rounded-full bg-blue-400" />
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-emerald-200">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
               Powered by OpenAI Vision
             </div>
 
@@ -257,17 +250,17 @@ export default function Home() {
             <div className="flex flex-col gap-3">
               <a
                 href={primaryCtaHref}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(59,130,246,0.35)]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(16,185,129,0.35)]"
               >
                 {primaryCtaLabel}
                 <ArrowRight size={18} />
               </a>
               <a
-                href="/estimator"
+                href={secondaryCtaHref}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/6 px-5 py-3.5 text-base font-semibold text-slate-100"
               >
-                See Demo
-                <Camera size={18} />
+                View Projects
+                <Share2 size={18} />
               </a>
             </div>
 
@@ -287,7 +280,7 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-slate-400">Detected area</span>
-                <span className="font-bold text-blue-300">640 sq ft</span>
+                <span className="font-bold text-emerald-300">640 sq ft</span>
               </div>
             </div>
 
@@ -400,19 +393,19 @@ export default function Home() {
               {
                 icon: <Clock size={18} />,
                 title: "Fast capture",
-                desc: "Demo mode lets you test photo capture before creating an account.",
+                desc: "Grant permissions once and start capturing driveway photos right away.",
               },
               {
                 icon: <Shield size={18} />,
-                title: "Signup unlocks full access",
-                desc: "Create an account to save jobs, generate previews, and share projects.",
+                title: "Device workspace",
+                desc: "The app keeps estimates, AI previews, and saved projects tied to this device workspace automatically.",
               },
             ].map(item => (
               <div
                 key={item.title}
                 className="flex gap-3 rounded-2xl border border-white/8 bg-[#0d1729] p-4"
               >
-                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/12 text-blue-300">
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-300">
                   {item.icon}
                 </span>
                 <div>
@@ -432,23 +425,23 @@ export default function Home() {
               Ready to measure your driveway?
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              Start with a demo capture or create an account to unlock the full
-              estimator, pricing, previews, and saved projects.
+              Grant permissions once, capture the driveway, then build a full
+              material and labor estimate from the same workflow.
             </p>
             <div className="mt-5 flex flex-col gap-3">
               <a
                 href={primaryCtaHref}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-base font-bold text-white"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-base font-bold text-white"
               >
                 {primaryCtaLabel}
                 <ArrowRight size={18} />
               </a>
               <a
-                href="/estimator"
+                href={secondaryCtaHref}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/6 px-5 py-3.5 text-base font-semibold text-slate-100"
               >
-                Open Demo
-                <Zap size={18} />
+                Open Projects
+                <BarChart3 size={18} />
               </a>
             </div>
           </div>
@@ -467,7 +460,7 @@ export default function Home() {
       <div
         className="hidden min-[1120px]:block min-h-screen overflow-x-auto"
         style={{
-          background: "#060d1a",
+          background: "#0c120f",
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
         }}
@@ -475,7 +468,7 @@ export default function Home() {
         <div
           className="min-h-screen"
           style={{
-            background: "#060d1a",
+            background: "#0c120f",
             color: "#e2e8f0",
             fontFamily: "system-ui, sans-serif",
             minWidth: 1120,
@@ -512,24 +505,24 @@ export default function Home() {
         .float-anim { animation: float 4s ease-in-out infinite; }
         .scan-line {
           position: absolute; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+          background: linear-gradient(90deg, transparent, #10b981, transparent);
           animation: scan 3s ease-in-out infinite;
-          box-shadow: 0 0 8px #3b82f6;
+          box-shadow: 0 0 8px #10b981;
         }
-        .glow-blue  { box-shadow: 0 0 32px rgba(59,130,246,0.35); }
+        .glow-blue  { box-shadow: 0 0 32px rgba(16,185,129,0.28); }
         .glow-green { box-shadow: 0 0 24px rgba(16,185,129,0.25); }
         .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
         .btn-primary {
-          background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+          background: linear-gradient(135deg, #047857, #10b981);
           color: white; border: none; border-radius: 10px;
           padding: 14px 32px; font-size: 16px; font-weight: 700;
           cursor: pointer; transition: all 0.2s ease;
-          box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+          box-shadow: 0 4px 20px rgba(16,185,129,0.35);
           display: inline-flex; align-items: center; gap: 8px;
           text-decoration: none;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(59,130,246,0.55); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(16,185,129,0.5); }
         .btn-secondary {
           background: rgba(255,255,255,0.06); color: #cbd5e1;
           border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
@@ -564,7 +557,7 @@ export default function Home() {
               position: "sticky",
               top: 0,
               zIndex: 50,
-              background: "rgba(6,13,26,0.85)",
+              background: "rgba(12,18,15,0.88)",
               backdropFilter: "blur(16px)",
               borderBottom: "1px solid rgba(255,255,255,0.06)",
             }}
@@ -583,7 +576,7 @@ export default function Home() {
               {/* Logo */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="8" fill="#1d4ed8" />
+                  <rect width="32" height="32" rx="8" fill="#059669" />
                   <polygon
                     points="8,24 16,8 24,24"
                     fill="none"
@@ -611,37 +604,25 @@ export default function Home() {
                     letterSpacing: "-0.3px",
                   }}
                 >
-                  Driveway<span style={{ color: "#3b82f6" }}>AI</span>
+                  Driveway<span style={{ color: "#10b981" }}>AI</span>
                 </span>
               </div>
               {/* Nav actions */}
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                {isAuthenticated ? (
-                  <>
-                    <a
-                      href="/dashboard"
-                      className="btn-secondary"
-                      style={{ padding: "9px 18px", fontSize: 14 }}
-                    >
-                      Dashboard
-                    </a>
-                    <a
-                      href="/estimator"
-                      className="btn-primary"
-                      style={{ padding: "9px 20px", fontSize: 14 }}
-                    >
-                      New Estimate <ArrowRight size={14} />
-                    </a>
-                  </>
-                ) : (
-                  <a
-                    href={getLoginUrl("/estimator")}
-                    className="btn-primary"
-                    style={{ padding: "9px 22px", fontSize: 14 }}
-                  >
-                    Sign In Free <ArrowRight size={14} />
-                  </a>
-                )}
+                <a
+                  href="/dashboard"
+                  className="btn-secondary"
+                  style={{ padding: "9px 18px", fontSize: 14 }}
+                >
+                  Saved Projects
+                </a>
+                <a
+                  href="/estimator"
+                  className="btn-primary"
+                  style={{ padding: "9px 20px", fontSize: 14 }}
+                >
+                  Launch Estimator <ArrowRight size={14} />
+                </a>
               </div>
             </div>
           </nav>
@@ -665,7 +646,7 @@ export default function Home() {
                 height: 500,
                 borderRadius: "50%",
                 background:
-                  "radial-gradient(circle, rgba(29,78,216,0.18) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(16,185,129,0.16) 0%, transparent 70%)",
                 pointerEvents: "none",
               }}
             />
@@ -701,13 +682,13 @@ export default function Home() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    background: "rgba(59,130,246,0.12)",
-                    border: "1px solid rgba(59,130,246,0.25)",
+                    background: "rgba(16,185,129,0.12)",
+                    border: "1px solid rgba(16,185,129,0.25)",
                     borderRadius: 99,
                     padding: "5px 14px",
                     marginBottom: 24,
                     fontSize: 13,
-                    color: "#93c5fd",
+                    color: "#a7f3d0",
                     fontWeight: 600,
                   }}
                 >
@@ -716,7 +697,7 @@ export default function Home() {
                       width: 7,
                       height: 7,
                       borderRadius: "50%",
-                      background: "#3b82f6",
+                      background: "#10b981",
                       display: "inline-block",
                       position: "relative",
                     }}
@@ -726,7 +707,7 @@ export default function Home() {
                         position: "absolute",
                         inset: -3,
                         borderRadius: "50%",
-                        background: "#3b82f6",
+                        background: "#10b981",
                         animation: "pulse-ring 1.5s ease-out infinite",
                       }}
                     />
@@ -749,7 +730,7 @@ export default function Home() {
                   <br />
                   <span
                     style={{
-                      background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
+                      background: "linear-gradient(135deg, #10b981, #f59e0b)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                     }}
@@ -782,17 +763,11 @@ export default function Home() {
                     marginBottom: 40,
                   }}
                 >
-                  {isAuthenticated ? (
-                    <a href="/estimator" className="btn-primary">
-                      Start Estimating <ArrowRight size={16} />
-                    </a>
-                  ) : (
-                    <a href={getLoginUrl("/estimator")} className="btn-primary">
-                      Get Started Free <ArrowRight size={16} />
-                    </a>
-                  )}
-                  <a href="/estimator" className="btn-secondary">
-                    See Demo
+                  <a href="/estimator" className="btn-primary">
+                    Open Estimator <ArrowRight size={16} />
+                  </a>
+                  <a href="/dashboard" className="btn-secondary">
+                    View Projects
                   </a>
                 </div>
 
@@ -1312,23 +1287,20 @@ export default function Home() {
                   flexWrap: "wrap",
                 }}
               >
-                {isAuthenticated ? (
-                  <a
-                    href="/estimator"
-                    className="btn-primary"
-                    style={{ fontSize: 17, padding: "16px 36px" }}
-                  >
-                    Start Estimating <ArrowRight size={18} />
-                  </a>
-                ) : (
-                  <a
-                    href={getLoginUrl("/estimator")}
-                    className="btn-primary"
-                    style={{ fontSize: 17, padding: "16px 36px" }}
-                  >
-                    Get Started Free <ArrowRight size={18} />
-                  </a>
-                )}
+                <a
+                  href="/estimator"
+                  className="btn-primary"
+                  style={{ fontSize: 17, padding: "16px 36px" }}
+                >
+                  Open Estimator <ArrowRight size={18} />
+                </a>
+                <a
+                  href="/dashboard"
+                  className="btn-secondary"
+                  style={{ fontSize: 17, padding: "16px 36px" }}
+                >
+                  Saved Projects
+                </a>
               </div>
             </div>
           </section>

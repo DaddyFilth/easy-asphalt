@@ -86,6 +86,9 @@ export default function SharedProject() {
   const materialCost = project.materialCost || project.totalCost;
   const hasLaborQuote =
     !!project.contractorPricePerSquareFoot && !!project.laborCost;
+  const additionalCosts = Array.isArray(project.additionalCosts)
+    ? project.additionalCosts
+    : [];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
@@ -250,6 +253,32 @@ export default function SharedProject() {
                   {project.totalCost}
                 </p>
               </div>
+              {additionalCosts.length > 0 && (
+                <div className="rounded-md border border-emerald-500/20 bg-slate-900/60 p-3">
+                  <p className="text-sm font-semibold text-emerald-300">
+                    Accepted Job Add-ons
+                  </p>
+                  <div className="mt-2 space-y-2 text-sm">
+                    {additionalCosts.map((item: any, index: number) => (
+                      <div
+                        key={`${item.label}-${index}`}
+                        className="flex justify-between text-slate-200"
+                      >
+                        <span>{item.label}</span>
+                        <span>${Number(item.amount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {project.finalInvoiceTotal && (
+                <div>
+                  <p className="text-slate-400 text-sm">Final Invoice Total</p>
+                  <p className="text-3xl font-bold text-emerald-400">
+                    {project.finalInvoiceTotal}
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-slate-400">
                 Material pricing excludes labor unless a contractor quote is
                 provided.

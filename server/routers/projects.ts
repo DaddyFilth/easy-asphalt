@@ -86,6 +86,10 @@ const cornerPointSchema = z.object({
   x: z.number().finite().min(0).max(100),
   y: z.number().finite().min(0).max(100),
 });
+const additionalCostItemSchema = z.object({
+  label: z.string().trim().min(1).max(80),
+  amount: z.number().finite().min(0).max(1_000_000),
+});
 const uploadPhotoInputSchema = z.object({
   photoBase64: z.string(),
   photoName: z.string().min(1).max(160),
@@ -110,12 +114,6 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
-const DEMO_CAPTURE_LIMIT = 5;
-const DEMO_CAPTURE_WINDOW_MS = 15 * 60_000;
-const demoCaptureAttempts = new Map<
-  string,
-  { count: number; resetAt: number }
->();
 
 function formatUsd(value: number) {
   return currencyFormatter.format(value);
@@ -124,6 +122,22 @@ function formatUsd(value: number) {
 function parseCurrencyAmount(value: string) {
   const parsed = Number.parseFloat(value.replace(/[^0-9.-]+/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseAdditionalCosts(additionalCostsJson: string | null | undefined) {
+  if (!additionalCostsJson) return [];
+
+  try {
+    const parsed = JSON.parse(additionalCostsJson) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map(item => additionalCostItemSchema.safeParse(item))
+      .filter(result => result.success)
+      .map(result => result.data);
+  } catch {
+    return [];
+  }
 }
 
 function safePdfSlug(value: string | null | undefined) {
@@ -141,17 +155,6 @@ function getBaseUrl(req: Request) {
   if (envBaseUrl) return envBaseUrl.replace(/\/+$/, "");
 
   return getRequestOrigin(req) || "http://localhost:3000";
-}
-
-function getRequestAddress(req: Request) {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  const fromHeader = Array.isArray(forwardedFor)
-    ? forwardedFor[0]
-    : typeof forwardedFor === "string"
-      ? forwardedFor.split(",")[0]
-      : undefined;
-
-  return (fromHeader || req.ip || "guest").trim().slice(0, 128);
 }
 
 function buildMaterialPreviewPrompt(
@@ -184,36 +187,6 @@ function buildMaterialPreviewPrompt(
   );
 
   return promptSections.join(" ");
-}
-
-function assertDemoCaptureWithinLimit(req: Request) {
-  const requestAddress = getRequestAddress(req);
-  const now = Date.now();
-  const existing = demoCaptureAttempts.get(requestAddress);
-
-  if (!existing || existing.resetAt <= now) {
-    demoCaptureAttempts.set(requestAddress, {
-      count: 1,
-      resetAt: now + DEMO_CAPTURE_WINDOW_MS,
-    });
-    return;
-  }
-
-  if (existing.count >= DEMO_CAPTURE_LIMIT) {
-    const retryAfterMinutes = Math.max(
-      1,
-      Math.ceil((existing.resetAt - now) / 60_000)
-    );
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: `Demo capture limit reached. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? "" : "s"}.`,
-    });
-  }
-
-  demoCaptureAttempts.set(requestAddress, {
-    count: existing.count + 1,
-    resetAt: existing.resetAt,
-  });
 }
 
 async function uploadPhotoAndDetectEdgesForOwner(
@@ -265,6 +238,9 @@ function toSharedProject(project: Project) {
     contractorPricePerSquareFoot: project.contractorPricePerSquareFoot,
     laborCost: project.laborCost,
     totalCost: project.totalCost,
+    additionalCosts: parseAdditionalCosts(project.additionalCostsJson),
+    finalInvoiceTotal: project.finalInvoiceTotal,
+    acceptedAt: project.acceptedAt,
     zipCode: project.zipCode,
     previewImageUrl: project.previewImageUrl,
     notes: project.notes,
@@ -303,6 +279,7 @@ export const projectsRouter = router({
     return projects.map(p => ({
       ...p,
       cornerPoints: p.cornerPoints ? JSON.parse(p.cornerPoints) : null,
+      additionalCosts: parseAdditionalCosts(p.additionalCostsJson),
     }));
   }),
 
@@ -325,6 +302,7 @@ export const projectsRouter = router({
         cornerPoints: project.cornerPoints
           ? JSON.parse(project.cornerPoints)
           : null,
+        additionalCosts: parseAdditionalCosts(project.additionalCostsJson),
       };
     }),
 
@@ -343,29 +321,6 @@ export const projectsRouter = router({
         );
       } catch (error) {
         console.error("[Projects] Edge detection error:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to detect driveway edges",
-        });
-      }
-    }),
-
-  /**
-   * Guest demo capture: capture and edge detection only. Pricing, previews,
-   * and saved projects stay locked behind authenticated routes.
-   */
-  uploadPhotoAndDetectEdgesDemo: publicProcedure
-    .input(uploadPhotoInputSchema)
-    .mutation(async ({ ctx, input }) => {
-      try {
-        assertDemoCaptureWithinLimit(ctx.req);
-        return await uploadPhotoAndDetectEdgesForOwner(ctx.req, "demo", input);
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-
-        console.error("[Projects] Demo edge detection error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to detect driveway edges",
@@ -554,6 +509,9 @@ export const projectsRouter = router({
           previewImageUrl: input.previewImageUrl,
           previewImageKey: input.previewImageKey,
           contractorEmail: input.contractorEmail,
+          additionalCostsJson: null,
+          finalInvoiceTotal: null,
+          acceptedAt: null,
           notes: input.notes,
         });
 
@@ -618,6 +576,52 @@ export const projectsRouter = router({
           message: "Failed to create project",
         });
       }
+    }),
+
+  finalizeInvoice: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int().positive(),
+        additionalCosts: z.array(additionalCostItemSchema).max(12),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const currentUser = ctx.user!;
+      const project = await getProjectById(input.projectId);
+
+      if (!project || project.userId !== currentUser.id) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      const additionalCosts = input.additionalCosts.map(item => ({
+        label: item.label.trim(),
+        amount: Number(item.amount.toFixed(2)),
+      }));
+      const additionalCostsTotalValue = additionalCosts.reduce(
+        (sum, item) => sum + item.amount,
+        0
+      );
+      const baseEstimateTotal = parseCurrencyAmount(
+        project.totalCost || "$0.00"
+      );
+      const finalInvoiceTotal = formatUsd(
+        baseEstimateTotal + additionalCostsTotalValue
+      );
+
+      await updateProject(project.id, {
+        additionalCostsJson: JSON.stringify(additionalCosts),
+        finalInvoiceTotal,
+        acceptedAt: new Date(),
+      });
+
+      return {
+        additionalCosts,
+        additionalCostsTotal: formatUsd(additionalCostsTotalValue),
+        finalInvoiceTotal,
+      };
     }),
 
   /**
