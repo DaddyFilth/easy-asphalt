@@ -918,23 +918,11 @@ export default function Estimator() {
                       <p className="text-slate-300">Processing photo...</p>
                     </>
                   ) : (
-                    <>
-                      {isDraggingOver ? (
-                        <Upload className="w-12 h-12 text-blue-300" />
-                      ) : (
-                        <Camera className="w-12 h-12 text-slate-400" />
-                      )}
-                      <div>
-                        <p className="text-white font-semibold">
-                          {isDraggingOver
-                            ? "Drop image to upload"
-                            : "Take a photo or upload an image"}
-                        </p>
-                        <p className="text-slate-400 text-sm">
-                          JPG, PNG, or WebP up to 10 MB
-                        </p>
-                      </div>
-                    </>
+                    isDraggingOver ? (
+                      <Upload className="w-12 h-12 text-blue-300" />
+                    ) : (
+                      <Camera className="w-12 h-12 text-slate-400" />
+                    )
                   )}
                   <div className="grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
                     <Button

@@ -567,24 +567,47 @@ export async function takeDrivewayPhotoWithCamera() {
 export async function chooseDrivewayPhotoFromGallery() {
   if (!isNativeMobileApp()) return null;
 
-  const permission = await requestNativePhotoPermission();
-  if (permission !== "granted") {
-    throw new Error("Photo library permission is required to upload an image");
+  // Try launching the gallery picker first. On some platforms the picker
+  // will allow the user to select an image without needing a separate
+  // permission grant. If the call fails due to permission, request the
+  // native photos permission once and try again.
+  try {
+    const media = await DeviceCamera.chooseFromGallery({
+      mediaType: MediaTypeSelection.Photo,
+      allowMultipleSelection: false,
+      quality: 90,
+      targetWidth: 1920,
+      targetHeight: 1920,
+      correctOrientation: true,
+      includeMetadata: true,
+    });
+    const photo = media.results[0];
+    if (!photo) return null;
+    return mediaResultToFile(photo, "gallery");
+  } catch (err) {
+    // If selection was cancelled, rethrow so callers can detect cancellation.
+    if (isMediaSelectionCanceled(err)) throw err;
+
+    // Request photos permission once and retry. If still failing, surface
+    // the original error to the caller.
+    const permission = await requestNativePhotoPermission();
+    if (permission !== "granted") {
+      throw new Error("Photo library permission is required to upload an image");
+    }
+
+    const media = await DeviceCamera.chooseFromGallery({
+      mediaType: MediaTypeSelection.Photo,
+      allowMultipleSelection: false,
+      quality: 90,
+      targetWidth: 1920,
+      targetHeight: 1920,
+      correctOrientation: true,
+      includeMetadata: true,
+    });
+    const photo = media.results[0];
+    if (!photo) return null;
+    return mediaResultToFile(photo, "gallery");
   }
-
-  const media = await DeviceCamera.chooseFromGallery({
-    mediaType: MediaTypeSelection.Photo,
-    allowMultipleSelection: false,
-    quality: 90,
-    targetWidth: 1920,
-    targetHeight: 1920,
-    correctOrientation: true,
-    includeMetadata: true,
-  });
-  const photo = media.results[0];
-
-  if (!photo) return null;
-  return mediaResultToFile(photo, "gallery");
 }
 
 export function isMediaSelectionCanceled(error: unknown) {

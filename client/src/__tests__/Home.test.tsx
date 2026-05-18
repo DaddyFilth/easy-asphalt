@@ -21,12 +21,12 @@ describe("Home landing page", () => {
     const html = renderHome();
     expect(html).toContain("Open Estimator");
     expect(html).toContain("Saved Projects");
-    expect(html).toContain('href="/estimator"');
+    expect(html).toContain('href="/estimator?start=upload"');
     expect(html).toContain('href="/dashboard"');
   });
 
-  it("mentions device permissions for capture-first workflow", () => {
-    expect(renderHome()).toMatch(/grant permissions once/i);
+  it("mentions starting with a driveway photo", () => {
+    expect(renderHome()).toMatch(/start with a driveway photo/i);
   });
 
   it("shows the four step titles", () => {

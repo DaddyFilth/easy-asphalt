@@ -1,7 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import { Suspense, lazy } from "react";
 import { Route, Switch } from "wouter";
-import DevicePermissionGate from "./components/DevicePermissionGate";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
@@ -26,24 +25,16 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Switch>
           <Route path={"/"}>
-            <DevicePermissionGate>
-              <Home />
-            </DevicePermissionGate>
+            <Home />
           </Route>
           <Route path={"/estimator"}>
-            <DevicePermissionGate>
-              <Estimator />
-            </DevicePermissionGate>
+            <Estimator />
           </Route>
           <Route path={"/dashboard"}>
-            <DevicePermissionGate>
-              <Dashboard />
-            </DevicePermissionGate>
+            <Dashboard />
           </Route>
           <Route path={"/project/:projectId"}>
-            <DevicePermissionGate>
-              <ProjectDetail />
-            </DevicePermissionGate>
+            <ProjectDetail />
           </Route>
           <Route path={"/share/:shareToken"} component={SharedProject} />
 

@@ -29,7 +29,7 @@ type Step = {
   icon: LucideIcon;
 };
 
-const primaryCtaHref = "/estimator";
+const primaryCtaHref = "/estimator?start=upload";
 const secondaryCtaHref = "/dashboard";
 
 const featureButtons: FeatureButton[] = [
@@ -66,7 +66,7 @@ const featureButtons: FeatureButton[] = [
 const steps: Step[] = [
   {
     title: "Capture",
-    copy: "Grant permissions once, then open the camera or upload a driveway photo.",
+    copy: "Start with a driveway photo, then measure and quote.",
     icon: Camera,
   },
   {
