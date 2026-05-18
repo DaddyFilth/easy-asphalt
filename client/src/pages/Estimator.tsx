@@ -63,7 +63,22 @@ import {
   type CornerPoint,
 } from "@shared/geometry";
 import { toast } from "sonner";
-import { Loader2, Upload, Camera, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Camera,
+  CheckCircle2,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
+  Ruler,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+  Upload,
+  Wand2,
+} from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Estimator() {
@@ -85,6 +100,11 @@ export default function Estimator() {
   const [estimateDecisionMode, setEstimateDecisionMode] = useState<
     "decision" | "accepted"
   >("decision");
+  const [robotGuideOpen, setRobotGuideOpen] = useState(true);
+  const [robotCommand, setRobotCommand] = useState("");
+  const [robotResponse, setRobotResponse] = useState(
+    "Tell me what to do inside the estimator."
+  );
   const [savedProjectId, setSavedProjectId] = useState<number | null>(null);
   const [additionalCosts, setAdditionalCosts] = useState<AdditionalCostItem[]>([
     createAdditionalCostItem(),
@@ -360,14 +380,20 @@ export default function Estimator() {
             dimensions.width,
             dimensions.height
           ),
+        selectedMaterial: prev.selectedMaterial ?? "hotmix",
+        previewPrompt:
+          prev.previewPrompt.trim() ||
+          defaultPreviewPromptByMaterial[prev.selectedMaterial ?? "hotmix"],
         previewUrl: null,
         previewKey: null,
         previewMaterial: null,
         previewUsedFallback: false,
       }));
 
-      toast.success(`Driveway detected! ${result.squareFeet} sq ft`);
-      setStep("adjust");
+      toast.success(
+        `Driveway detected: ${result.squareFeet} sq ft. Opening image generator.`
+      );
+      setStep("material");
     } catch (error) {
       toast.error("Failed to process photo");
       console.error(error);
@@ -759,50 +785,283 @@ export default function Estimator() {
     },
     { id: "gravel", name: materialDisplayNames.gravel, icon: "⚫" },
   ];
+  const workflowSteps: Array<{
+    id: Step;
+    label: string;
+    icon: typeof Camera;
+  }> = [
+    { id: "upload", label: "Capture", icon: Camera },
+    { id: "adjust", label: "Measure", icon: Ruler },
+    { id: "material", label: "Generate", icon: Sparkles },
+    { id: "preview", label: "Compare", icon: ImageIcon },
+    { id: "summary", label: "Quote", icon: FileText },
+  ];
+  const currentStepIndex = workflowSteps.findIndex(item => item.id === step);
+  const robotGuide: Record<
+    Step,
+    { title: string; message: string; action: string }
+  > = {
+    upload: {
+      title: "Photo first",
+      message:
+        "Take a straight-on driveway photo or upload one. I will send it straight into the AI generator after detection.",
+      action: "Capture or upload",
+    },
+    adjust: {
+      title: "Tune the outline",
+      message:
+        "Drag the corner handles only if the driveway boundary looks off. The area updates as you move them.",
+      action: "Confirm measurement",
+    },
+    material: {
+      title: "Generate the look",
+      message:
+        "Choose a material and prompt style. ZIP pricing is helpful for quotes, but the AI preview can run right away.",
+      action: "Generate preview",
+    },
+    preview: {
+      title: "Compare with the client",
+      message:
+        "Switch between the static AI render and live overlay. Regenerate if the finish needs a different texture.",
+      action: "Approve preview",
+    },
+    summary: {
+      title: "Close the quote",
+      message:
+        "Add labor, notes, and client details. Save the estimate, then create a final invoice if they accept.",
+      action: "Save estimate",
+    },
+  };
+  const canVisitStep = (targetStep: Step) => {
+    if (targetStep === "upload") return true;
+    if (targetStep === "adjust") return !!state.photoUrl;
+    if (targetStep === "material") return !!state.photoUrl;
+    if (targetStep === "preview") return !!state.previewUrl;
+    if (targetStep === "summary") return !!state.photoUrl && !!state.selectedMaterial;
+    return false;
+  };
+
+  const materialFromCommand = (command: string): Material | null => {
+    if (command.includes("milling")) return "millings";
+    if (command.includes("tar") || command.includes("chip")) {
+      return "tar_and_chip";
+    }
+    if (command.includes("gravel")) return "gravel";
+    if (command.includes("hot") || command.includes("asphalt")) {
+      return "hotmix";
+    }
+    return null;
+  };
+
+  const generatePreviewFromRobot = async (material: Material) => {
+    if (!state.photoUrl) {
+      setRobotResponse("I need a driveway photo first. Try: take photo.");
+      setStep("upload");
+      return;
+    }
+
+    const prompt =
+      state.previewPrompt.trim() || defaultPreviewPromptByMaterial[material];
+
+    setLoading(true);
+    try {
+      const result = await generatePreviewMutation.mutateAsync({
+        photoUrl: state.photoUrl,
+        photoMimeType: state.photoMimeType || "image/jpeg",
+        material,
+        editPrompt: prompt,
+      });
+
+      setState(prev => ({
+        ...prev,
+        selectedMaterial: material,
+        previewPrompt: prompt,
+        previewUrl: result.previewUrl,
+        previewKey: result.previewKey ?? null,
+        previewMaterial: material,
+        previewUsedFallback: result.usedFallback ?? false,
+      }));
+      setPreviewMode("static");
+      setStep("preview");
+      setRobotResponse(
+        `Done. I generated a ${materialDisplayNames[material]} preview.`
+      );
+      toast.success("Robot generated the material preview");
+    } catch (error) {
+      setRobotResponse("I could not generate the preview. Check the AI service and try again.");
+      toast.error("Failed to generate preview");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runRobotCommand = async (rawCommand: string) => {
+    const command = rawCommand.trim().toLowerCase();
+    if (!command) return;
+
+    setRobotCommand("");
+    setRobotGuideOpen(true);
+
+    if (command.includes("take") || command.includes("camera")) {
+      setRobotResponse("Opening the camera. After capture, I will open the generator.");
+      await handleTakePhoto();
+      return;
+    }
+
+    if (command.includes("upload") || command.includes("gallery")) {
+      setRobotResponse("Opening photo upload. After selection, I will open the generator.");
+      await handleUploadPhoto();
+      return;
+    }
+
+    if (command.includes("adjust") || command.includes("outline") || command.includes("measure")) {
+      if (!state.photoUrl) {
+        setRobotResponse("I need a photo before I can adjust the outline.");
+        setStep("upload");
+        return;
+      }
+      setStep("adjust");
+      setRobotResponse("I opened the measurement editor. Drag the handles if the outline needs tuning.");
+      return;
+    }
+
+    if (command.includes("generate") || command.includes("preview") || command.includes("render")) {
+      const material = materialFromCommand(command) ?? state.selectedMaterial ?? "hotmix";
+      await generatePreviewFromRobot(material);
+      return;
+    }
+
+    const material = materialFromCommand(command);
+    if (material) {
+      handleMaterialSelect(material);
+      setStep("material");
+      setRobotResponse(`Selected ${materialDisplayNames[material]}. Say "generate preview" when ready.`);
+      return;
+    }
+
+    if (command.includes("live")) {
+      if (!state.previewUrl) {
+        setRobotResponse("Generate a preview first, then I can switch to live overlay.");
+        setStep(state.photoUrl ? "material" : "upload");
+        return;
+      }
+      setPreviewMode("live");
+      setStep("preview");
+      setRobotResponse("Switched to live camera overlay.");
+      return;
+    }
+
+    if (command.includes("static") || command.includes("compare")) {
+      if (!state.previewUrl) {
+        setRobotResponse("Generate a preview first, then I can show comparison.");
+        setStep(state.photoUrl ? "material" : "upload");
+        return;
+      }
+      setPreviewMode("static");
+      setStep("preview");
+      setRobotResponse("Showing the static AI preview for comparison.");
+      return;
+    }
+
+    if (command.includes("quote") || command.includes("summary")) {
+      if (!state.photoUrl || !state.selectedMaterial) {
+        setRobotResponse("I need a photo and material before opening the quote.");
+        setStep(state.photoUrl ? "material" : "upload");
+        return;
+      }
+      setStep("summary");
+      setRobotResponse("I opened the quote step. Add labor rate and project details.");
+      return;
+    }
+
+    if (command.includes("save")) {
+      setRobotResponse("I will try to save the estimate with the current details.");
+      await handleSaveProject();
+      return;
+    }
+
+    setRobotResponse(
+      "I can help with estimator tasks: take photo, upload, adjust outline, select gravel/asphalt, generate preview, live overlay, quote, or save estimate."
+    );
+  };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-[#08110d] via-[#0f1b15] to-[#18281e] p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen overflow-x-hidden bg-[#06100d] p-4 text-white md:p-8">
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
-            Driveway Sales Estimator
-          </h1>
-          <p className="text-slate-300">
-            Measure, visualize, and quote driveway installs right at the job
-            site
-          </p>
+        <div className="mb-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-100">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI driveway workflow
+            </p>
+            <h1 className="text-3xl font-black text-white sm:text-4xl">
+              Capture, generate, quote
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-100">
+              Take or upload a driveway photo, generate material previews,
+              adjust measurements when needed, and turn it into a sales quote.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/12 bg-black/30 p-2 text-center text-xs text-slate-100">
+            <div className="rounded-lg bg-white/8 px-3 py-2">
+              <p className="font-bold text-white">
+                {state.squareFeet ?? "--"}
+              </p>
+              <p>sq ft</p>
+            </div>
+            <div className="rounded-lg bg-white/8 px-3 py-2">
+              <p className="font-bold text-white">
+                {state.selectedMaterial
+                  ? materialDisplayNames[state.selectedMaterial]
+                  : "--"}
+              </p>
+              <p>material</p>
+            </div>
+            <div className="rounded-lg bg-white/8 px-3 py-2">
+              <p className="font-bold text-white">
+                {state.previewUrl ? "Ready" : "Open"}
+              </p>
+              <p>preview</p>
+            </div>
+          </div>
         </div>
 
         {/* Step Indicator */}
-        <div className="-mx-1 mb-8 overflow-x-auto pb-2">
-          <div className="flex min-w-max items-center gap-2 px-1 sm:justify-between">
-            {["upload", "adjust", "material", "preview", "summary"].map(
-              (s, i) => (
-                <div key={s} className="flex shrink-0 items-center">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${
-                      step === s
-                        ? "bg-blue-500 text-white"
-                        : [
-                              "upload",
-                              "adjust",
-                              "material",
-                              "preview",
-                              "summary",
-                            ].indexOf(step) > i
-                          ? "bg-green-500 text-white"
-                          : "bg-slate-600 text-slate-300"
-                    }`}
-                  >
-                    {i + 1}
-                  </div>
-                  {i < 4 && (
-                    <div className="mx-2 h-1 w-8 bg-slate-600 sm:w-12"></div>
+        <div className="-mx-1 mb-6 overflow-x-auto pb-2">
+          <div className="flex min-w-max items-center gap-2 px-1">
+            {workflowSteps.map((workflowStep, i) => {
+              const Icon = workflowStep.icon;
+              const isActive = step === workflowStep.id;
+              const isComplete = currentStepIndex > i;
+              const isReachable = canVisitStep(workflowStep.id);
+
+              return (
+                <button
+                  key={workflowStep.id}
+                  type="button"
+                  disabled={!isReachable}
+                  onClick={() => setStep(workflowStep.id)}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                    isActive
+                      ? "border-emerald-200/60 bg-emerald-400/18 text-white shadow-[0_0_24px_rgba(52,211,153,0.18)]"
+                      : isComplete
+                        ? "border-emerald-300/25 bg-emerald-400/10 text-emerald-50"
+                        : isReachable
+                          ? "border-white/14 bg-white/8 text-slate-100 hover:bg-white/12"
+                          : "border-white/8 bg-black/20 text-slate-400"
+                  }`}
+                >
+                  {isComplete ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <Icon className="h-4 w-4" />
                   )}
-                </div>
-              )
-            )}
+                  {workflowStep.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -933,6 +1192,7 @@ export default function Estimator() {
                     >
                       <Camera className="h-4 w-4" />
                       Take Photo
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                     <Button
                       type="button"
@@ -942,6 +1202,7 @@ export default function Estimator() {
                     >
                       <Upload className="h-4 w-4" />
                       Upload Image
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -1079,14 +1340,91 @@ export default function Estimator() {
         {step === "material" && (
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">
-                Step 3: Select Material
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Wand2 className="h-5 w-5 text-emerald-200" />
+                AI Image Generator
               </CardTitle>
               <CardDescription>
-                Choose the driveway material you want
+                Pick a surface, tune the prompt, then generate a client-ready
+                driveway preview from the captured photo.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {state.photoUrl && (
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div
+                    className="relative overflow-hidden rounded-xl border border-white/12 bg-black"
+                    style={{ aspectRatio: photoAspectRatio }}
+                  >
+                    <img
+                      src={state.photoUrl}
+                      alt="Captured driveway"
+                      className="h-full w-full object-cover"
+                    />
+                    {state.corners.length >= 3 && (
+                      <svg
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 h-full w-full"
+                        preserveAspectRatio="none"
+                        viewBox="0 0 100 100"
+                      >
+                        <polygon
+                          points={cornerPolygon}
+                          fill="rgba(52, 211, 153, 0.14)"
+                          stroke="rgb(110, 231, 183)"
+                          strokeWidth="0.75"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </svg>
+                    )}
+                    <div className="absolute left-3 top-3 rounded-full border border-black/30 bg-emerald-300 px-3 py-1 text-xs font-black text-emerald-950 shadow">
+                      Source image
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div className="rounded-xl border border-white/12 bg-white/8 p-4">
+                      <p className="flex items-center gap-2 text-sm font-bold text-white">
+                        <Ruler className="h-4 w-4 text-emerald-200" />
+                        Detected measurement
+                      </p>
+                      <p className="mt-2 text-3xl font-black text-white">
+                        {state.squareFeet ?? "--"} sq ft
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-100">
+                        {state.detectionDescription ||
+                          "AI mapped the driveway boundary. Fine-tune corners if the outline needs correction before quoting."}
+                      </p>
+                      {state.detectionConfidence != null && (
+                        <p className="mt-2 text-sm font-semibold text-emerald-100">
+                          Confidence {Math.round(state.detectionConfidence * 100)}%
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep("adjust")}
+                        className="border-white/20 bg-white/8 text-white hover:bg-white/14"
+                      >
+                        <SlidersHorizontal className="h-4 w-4" />
+                        Adjust outline
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setStep("upload")}
+                        className="border-white/20 bg-white/8 text-white hover:bg-white/14"
+                      >
+                        <Camera className="h-4 w-4" />
+                        New photo
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="pricing-zip" className="text-slate-200">
                   Pricing ZIP Code
@@ -1112,17 +1450,17 @@ export default function Estimator() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {materials.map(material => (
                   <button
                     key={material.id}
                     type="button"
                     aria-pressed={state.selectedMaterial === material.id}
                     onClick={() => handleMaterialSelect(material.id)}
-                    className={`p-4 rounded-lg border-2 transition ${
+                    className={`rounded-xl border-2 p-4 text-left transition ${
                       state.selectedMaterial === material.id
-                        ? "border-blue-500 bg-blue-500/10"
-                        : "border-slate-600 bg-slate-700/50 hover:border-slate-500"
+                        ? "border-emerald-300 bg-emerald-300/12 shadow-[0_0_22px_rgba(52,211,153,0.12)]"
+                        : "border-slate-600 bg-slate-700/50 hover:border-slate-400 hover:bg-slate-700"
                     }`}
                   >
                     <div className="text-3xl mb-2">{material.icon}</div>
@@ -1255,20 +1593,17 @@ export default function Estimator() {
                 onClick={handleGeneratePreview}
                 disabled={
                   !state.selectedMaterial ||
-                  !getPricingQuery.data ||
                   loading ||
-                  getPricingQuery.isLoading ||
                   getPricingQuery.isError
                 }
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="h-12 w-full bg-emerald-600 text-white hover:bg-emerald-700"
               >
-                {!state.zipCode
-                  ? "Enter ZIP to Load Pricing"
-                  : getPricingQuery.isLoading
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {getPricingQuery.isLoading
                     ? "Checking Pricing..."
                     : loading
-                      ? "Generating Preview..."
-                      : "Generate Material Preview"}
+                      ? "Generating AI Preview..."
+                      : "Generate AI Material Preview"}
               </Button>
             </CardContent>
           </Card>
@@ -1909,6 +2244,109 @@ export default function Estimator() {
           )}
         </DialogContent>
       </Dialog>
+
+      <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-6xl md:left-auto md:right-6 md:max-w-sm">
+        <div className="flex items-end gap-3 md:justify-end">
+          {robotGuideOpen && (
+            <div className="pointer-events-auto max-w-[calc(100%-4.5rem)] rounded-2xl border border-emerald-200/30 bg-[#06100d]/96 p-4 text-white shadow-[0_24px_90px_rgba(0,0,0,0.58)] backdrop-blur md:max-w-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-emerald-100">
+                    Estimator bot • {robotGuide[step].title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-50">
+                    {robotResponse || robotGuide[step].message}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRobotGuideOpen(false)}
+                  className="rounded-full border border-white/15 bg-white/10 px-2 py-1 text-xs font-bold text-slate-100 hover:bg-white/16"
+                  aria-label="Hide estimator bot"
+                >
+                  Hide
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/25 bg-emerald-300/12 px-3 py-1.5 text-xs font-bold text-emerald-50">
+                  {robotGuide[step].action}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+                {workflowSteps.map(item => (
+                  <button
+                    key={`bot-${item.id}`}
+                    type="button"
+                    disabled={!canVisitStep(item.id)}
+                    onClick={() => setStep(item.id)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                      step === item.id
+                        ? "border-emerald-200/60 bg-emerald-300/20 text-white"
+                        : canVisitStep(item.id)
+                          ? "border-white/15 bg-white/8 text-slate-100 hover:bg-white/14"
+                          : "border-white/8 bg-black/20 text-slate-500"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <form
+                className="mt-3 flex gap-2"
+                onSubmit={event => {
+                  event.preventDefault();
+                  void runRobotCommand(robotCommand);
+                }}
+              >
+                <Input
+                  value={robotCommand}
+                  onChange={event => setRobotCommand(event.target.value)}
+                  placeholder='Try "generate gravel preview"'
+                  className="h-10 border-emerald-200/20 bg-black/45 text-white placeholder:text-slate-300"
+                />
+                <Button
+                  type="submit"
+                  disabled={loading || !robotCommand.trim()}
+                  className="h-10 bg-emerald-500 px-3 text-emerald-950 hover:bg-emerald-300"
+                >
+                  Go
+                </Button>
+              </form>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[
+                  "take photo",
+                  "upload",
+                  "generate asphalt preview",
+                  "adjust outline",
+                  "open quote",
+                ].map(example => (
+                  <button
+                    key={example}
+                    type="button"
+                    onClick={() => void runRobotCommand(example)}
+                    className="rounded-full border border-white/10 bg-white/6 px-2.5 py-1 text-[11px] font-semibold text-slate-100 hover:bg-white/12"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setRobotGuideOpen(open => !open)}
+            className="pointer-events-auto relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-emerald-100/45 bg-emerald-400 text-emerald-950 shadow-[0_18px_50px_rgba(16,185,129,0.35)] transition hover:-translate-y-0.5 hover:bg-emerald-300"
+            aria-label={
+              robotGuideOpen ? "Hide estimator bot" : "Show estimator bot"
+            }
+          >
+            <Bot className="h-9 w-9" />
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#06100d] bg-white text-[10px] font-black text-emerald-900">
+              AI
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
