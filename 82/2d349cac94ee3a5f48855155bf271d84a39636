@@ -1,0 +1,34 @@
+android/app/src/main/java/com/daddyfilth/drivewayestimator/DevicePermissionsPlugin.java
+  s_ea32ec7bb22571::t_9fa00835ebe657 18-38,49-50,52,57-58,60,67,71-72,74,76-79,81-83,86-87,91
+  s_ea32ec7bb22571::t_00569fbdbcfb9b 80
+  s_ea32ec7bb22571::t_911b5c52d0b40a 1-17,39-48,51,53-56,59,61-66,68-70,73,75,84-85,88-90,92-94
+client/src/index.css
+  s_ea32ec7bb22571::t_f7fda5019914c6 65,87,89,91,95,109,116-151
+client/src/components/DevicePermissionGate.tsx
+  s_ea32ec7bb22571::t_ef05ed6bfab7c2 12,15,17-19,28-36,48-49,59-60,63,65-69,73-78,83,85-93,95-106,115-117,119-122,125-126,128,130-131,133
+  s_ea32ec7bb22571::t_4e4343feac4599 37-39
+  s_ea32ec7bb22571::t_63ccbf16dd0984 4-9,20-26
+client/src/lib/deviceMedia.ts
+  s_ea32ec7bb22571::t_aa93d2f53a41bb 288-289,299-300,309-310,507-509
+  s_ea32ec7bb22571::t_6b53d667914b61 9,28-33,40,44-46,170-171,173-178,505-506,510-514
+  s_ea32ec7bb22571::t_5bc3de0bd186ca 82-112,120,123-125,133,136-140,143-169,179-195
+  s_ea32ec7bb22571::t_f1938ad9a77fa7 34-39,113-119,121-122,126-132,134-135,141-142,172
+android/app/src/main/java/com/daddyfilth/drivewayestimator/MainActivity.java
+  s_ea32ec7bb22571::t_911b5c52d0b40a 5-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "822d349cac94ee3a5f48855155bf271d84a39636",
+  "prompts": {},
+  "sessions": {
+    "s_ea32ec7bb22571": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3846-e969-7662-935a-c6257f339389",
+        "model": "gpt-5.5"
+      },
+      "human_author": "DaddyFilth <daddyfilthie@proton.me>"
+    }
+  }
+}
