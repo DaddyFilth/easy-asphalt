@@ -6,7 +6,7 @@ import {
   type CameraPermissionState,
   type MediaResult,
 } from "@capacitor/camera";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 
 export type DevicePermissionResult = "granted" | "denied";
@@ -25,9 +25,25 @@ export type DeviceConnectionSnapshot = {
   label: string;
 };
 export type PendingEstimatorAction = "gallery";
+type NativePermissionState =
+  | "granted"
+  | "denied"
+  | "prompt"
+  | "prompt-with-rationale";
+type DevicePermissionsPlugin = {
+  check: (options: {
+    permission: "camera" | "photos" | "location" | "bluetooth";
+  }) => Promise<{ state: NativePermissionState }>;
+  request: (options: {
+    permission: "camera" | "photos" | "location" | "bluetooth";
+  }) => Promise<{ state: NativePermissionState }>;
+};
 
 const PHOTO_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const PENDING_ESTIMATOR_ACTION_KEY = "easy-asphalt:pending-estimator-action";
+const DevicePermissions = registerPlugin<DevicePermissionsPlugin>(
+  "DevicePermissions"
+);
 
 export function isNativeMobileApp() {
   return Capacitor.isNativePlatform();
@@ -61,6 +77,120 @@ export function isAllowedPermissionState(
   state: CameraPermissionState | "prompt" | "prompt-with-rationale"
 ) {
   return state === "granted" || state === "limited";
+}
+
+type BrowserPermissionName =
+  | "camera"
+  | "geolocation"
+  | "local-fonts"
+  | "microphone"
+  | "notifications"
+  | "persistent-storage"
+  | "push"
+  | "screen-wake-lock";
+
+async function queryBrowserPermission(
+  name: BrowserPermissionName
+): Promise<DevicePermissionResult | null> {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) {
+    return null;
+  }
+
+  try {
+    const status = await navigator.permissions.query({
+      name,
+    } as PermissionDescriptor);
+
+    if (status.state === "granted") return "granted";
+    if (status.state === "denied") return "denied";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function checkNativeCameraPermission(): Promise<DevicePermissionResult | null> {
+  if (isNativeMobileApp()) {
+    try {
+      const status = await DevicePermissions.check({ permission: "camera" });
+      return status.state === "granted" ? "granted" : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return queryBrowserPermission("camera");
+}
+
+export async function checkNativePhotoPermission(): Promise<DevicePermissionResult | null> {
+  if (isNativeMobileApp()) {
+    try {
+      const status = await DevicePermissions.check({ permission: "photos" });
+      return status.state === "granted" ? "granted" : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return "granted";
+}
+
+export async function checkDeviceLocationPermission(): Promise<DevicePermissionResult | null> {
+  if (isNativeMobileApp()) {
+    try {
+      const status = await DevicePermissions.check({ permission: "location" });
+      return status.state === "granted" ? "granted" : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return queryBrowserPermission("geolocation");
+}
+
+export async function checkMotionSensorPermission(): Promise<DevicePermissionResult | null> {
+  const motionRequester = getMotionPermissionRequester("DeviceMotionEvent");
+  const orientationRequester = getMotionPermissionRequester(
+    "DeviceOrientationEvent"
+  );
+
+  return typeof motionRequester?.requestPermission === "function" ||
+    typeof orientationRequester?.requestPermission === "function"
+    ? null
+    : "granted";
+}
+
+export async function checkNetworkAccessPermission(): Promise<DevicePermissionResult | null> {
+  if (typeof navigator === "undefined") return null;
+
+  return navigator.onLine ? "granted" : "denied";
+}
+
+export async function checkBluetoothAccessPermission(): Promise<DevicePermissionResult | null> {
+  if (isNativeMobileApp()) {
+    try {
+      const status = await DevicePermissions.check({ permission: "bluetooth" });
+      return status.state === "granted" ? "granted" : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const available = await getBluetoothAvailability();
+
+  if (available !== true) return available === false ? "denied" : null;
+
+  const bluetooth = (
+    navigator as Navigator & {
+      bluetooth?: {
+        requestDevice?: (options: {
+          acceptAllDevices: boolean;
+        }) => Promise<unknown>;
+      };
+    }
+  ).bluetooth;
+
+  return typeof bluetooth?.requestDevice === "function" ? null : "granted";
 }
 
 export function normalizeMediaMimeType(
@@ -155,10 +285,8 @@ export async function requestNativeCameraPermission(): Promise<DevicePermissionR
   }
 
   try {
-    const status = await DeviceCamera.requestPermissions({
-      permissions: ["camera"],
-    });
-    return isAllowedPermissionState(status.camera) ? "granted" : "denied";
+    const status = await DevicePermissions.request({ permission: "camera" });
+    return status.state === "granted" ? "granted" : "denied";
   } catch {
     return "denied";
   }
@@ -168,10 +296,8 @@ export async function requestNativePhotoPermission(): Promise<DevicePermissionRe
   if (!isNativeMobileApp()) return "granted";
 
   try {
-    const status = await DeviceCamera.requestPermissions({
-      permissions: ["photos"],
-    });
-    return isAllowedPermissionState(status.photos) ? "granted" : "denied";
+    const status = await DevicePermissions.request({ permission: "photos" });
+    return status.state === "granted" ? "granted" : "denied";
   } catch {
     return "denied";
   }
@@ -180,10 +306,8 @@ export async function requestNativePhotoPermission(): Promise<DevicePermissionRe
 export async function requestDeviceLocationPermission(): Promise<DevicePermissionResult> {
   if (isNativeMobileApp()) {
     try {
-      const status = await Geolocation.requestPermissions({
-        permissions: ["location"],
-      });
-      return status.location === "granted" ? "granted" : "denied";
+      const status = await DevicePermissions.request({ permission: "location" });
+      return status.state === "granted" ? "granted" : "denied";
     } catch {
       return "denied";
     }
@@ -377,6 +501,17 @@ export async function getBluetoothAvailability(): Promise<boolean | null> {
 
 export async function requestBluetoothAccessPermission(): Promise<DevicePermissionResult> {
   if (typeof navigator === "undefined") return "denied";
+
+  if (isNativeMobileApp()) {
+    try {
+      const status = await DevicePermissions.request({
+        permission: "bluetooth",
+      });
+      return status.state === "granted" ? "granted" : "denied";
+    } catch {
+      return "denied";
+    }
+  }
 
   const bluetooth = (
     navigator as Navigator & {
