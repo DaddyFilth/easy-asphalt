@@ -1,0 +1,34 @@
+client/src/__tests__/Home.test.tsx
+  h_3de1f45e8c8149 24
+  s_7ff33f46e11f65::t_e6a68b843a6bbb 28-29
+client/src/pages/Home.tsx
+  s_7ff33f46e11f65::t_2dfda167ef421b 32
+  s_7ff33f46e11f65::t_ee21a568dc2c08 69
+client/src/pages/Estimator.tsx
+  h_3de1f45e8c8149 925
+client/src/App.tsx
+  h_3de1f45e8c8149 28,31,34,37
+client/src/lib/deviceMedia.ts
+  s_7ff33f46e11f65::t_8c9190a56e553a 570-596,598-610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a891b362d76615d43fe65b086e8254a5ade80a86",
+  "prompts": {},
+  "humans": {
+    "h_3de1f45e8c8149": {
+      "author": "DaddyFilth <daddyfilthie@proton.me>"
+    }
+  },
+  "sessions": {
+    "s_7ff33f46e11f65": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "8bc64690-f3eb-431a-9a70-4d2e6bb2a82e",
+        "model": "gpt-5-mini"
+      },
+      "human_author": "DaddyFilth <daddyfilthie@proton.me>"
+    }
+  }
+}
