@@ -28,6 +28,11 @@ export default function EstimatorPage() {
   } | null>(null);
 
   const calculateEstimate = () => {
+    if (form.squareFootage <= 0 || form.depth <= 0) {
+      setEstimate(null);
+      return;
+    }
+
     const cubicFeet = form.squareFootage * (form.depth / 12);
     const tons = (cubicFeet * 145) / 2000;
     const materialCost = tons * 120;
