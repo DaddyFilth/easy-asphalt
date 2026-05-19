@@ -265,7 +265,7 @@ importers:
         version: 6.0.1(vite@8.0.12(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.21.0))
       autoprefixer:
         specifier: ^10.5.0
-        version: 10.5.0(postcss@8.5.14)
+        version: 10.5.0(postcss@8.5.15)
       drizzle-kit:
         specifier: ^0.18.1
         version: 0.18.1
@@ -273,8 +273,8 @@ importers:
         specifier: ^0.28.0
         version: 0.28.0
       postcss:
-        specifier: ^8.5.14
-        version: 8.5.14
+        specifier: ^8.5.15
+        version: 8.5.15
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -296,12 +296,6 @@ importers:
       vitest:
         specifier: ^4.1.6
         version: 4.1.6(@opentelemetry/api@1.9.0)(@types/node@24.12.4)(vite@8.0.12(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.21.0))
-
-  client: {}
-
-  server: {}
-
-  shared: {}
 
 packages:
 
@@ -3903,8 +3897,8 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.5.14:
-    resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
+  postcss@8.5.15:
+    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
 
   prettier@3.8.3:
@@ -6799,13 +6793,13 @@ snapshots:
 
   at-least-node@1.0.0: {}
 
-  autoprefixer@10.5.0(postcss@8.5.14):
+  autoprefixer@10.5.0(postcss@8.5.15):
     dependencies:
       browserslist: 4.28.2
       caniuse-lite: 1.0.30001792
       fraction.js: 5.3.4
       picocolors: 1.1.1
-      postcss: 8.5.14
+      postcss: 8.5.15
       postcss-value-parser: 4.2.0
 
   aws-ssl-profiles@1.1.2: {}
@@ -8564,7 +8558,7 @@ snapshots:
 
   postcss-value-parser@4.2.0: {}
 
-  postcss@8.5.14:
+  postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
       picocolors: 1.1.1
@@ -9170,7 +9164,7 @@ snapshots:
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
-      postcss: 8.5.14
+      postcss: 8.5.15
       rolldown: 1.0.0
       tinyglobby: 0.2.16
     optionalDependencies:
