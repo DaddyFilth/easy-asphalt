@@ -1,43 +1,30 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import ImageUploadPanel from './components/ImageUploadPanel';
+import Link from "next/link";
 
 export default function Home() {
-  const [selectedImage, setSelectedImage] = useState<{ file: File; preview: string } | null>(null);
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">🛣️</span>
-            <h1 className="text-3xl md:text-4xl font-bold text-white">Easy Asphalt</h1>
-          </div>
-          <p className="text-slate-300">Driveway Estimator Pro</p>
-        </div>
-
-        {/* Main Content */}
-        <div>
-          {/* Image Upload */}
-          <ImageUploadPanel
-            onImageSelected={(file, preview) => {
-              setSelectedImage({ file, preview });
-            }}
-          />
-
-          {/* Selected Image Info */}
-          {selectedImage && (
-            <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <p className="text-blue-300 text-sm">
-                ✓ Image selected: <span className="font-medium">{selectedImage.file.name}</span>
-              </p>
-              <p className="text-blue-300 text-sm mt-1">
-                Size: {(selectedImage.file.size / 1024 / 1024).toFixed(2)}MB
-              </p>
-            </div>
-          )}
+    <main className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+      <div className="max-w-2xl w-full text-center space-y-8">
+        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white">
+          Asphalt Paving Estimator
+        </h1>
+        <p className="text-lg text-slate-600 dark:text-slate-300">
+          Professional paving project management and cost estimation tools for contractors.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/dashboard"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            Go to Dashboard
+          </Link>
+          <Link
+            href="/estimator"
+            className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-semibold rounded-lg transition-colors"
+          >
+            New Estimate
+          </Link>
         </div>
       </div>
     </main>
