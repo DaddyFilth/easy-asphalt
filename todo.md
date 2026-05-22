@@ -30,8 +30,8 @@
 - [x] Build material selector grid (hotmix, millings, tar and chip, gravel)
 - [x] Display material pricing and quantity needed
 - [x] Create projects dashboard page
-- [x ] Add touch/pointer event support for mobile corner dragging
-- [x ] Recalculate square footage when corners are adjusted
+- [x] Add touch/pointer event support for mobile corner dragging
+- [x] Recalculate square footage when corners are adjusted
 - [ ] Add permission denied/unavailable error handling for camera
 
 ## Phase 4: Frontend - Visualization & Sharing
@@ -56,9 +56,9 @@
 
 ## Phase 6: Deployment & Polish
 
-- [x ] Create final checkpoint
+- [x] Create final checkpoint
 - [ ] Verify all features working in production
-- [x ] Document API endpoints and usage
+- [x] Document API endpoints and usage
 - [ ] Prepare for user delivery
 
 ## Production Readiness Notes
