@@ -39,7 +39,7 @@ const featureButtons: FeatureButton[] = [
   {
     title: "Capture",
     detail: "Camera or upload",
-    href: "/estimator?feature=capture",
+    href: "/camera",
     icon: Camera,
     accent: "#39ff14",
   },
@@ -320,96 +320,20 @@ export default function Home() {
           </div>
 
           <div className="landing-rise relative mx-auto w-full max-w-sm lg:max-w-md">
-            {/* Phone frame */}
+            {/* Driveway preview image */}
             <div className="overflow-hidden rounded-[2.5rem] border-4 border-zinc-700 bg-black shadow-[0_32px_90px_rgba(0,0,0,0.55)]">
-              {/* Status bar */}
-              <div className="flex items-center justify-between bg-black px-6 pt-2 pb-1">
-                <span className="text-[11px] font-semibold text-white/80">9:41</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#39ff14]" />
-                  <span className="text-[11px] font-semibold text-white/60">REC</span>
-                </div>
-              </div>
-
-              {/* Camera viewfinder with live estimate overlay */}
               <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
                 <img
                   src="/landing-driveway-visual.png"
-                  alt="Camera viewfinder with live estimate"
+                  alt="Driveway preview"
                   className="h-full w-full object-cover"
                 />
-
-                {/* Grid overlay */}
-                <div className="pointer-events-none absolute inset-0">
-                  <div className="absolute left-1/3 right-2/3 top-0 bottom-0 border-x border-white/15" />
-                  <div className="absolute left-2/3 right-1/3 top-0 bottom-0 border-x border-white/15" />
-                  <div className="absolute top-1/3 bottom-2/3 left-0 right-0 border-y border-white/15" />
-                  <div className="absolute top-2/3 bottom-1/3 left-0 right-0 border-y border-white/15" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <p className="text-center text-sm font-semibold text-white/80">
+                    Capture a driveway to get started
+                  </p>
                 </div>
-
-                {/* Corner brackets */}
-                <div className="pointer-events-none absolute inset-4">
-                  <div className="absolute top-0 left-0 h-6 w-6 border-t-2 border-l-2 border-[#39ff14]" />
-                  <div className="absolute top-0 right-0 h-6 w-6 border-t-2 border-r-2 border-[#39ff14]" />
-                  <div className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-[#39ff14]" />
-                  <div className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-[#39ff14]" />
-                </div>
-
-                {/* Scanning animation line */}
-                <span className="landing-scan pointer-events-none absolute left-6 right-6 top-1/3 h-0.5 bg-[#64d8ff] shadow-[0_0_18px_rgba(100,216,255,0.9)]" />
-
-                {/* Live estimate badges - appear on capture */}
-                {showEstimate && (
-                  <>
-                    <div className="absolute top-3 left-3">
-                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#39ff14]/30 bg-black/60 px-2.5 py-1 text-[11px] font-black text-[#d8ffe8] backdrop-blur">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#39ff14]" />
-                        Live Estimate
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-20 left-3 right-3 grid grid-cols-3 gap-1.5">
-                      {[
-                        ["842", "sq ft"],
-                        ["$3.10", "sq ft"],
-                        ["$2,610", "total"],
-                      ].map(item => (
-                        <div
-                          key={item[1]}
-                          className="rounded-lg border border-white/12 bg-black/70 px-2.5 py-1.5 backdrop-blur animate-in fade-in slide-in-from-bottom-2 duration-300"
-                        >
-                          <span className="block text-base font-black text-white leading-tight">
-                            {item[0]}
-                          </span>
-                          <span className="text-[10px] font-bold text-[#9fb1aa]">
-                            {item[1]}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Bottom toolbar */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-6 pt-8 pb-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">1×</span>
-                    <button
-                      onClick={() => setShowEstimate(true)}
-                      className="h-14 w-14 rounded-full border-4 border-white/80 flex items-center justify-center hover:border-[#39ff14]/80 transition-colors focus:outline-none"
-                    >
-                      <div className="h-11 w-11 rounded-full border-2 border-white/30" />
-                    </button>
-                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Auto</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom bar */}
-              <div className="flex items-center justify-center bg-black px-6 py-2.5">
-                <span className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
-                  {showEstimate ? "842 sq ft · $3.10/sq ft · $2,610 total" : "Tap capture to estimate driveway"}
-                </span>
               </div>
             </div>
           </div>

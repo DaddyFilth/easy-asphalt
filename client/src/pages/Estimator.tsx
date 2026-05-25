@@ -1117,63 +1117,6 @@ export default function Estimator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
-                  <p className="font-semibold text-white">
-                    Field accuracy signals
-                  </p>
-                  <p className="mt-2">
-                    GPS:{" "}
-                    <span className="text-blue-300">
-                      {deviceReadiness.gpsAccuracyFeet != null
-                        ? `within about ${deviceReadiness.gpsAccuracyFeet} ft`
-                        : "waiting for location lock"}
-                    </span>
-                  </p>
-                  <p className="mt-1">
-                    Connection:{" "}
-                    <span className="text-blue-300">
-                      {deviceReadiness.online
-                        ? deviceReadiness.connectionLabel
-                        : "Offline"}
-                    </span>
-                  </p>
-                  <p className="mt-1">
-                    Bluetooth:{" "}
-                    <span className="text-blue-300">
-                      {deviceReadiness.bluetoothAvailable === null
-                        ? "not exposed on this device"
-                        : deviceReadiness.bluetoothAvailable
-                          ? "available"
-                          : "off or unavailable"}
-                    </span>
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-200">
-                  <p className="font-semibold text-white">Capture guidance</p>
-                  <p className="mt-2">
-                    Phone pitch:{" "}
-                    <span className="text-emerald-300">
-                      {deviceReadiness.pitch != null
-                        ? `${deviceReadiness.pitch.toFixed(1)} deg`
-                        : "not available"}
-                    </span>
-                  </p>
-                  <p className="mt-1">
-                    Phone roll:{" "}
-                    <span className="text-emerald-300">
-                      {deviceReadiness.roll != null
-                        ? `${deviceReadiness.roll.toFixed(1)} deg`
-                        : "not available"}
-                    </span>
-                  </p>
-                  <p className="mt-2 text-slate-400">
-                    A level phone and a strong GPS lock help produce cleaner
-                    capture data and more reliable project data.
-                  </p>
-                </div>
-              </div>
-
               {cameraPermissionDenied && (
                 <div
                   role="alert"

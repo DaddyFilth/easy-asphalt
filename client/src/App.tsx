@@ -4,6 +4,7 @@ import { Route, Switch } from "wouter";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
+const Camera = lazy(() => import("./pages/Camera"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Estimator = lazy(() => import("./pages/Estimator"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
@@ -26,6 +27,9 @@ export default function App() {
         <Switch>
           <Route path={"/"}>
             <Home />
+          </Route>
+          <Route path={"/camera"}>
+            <Camera />
           </Route>
           <Route path={"/estimator"}>
             <Estimator />
