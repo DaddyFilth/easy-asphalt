@@ -219,18 +219,18 @@ export default function Home() {
           </div>
         </nav>
 
-        <section className="relative z-10 mx-auto grid min-h-[76svh] max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
+        <section className="relative z-10 mx-auto grid min-h-[60svh] max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 sm:py-14 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
           <div className="landing-rise max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-lg border border-[#39ff14]/25 bg-[#39ff14]/10 px-3 py-2 text-xs font-black uppercase text-[#d8ffe8]">
               <Sparkles className="h-4 w-4 text-[#39ff14]" />
               AI sales estimator
             </span>
 
-            <h1 className="mt-6 max-w-2xl text-5xl font-black leading-[0.98] text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 max-w-2xl text-[2.25rem] font-black leading-[0.98] text-white sm:text-6xl lg:text-7xl">
               Close driveway jobs faster.
             </h1>
 
-            <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-[#d7e1dc]">
+            <p className="mt-5 max-w-xl text-base font-medium leading-7 text-[#d7e1dc] sm:text-lg sm:leading-8">
               Capture the driveway, map the surface, preview materials, and
               build the quote while you are still on site.
             </p>
@@ -252,7 +252,7 @@ export default function Home() {
               </a>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-8 grid grid-cols-2 gap-2 md:grid-cols-4">
               {featureButtons.map(feature => {
                 const Icon = feature.icon;
 

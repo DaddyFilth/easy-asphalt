@@ -62,6 +62,7 @@ vi.mock("wouter", async () => {
   return {
     Link: ({ href, children }: { href: string; children?: React.ReactNode }) =>
       ReactModule.createElement("a", { href }, children),
+    useLocation: () => ["/dashboard", vi.fn()],
   };
 });
 

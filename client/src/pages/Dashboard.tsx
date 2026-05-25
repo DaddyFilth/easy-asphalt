@@ -11,6 +11,7 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 import { Trash2, Share2, Eye, Loader2 } from "lucide-react";
 import { useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Dashboard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
@@ -55,8 +56,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <DashboardLayout>
+      <div className="min-h-full">
+        <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -189,7 +191,8 @@ export default function Dashboard() {
                         href={`/project/${project.id}`}
                         aria-label={`View ${project.projectName}`}
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 sm:mr-1.5" />
+                        <span className="hidden sm:inline">View</span>
                       </a>
                     </Button>
                     <Button
@@ -200,7 +203,8 @@ export default function Dashboard() {
                       size="sm"
                       className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
                     >
-                      <Share2 className="w-4 h-4" />
+                      <Share2 className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Share</span>
                     </Button>
                     <Button
                       onClick={() => handleDelete(project.id)}
@@ -210,7 +214,8 @@ export default function Dashboard() {
                       size="sm"
                       className="w-full border-red-600 text-red-400 hover:bg-red-900/20"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Delete</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -220,5 +225,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+  </DashboardLayout>
   );
 }
