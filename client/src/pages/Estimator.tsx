@@ -55,6 +55,8 @@ import {
   getPreciseDeviceLocation,
   isMediaSelectionCanceled,
   isNativeMobileApp,
+  requestNativeCameraPermission,
+  requestNativePhotoPermission,
   takeDrivewayPhotoWithCamera,
 } from "@/lib/deviceMedia";
 import { trpc } from "@/lib/trpc";
@@ -106,6 +108,8 @@ export default function Estimator() {
     "Tell me what to do inside the estimator."
   );
   const [savedProjectId, setSavedProjectId] = useState<number | null>(null);
+  const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
+  const [galleryPermissionDenied, setGalleryPermissionDenied] = useState(false);
   const [additionalCosts, setAdditionalCosts] = useState<AdditionalCostItem[]>([
     createAdditionalCostItem(),
   ]);
@@ -123,6 +127,7 @@ export default function Estimator() {
   const livePreviewVideoRef = useRef<HTMLVideoElement>(null);
   const livePreviewStreamRef = useRef<MediaStream | null>(null);
 
+  const trpcUtils = trpc.useUtils();
   const uploadPhotoMutation =
     trpc.projects.uploadPhotoAndDetectEdges.useMutation();
   const getPricingQuery = trpc.projects.getPricing.useQuery(
@@ -157,9 +162,7 @@ export default function Estimator() {
       : "16 / 9";
   const nativeMobileApp = isNativeMobileApp();
   const materialCost =
-    getPricingQuery.data?.materialCost ??
-    getPricingQuery.data?.totalCost ??
-    null;
+    getPricingQuery.data?.materialCost ?? null;
   const materialCostValue = materialCost ? parseCurrency(materialCost) : null;
   const contractorRateValue =
     state.contractorPricePerSquareFoot.trim() === ""
@@ -293,6 +296,23 @@ export default function Estimator() {
           latitude: location.latitude.toString(),
           longitude: location.longitude.toString(),
         }));
+
+        // Auto-fill ZIP from GPS if still the initial default
+        try {
+          const geoResult = await trpcUtils.projects.reverseGeocode.fetch({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          });
+          if (geoResult && !cancelled) {
+            setState(prev =>
+              prev.zipCode === "10001"
+                ? { ...prev, zipCode: geoResult.zipCode }
+                : prev
+            );
+          }
+        } catch {
+          // Reverse geocoding unavailable; user can type ZIP manually
+        }
       }
 
       setDeviceReadiness({
@@ -414,11 +434,21 @@ export default function Estimator() {
       return;
     }
 
+    setCameraPermissionDenied(false);
+
+    const permission = await requestNativeCameraPermission();
+    if (permission !== "granted") {
+      setCameraPermissionDenied(true);
+      toast.error("Camera permission denied. Enable camera access in your device settings to take photos.");
+      return;
+    }
+
     try {
       const file = await takeDrivewayPhotoWithCamera();
       if (file) await handlePhotoCapture(file);
     } catch (error) {
       if (isMediaSelectionCanceled(error)) return;
+      setCameraPermissionDenied(true);
       toast.error("Camera access is required to take a driveway photo");
       console.error(error);
     }
@@ -430,11 +460,21 @@ export default function Estimator() {
       return;
     }
 
+    setGalleryPermissionDenied(false);
+
+    const permission = await requestNativePhotoPermission();
+    if (permission !== "granted") {
+      setGalleryPermissionDenied(true);
+      toast.error("Photo library permission denied. Enable access in your device settings to upload images.");
+      return;
+    }
+
     try {
       const file = await chooseDrivewayPhotoFromGallery();
       if (file) await handlePhotoCapture(file);
     } catch (error) {
       if (isMediaSelectionCanceled(error)) return;
+      setGalleryPermissionDenied(true);
       toast.error("Photo library access is required to upload an image");
       console.error(error);
     }
@@ -1133,6 +1173,49 @@ export default function Estimator() {
                   </p>
                 </div>
               </div>
+
+              {cameraPermissionDenied && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100"
+                >
+                  <p className="font-semibold text-red-50">Camera permission denied</p>
+                  <p className="mt-1 leading-6">
+                    Enable camera access in your device settings, then try again.
+                    You can also upload an existing photo instead.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 border-red-500/40 text-red-200 hover:bg-red-950/50"
+                    onClick={() => setCameraPermissionDenied(false)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+
+              {galleryPermissionDenied && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100"
+                >
+                  <p className="font-semibold text-red-50">Photo library permission denied</p>
+                  <p className="mt-1 leading-6">
+                    Enable photo library access in your device settings, then try again.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 border-red-500/40 text-red-200 hover:bg-red-950/50"
+                    onClick={() => setGalleryPermissionDenied(false)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              )}
 
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition ${

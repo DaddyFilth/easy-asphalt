@@ -1,20 +1,4 @@
-/**
- * Image generation helper using internal ImageService
- *
- * Example usage:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "A serene landscape with mountains"
- *   });
- *
- * For editing:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "Add a rainbow to this landscape",
- *     originalImages: [{
- *       url: "https://example.com/original.jpg",
- *       mimeType: "image/jpeg"
- *     }]
- *   });
- */
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { storagePut } from "../storage";
 import { ENV } from "./env";
 
@@ -34,11 +18,27 @@ export type GenerateImageResponse = {
   usedFallback?: boolean;
 };
 
+async function fetchImageAsBase64(
+  url: string
+): Promise<{ base64: string; mimeType: string }> {
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(
+      `Failed to fetch source image (${response.status} ${response.statusText})`
+    );
+  const buffer = await response.arrayBuffer();
+  return {
+    base64: Buffer.from(buffer).toString("base64"),
+    mimeType: response.headers.get("content-type") || "image/jpeg",
+  };
+}
+
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    const originalImage = options.originalImages?.[0];
+  const originalImage = options.originalImages?.[0];
+
+  if (!ENV.geminiApiKey) {
     if (!ENV.isProduction && originalImage?.url) {
       return {
         url: originalImage.url,
@@ -46,60 +46,49 @@ export async function generateImage(
         usedFallback: true,
       };
     }
-
     throw new Error(
-      "Image generation service is not configured: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "Image generation is not configured: set GEMINI_API_KEY"
     );
   }
 
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "images.v1.ImageService/GenerateImage",
-    baseUrl
-  ).toString();
+  const genAI = new GoogleGenerativeAI(ENV.geminiApiKey);
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-3-pro-image" },
+    { baseUrl: ENV.geminiApiEndpoint }
+  );
 
-  const response = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      original_images: options.originalImages || [],
-    }),
+  const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
+    { text: options.prompt },
+  ];
+
+  if (originalImage?.url) {
+    const source = await fetchImageAsBase64(originalImage.url);
+    parts.push({
+      inlineData: { mimeType: source.mimeType, data: source.base64 },
+    });
+  }
+
+  const response = await model.generateContent({
+    contents: [{ role: "user", parts }],
+    generationConfig: { responseModalities: ["IMAGE"] } as any,
   });
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+  const candidate = response.response.candidates?.[0];
+  const part = candidate?.content?.parts?.[0];
+
+  if (!part || !("inlineData" in part) || !part.inlineData?.data) {
+    throw new Error("Gemini did not return an image in the response");
   }
 
-  const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
-    };
-  };
-  const base64Data = result.image.b64Json;
+  const base64Data = part.inlineData.data;
+  const mimeType = part.inlineData.mimeType || "image/png";
   const buffer = Buffer.from(base64Data, "base64");
 
-  // Save to S3
   const { key, url } = await storagePut(
     `generated/${Date.now()}.png`,
     buffer,
-    result.image.mimeType
+    mimeType
   );
-  return {
-    key,
-    url,
-    mimeType: result.image.mimeType,
-  };
+
+  return { key, url, mimeType };
 }

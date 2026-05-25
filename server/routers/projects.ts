@@ -33,6 +33,7 @@ import {
   sendContractorNotification,
 } from "../services/email";
 import { generateImage } from "../_core/imageGeneration";
+import { reverseGeocodeToZip } from "../services/geolocation";
 import type { Request } from "express";
 import type { Project } from "../../drizzle/schema";
 
@@ -329,6 +330,21 @@ export const projectsRouter = router({
     }),
 
   /**
+   * Reverse geocode GPS coordinates to ZIP code + city + state.
+   * Used by the client to auto-fill the pricing ZIP field after GPS capture.
+   */
+  reverseGeocode: publicProcedure
+    .input(
+      z.object({
+        latitude: z.number().finite().min(-90).max(90),
+        longitude: z.number().finite().min(-180).max(180),
+      })
+    )
+    .query(async ({ input }) => {
+      return reverseGeocodeToZip(input.latitude, input.longitude);
+    }),
+
+  /**
    * Get pricing for a material in a specific location
    */
   getPricing: protectedProcedure
@@ -351,7 +367,7 @@ export const projectsRouter = router({
           input.depthInches,
           input.material
         );
-        const totalCost = calculateTotalCost(
+        const materialCost = calculateTotalCost(
           quantity.quantity,
           pricing.pricePerTon
         );
@@ -361,8 +377,7 @@ export const projectsRouter = router({
           pricePerSquareFoot: pricing.pricePerSquareFoot,
           supplier: pricing.supplier,
           quantityNeeded: quantity.quantityStr,
-          materialCost: totalCost,
-          totalCost,
+          materialCost,
         };
       } catch (error) {
         console.error("[Projects] Pricing error:", error);

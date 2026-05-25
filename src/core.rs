@@ -1,3 +1,4 @@
+use base64::Engine as _;
 use serde::Deserialize;
 
 fn session_cookie() -> String {
@@ -40,12 +41,30 @@ pub struct PricingResult {
     pub supplier: String,
 }
 
-pub fn detect_edges(_photo_url: &str, image_width: u32, image_height: u32) -> Result<EdgeDetectionResult, String> {
+pub fn detect_edges(photo_url: &str, image_width: u32, image_height: u32) -> Result<EdgeDetectionResult, String> {
+    if photo_url.is_empty() {
+        return Err("No photo URL provided. Upload an image to the web app first and copy the photo URL here.".to_string());
+    }
+
+    let filename = photo_url.rsplit('/').next().unwrap_or("photo.jpg");
+    let ext = filename.rsplit('.').last().unwrap_or("jpg");
+    let mime = match ext {
+        "png" | "webp" => format!("image/{}", ext),
+        _ => "image/jpeg".to_string(),
+    };
+
+    let resp = reqwest::blocking::get(photo_url)
+        .map_err(|e| format!("Failed to download photo: {}", e))?;
+    let bytes = resp.bytes()
+        .map_err(|e| format!("Failed to read photo bytes: {}", e))?;
+    let base64 = base64::engine::general_purpose::STANDARD.encode(&*bytes);
+
     let url = "http://localhost:3000/api/trpc/projects.uploadPhotoAndDetectEdges";
     let body = serde_json::json!({
         "json": {
-            "photoBase64": "",
-            "photoName": "photo.jpg",
+            "photoBase64": base64,
+            "photoName": filename,
+            "photoMimeType": mime,
             "imageWidth": image_width,
             "imageHeight": image_height
         }

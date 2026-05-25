@@ -2,8 +2,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 
 vi.mock("./env", () => ({
   ENV: {
-    forgeApiUrl: "",
-    forgeApiKey: "",
+    geminiApiKey: "",
     isProduction: false,
   },
 }));
@@ -13,8 +12,7 @@ import { generateImage } from "./imageGeneration";
 
 describe("generateImage", () => {
   beforeEach(() => {
-    ENV.forgeApiUrl = "";
-    ENV.forgeApiKey = "";
+    ENV.geminiApiKey = "";
     ENV.isProduction = false;
   });
 
@@ -49,6 +47,6 @@ describe("generateImage", () => {
           },
         ],
       })
-    ).rejects.toThrow("Image generation service is not configured");
+    ).rejects.toThrow("Image generation is not configured");
   });
 });

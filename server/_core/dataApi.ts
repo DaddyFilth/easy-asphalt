@@ -1,37 +1,22 @@
-/**
- * Quick example (matches curl usage):
- *   await callDataApi("Youtube/search", {
- *     query: { gl: "US", hl: "en", q: "manus" },
- *   })
- */
-import { ENV } from "./env";
-
 export type DataApiCallOptions = {
+  baseUrl: string;
+  apiKey?: string;
   query?: Record<string, unknown>;
   body?: Record<string, unknown>;
-  pathParams?: Record<string, unknown>;
-  formData?: Record<string, unknown>;
 };
 
 export async function callDataApi(
   apiId: string,
-  options: DataApiCallOptions = {}
+  options: DataApiCallOptions
 ): Promise<unknown> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+  const baseUrl = options.baseUrl;
+  const apiKey = options.apiKey;
+  if (!baseUrl) {
+    throw new Error("External API base URL is required");
   }
 
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "webdevtoken.v1.WebDevService/CallApi",
-    baseUrl
-  ).toString();
+  const normalized = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const fullUrl = new URL("webdevtoken.v1.WebDevService/CallApi", normalized).toString();
 
   const response = await fetch(fullUrl, {
     method: "POST",
@@ -39,14 +24,12 @@ export async function callDataApi(
       accept: "application/json",
       "content-type": "application/json",
       "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
       apiId,
       query: options.query,
       body: options.body,
-      path_params: options.pathParams,
-      multipart_form_data: options.formData,
     }),
   });
 

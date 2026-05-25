@@ -1,8 +1,4 @@
-/**
- * Email notification service
- * In production, integrate with SendGrid, AWS SES, or similar
- * This is a mock implementation that logs emails
- */
+import { ENV } from "../_core/env";
 
 export interface EmailNotification {
   to: string;
@@ -24,9 +20,6 @@ function sanitizeSubject(value: string) {
   return value.replace(/[\r\n]+/g, " ").slice(0, 200);
 }
 
-/**
- * Send email notification for project estimate
- */
 export async function sendEstimateNotification(
   recipientEmail: string,
   projectName: string,
@@ -85,9 +78,6 @@ Driveway Estimator Pro
   });
 }
 
-/**
- * Send email notification to contractor with project details
- */
 export async function sendContractorNotification(
   contractorEmail: string,
   ownerName: string,
@@ -150,35 +140,50 @@ Driveway Estimator Pro
   });
 }
 
-/**
- * Core email sending function
- * In production, replace with actual email service provider
- */
 async function sendEmail(
   notification: EmailNotification
 ): Promise<{ success: boolean; messageId?: string }> {
-  try {
-    const mockMessageId = `msg_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 11)}`;
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    console.info("[Email] Mock email accepted", {
-      messageId: mockMessageId,
+  if (!ENV.resendApiKey) {
+    console.info("[Email] RESEND_API_KEY not configured; mock email accepted", {
       toDomain: notification.to.split("@")[1] ?? "unknown",
       subject: notification.subject,
     });
-    return { success: true, messageId: mockMessageId };
+    return {
+      success: true,
+      messageId: `mock_${Date.now()}`,
+    };
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ENV.resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: ENV.emailFromAddress,
+        to: [notification.to],
+        subject: notification.subject,
+        html: notification.html,
+        text: notification.text,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error("[Email] Resend API error:", response.status, errorBody);
+      return { success: false };
+    }
+
+    const result = (await response.json()) as { id: string };
+    return { success: true, messageId: result.id };
   } catch (error) {
     console.error("[Email] Failed to send email:", error);
     return { success: false };
   }
 }
 
-/**
- * Format material name for display
- */
 function formatMaterialName(material: string): string {
   const names: Record<string, string> = {
     hotmix: "Hot Mix Asphalt",

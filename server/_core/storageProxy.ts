@@ -1,10 +1,8 @@
 import type { Express } from "express";
-import { ENV } from "./env";
-import {
-  LOCAL_STORAGE_DIR,
-  LOCAL_STORAGE_URL_PREFIX,
-} from "../storage";
+import { LOCAL_STORAGE_DIR, LOCAL_STORAGE_URL_PREFIX } from "../storage";
 import path from "node:path";
+import { ENV } from "./env";
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 export function registerStorageProxy(app: Express) {
   app.get(`${LOCAL_STORAGE_URL_PREFIX}/*`, (req, res) => {
@@ -20,9 +18,7 @@ export function registerStorageProxy(app: Express) {
     }
 
     const filePath = path.resolve(LOCAL_STORAGE_DIR, key);
-    const storageRoot = `${LOCAL_STORAGE_DIR}${path.sep}`;
-
-    if (!filePath.startsWith(storageRoot)) {
+    if (!filePath.startsWith(`${LOCAL_STORAGE_DIR}${path.sep}`)) {
       res.status(400).send("Invalid storage key");
       return;
     }
@@ -42,41 +38,30 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(500).send("Storage proxy not configured");
+    if (!ENV.s3Bucket) {
+      res.status(404).send("Not found");
       return;
     }
 
     try {
-      const forgeUrl = new URL(
-        "v1/storage/presign/get",
-        ENV.forgeApiUrl.replace(/\/+$/, "") + "/"
-      );
-      forgeUrl.searchParams.set("path", key);
-
-      const forgeResp = await fetch(forgeUrl, {
-        headers: { Authorization: `Bearer ${ENV.forgeApiKey}` },
+      const client = new S3Client({
+        region: process.env.AWS_REGION || "us-east-1",
       });
-
-      if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(
-          `[StorageProxy] forge error: ${forgeResp.status} ${body}`
-        );
+      const command = new GetObjectCommand({ Bucket: ENV.s3Bucket, Key: key });
+      const s3Response = await client.send(command);
+      const stream = s3Response.Body as NodeJS.ReadableStream | undefined;
+      if (!stream) {
         res.status(502).send("Storage backend error");
         return;
       }
 
-      const { url } = (await forgeResp.json()) as { url: string };
-      if (!url) {
-        res.status(502).send("Empty signed URL from backend");
-        return;
+      if (s3Response.ContentType) {
+        res.set("Content-Type", s3Response.ContentType);
       }
-
-      res.set("Cache-Control", "no-store");
-      res.redirect(307, url);
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+      stream.pipe(res);
     } catch (err) {
-      console.error("[StorageProxy] failed:", err);
+      console.error("[StorageProxy] S3 error:", err);
       res.status(502).send("Storage proxy error");
     }
   });

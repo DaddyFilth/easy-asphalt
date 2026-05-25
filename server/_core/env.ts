@@ -24,8 +24,17 @@ export const ENV = {
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   ownerEmail: process.env.OWNER_EMAIL ?? "",
   isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  //  HIGH-08: Gemini image generation
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  geminiApiEndpoint:
+    process.env.GEMINI_API_ENDPOINT ??
+    "https://generativelanguage.googleapis.com",
+  //  HIGH-08: direct Google Maps API key (no Forge proxy)
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+  //  HIGH-08: direct OpenAI API key (Whisper transcription)
+  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
+  //  HIGH-08: S3 storage (replaces Forge storage proxy)
+  s3Bucket: process.env.S3_BUCKET_NAME ?? "",
   //  HIGH-08: configurable LLM model
   llmModel: process.env.LLM_MODEL ?? "gemini-2.5-flash",
   llmMaxTokens: parseInt(process.env.LLM_MAX_TOKENS ?? "4096", 10),

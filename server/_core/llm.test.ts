@@ -1,9 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
-  process.env.BUILT_IN_FORGE_API_KEY = "test-key";
-  process.env.BUILT_IN_FORGE_API_URL = "https://api.example.test";
+  process.env.GEMINI_API_KEY = "test-key";
+  process.env.GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com";
 });
+
+vi.mock("./env", () => ({
+  ENV: {
+    geminiApiKey: "test-key",
+    geminiApiEndpoint: "https://generativelanguage.googleapis.com",
+    llmModel: "gemini-2.5-flash",
+  },
+}));
 
 import { invokeLLM } from "./llm";
 
@@ -14,10 +22,13 @@ describe("LLM Core", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          choices: [
-            { message: { content: '{"test":true}', role: "assistant" } },
+          candidates: [
+            {
+              content: { parts: [{ text: '{"test":true}' }], role: "assistant" },
+              finishReason: "stop",
+            },
           ],
-          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+          usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5, totalTokenCount: 15 },
         }),
       })
     );

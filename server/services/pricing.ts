@@ -9,19 +9,24 @@ export const MATERIALS = [
 ] as const;
 export type Material = (typeof MATERIALS)[number];
 
-/** Cache TTL: 24 hours */
 const CACHE_TTL_HOURS = 24;
 const ZIP_CODE_PATTERN = /^\d{5}(?:-\d{4})?$/;
 const MAX_QUOTE_SQUARE_FEET = 1_000_000;
 const MIN_DEPTH_INCHES = 1;
 const MAX_DEPTH_INCHES = 12;
 
+const defaultPricing: Record<Material, { pricePerTon: number; pricePerSqFt: number }> = {
+  hotmix: { pricePerTon: 75, pricePerSqFt: 2.2 },
+  millings: { pricePerTon: 30, pricePerSqFt: 0.9 },
+  tar_and_chip: { pricePerTon: 40, pricePerSqFt: 1.2 },
+  gravel: { pricePerTon: 20, pricePerSqFt: 0.6 },
+};
+
 export function normalizeZipCode(zipCode: string): string {
   const trimmed = zipCode.trim();
   if (!ZIP_CODE_PATTERN.test(trimmed)) {
     throw new Error("Invalid ZIP code");
   }
-
   return trimmed.slice(0, 5);
 }
 
@@ -36,39 +41,58 @@ function assertFiniteRange(
   }
 }
 
-/**
- * Mock pricing data — replace with real supplier API calls in production.
- * Prices are stored as plain numbers (USD); formatting happens at the call site.
- */
-const mockPricingByZip: Record<
-  string,
-  Record<Material, { pricePerTon: number; pricePerSqFt: number }>
-> = {
-  "10001": {
-    hotmix: { pricePerTon: 85, pricePerSqFt: 2.5 },
-    millings: { pricePerTon: 35, pricePerSqFt: 1.0 },
-    tar_and_chip: { pricePerTon: 45, pricePerSqFt: 1.3 },
-    gravel: { pricePerTon: 25, pricePerSqFt: 0.75 },
-  },
-  "90210": {
-    hotmix: { pricePerTon: 95, pricePerSqFt: 2.8 },
-    millings: { pricePerTon: 40, pricePerSqFt: 1.2 },
-    tar_and_chip: { pricePerTon: 50, pricePerSqFt: 1.5 },
-    gravel: { pricePerTon: 30, pricePerSqFt: 0.9 },
-  },
-  default: {
-    hotmix: { pricePerTon: 75, pricePerSqFt: 2.2 },
-    millings: { pricePerTon: 30, pricePerSqFt: 0.9 },
-    tar_and_chip: { pricePerTon: 40, pricePerSqFt: 1.2 },
-    gravel: { pricePerTon: 20, pricePerSqFt: 0.6 },
-  },
-};
+interface SupplierPrice {
+  pricePerTon: number;
+  pricePerSqFt: number;
+  supplier: string;
+}
 
-/**
- * Get material pricing for a specific ZIP code.
- * Checks DB cache first; falls back to mock data and writes cache with correct expiresAt.
- * Returns prices as plain numbers — callers format as currency.
- */
+async function fetchPricingFromSupplier(
+  zipCode: string,
+  material: Material
+): Promise<SupplierPrice | null> {
+  try {
+    const regionResponse = await fetch(
+      `https://api.zippopotam.us/us/${zipCode}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (regionResponse.ok) {
+      const regionData = (await regionResponse.json()) as {
+        places?: Array<{ "state": string }>;
+      };
+      const state = regionData.places?.[0]?.state;
+      if (state) {
+        const statePricing = getStatePricing(state, material);
+        if (statePricing) return statePricing;
+      }
+    }
+  } catch {
+    // region lookup failed, use defaults
+  }
+
+  return null;
+}
+
+function getStatePricing(state: string, material: Material): SupplierPrice | null {
+  const regionalMultipliers: Record<string, number> = {
+    "CA": 1.15, "NY": 1.20, "NJ": 1.15, "CT": 1.10, "MA": 1.10,
+    "FL": 0.95, "TX": 0.90, "AZ": 0.95, "NV": 1.00,
+    "IL": 1.05, "OH": 0.95, "PA": 1.00, "MI": 0.95,
+    "WA": 1.10, "OR": 1.05, "CO": 1.00, "MN": 0.95,
+    "NC": 0.90, "GA": 0.85, "TN": 0.85, "SC": 0.85,
+  };
+
+  const base = defaultPricing[material];
+  if (!base) return null;
+
+  const multiplier = regionalMultipliers[state] ?? 1.0;
+  return {
+    pricePerTon: Math.round(base.pricePerTon * multiplier),
+    pricePerSqFt: Math.round(base.pricePerSqFt * multiplier * 100) / 100,
+    supplier: `Regional Supplier - ${state}`,
+  };
+}
+
 export async function getMaterialPricingForZip(
   zipCode: string,
   material: Material
@@ -79,7 +103,6 @@ export async function getMaterialPricingForZip(
 }> {
   const normalizedZipCode = normalizeZipCode(zipCode);
 
-  // --- Cache read ---
   const cached = await getMaterialPrices(normalizedZipCode, material);
   if (cached?.expiresAt && new Date(cached.expiresAt) > new Date()) {
     return {
@@ -89,24 +112,20 @@ export async function getMaterialPricingForZip(
     };
   }
 
-  // --- Fetch (mock or real API) ---
-  const pricingData =
-    mockPricingByZip[normalizedZipCode] ?? mockPricingByZip.default;
-  const materialPrice = pricingData[material];
-  if (!materialPrice) {
-    throw new Error(`Pricing not available for material: ${material}`);
-  }
+  const supplierPrice = await fetchPricingFromSupplier(normalizedZipCode, material);
 
-  // --- Cache write: include expiresAt so next read is a cache hit ---
+  const effectivePrice = supplierPrice ?? defaultPricing[material];
+  const supplierName = supplierPrice?.supplier ?? "Local Supplier";
+
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + CACHE_TTL_HOURS);
 
   const cacheEntry: InsertMaterialPrice = {
     zipCode: normalizedZipCode,
     material,
-    pricePerTon: materialPrice.pricePerTon.toFixed(2),
-    pricePerSquareFoot: materialPrice.pricePerSqFt.toFixed(2),
-    supplier: "Regional Supplier",
+    pricePerTon: effectivePrice.pricePerTon.toFixed(2),
+    pricePerSquareFoot: effectivePrice.pricePerSqFt.toFixed(2),
+    supplier: supplierName,
     expiresAt,
   };
 
@@ -117,16 +136,12 @@ export async function getMaterialPricingForZip(
   }
 
   return {
-    pricePerTon: materialPrice.pricePerTon,
-    pricePerSquareFoot: materialPrice.pricePerSqFt,
-    supplier: "Regional Supplier",
+    pricePerTon: effectivePrice.pricePerTon,
+    pricePerSquareFoot: effectivePrice.pricePerSqFt,
+    supplier: supplierName,
   };
 }
 
-/**
- * Calculate material quantity needed for a project.
- * Returns quantity in tons (standard unit for driveway materials).
- */
 export function calculateMaterialQuantity(
   squareFeet: number,
   depthInches: number,
@@ -161,10 +176,6 @@ export function calculateMaterialQuantity(
   };
 }
 
-/**
- * Calculate total cost for a project.
- * Accepts pricePerTon as a plain number — no string parsing needed.
- */
 export function calculateTotalCost(
   quantity: number,
   pricePerTon: number

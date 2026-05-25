@@ -1,5 +1,4 @@
 import { invokeLLM } from "../_core/llm";
-import { ENV } from "../_core/env";
 export { calculateSquareFeetFromCorners } from "../../shared/geometry";
 
 const LLM_TIMEOUT_MS = 15_000;
@@ -37,10 +36,6 @@ export async function detectDrivewayEdges(photoUrl: string): Promise<{
   confidence: number;
   description: string;
 }> {
-  if (!ENV.forgeApiKey) {
-    return getFallbackDrivewayEdges();
-  }
-
   const call = invokeLLM({
     messages: [
       {
