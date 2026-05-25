@@ -113,6 +113,7 @@ const trustItems = [
 export default function Home() {
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showEstimate, setShowEstimate] = useState(false);
 
   const generatePreview = trpc.projects.generateLandingPreview.useMutation();
   const pricingQuery = trpc.projects.getLandingPricing.useQuery(
@@ -136,7 +137,7 @@ export default function Home() {
   const materialOverlay = materialOptions.find(m => m.id === selectedMaterial);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#07100d] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#1a2e28] text-white">
       <style>{`
         @keyframes landing-rise {
           from { opacity: 0; transform: translateY(18px); }
@@ -203,7 +204,7 @@ export default function Home() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, rgba(7,16,13,0.98) 0%, rgba(7,16,13,0.88) 42%, rgba(7,16,13,0.48) 100%)",
+              "linear-gradient(90deg, rgba(26,46,40,0.92) 0%, rgba(26,46,40,0.78) 42%, rgba(26,46,40,0.30) 100%)",
           }}
         />
         <div
@@ -217,10 +218,10 @@ export default function Home() {
         />
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#07100d] to-transparent"
+          className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#1a2e28] to-transparent"
         />
 
-        <nav className="relative z-10 border-b border-white/10 bg-[#07100d]/72 backdrop-blur-md">
+        <nav className="relative z-10 border-b border-white/10 bg-[#1a2e28]/72 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <a
               href="/"
@@ -318,43 +319,97 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="landing-rise landing-float relative mx-auto w-full max-w-md lg:max-w-lg">
-            <div className="overflow-hidden rounded-lg border border-white/12 bg-[#06110a]/86 shadow-[0_32px_90px_rgba(0,0,0,0.55)] backdrop-blur-md">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                <span className="text-sm font-black text-white">
-                  Live estimate
-                </span>
-                <span className="rounded-lg border border-[#39ff14]/30 bg-[#39ff14]/12 px-2.5 py-1 text-xs font-black text-[#d8ffe8]">
-                  Ready
-                </span>
+          <div className="landing-rise relative mx-auto w-full max-w-sm lg:max-w-md">
+            {/* Phone frame */}
+            <div className="overflow-hidden rounded-[2.5rem] border-4 border-zinc-700 bg-black shadow-[0_32px_90px_rgba(0,0,0,0.55)]">
+              {/* Status bar */}
+              <div className="flex items-center justify-between bg-black px-6 pt-2 pb-1">
+                <span className="text-[11px] font-semibold text-white/80">9:41</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#39ff14]" />
+                  <span className="text-[11px] font-semibold text-white/60">REC</span>
+                </div>
               </div>
 
-              <div className="relative aspect-[4/3] overflow-hidden">
+              {/* Camera viewfinder with live estimate overlay */}
+              <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
                 <img
                   src="/landing-driveway-visual.png"
-                  alt="AI driveway boundary preview"
+                  alt="Camera viewfinder with live estimate"
                   className="h-full w-full object-cover"
                 />
+
+                {/* Grid overlay */}
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute left-1/3 right-2/3 top-0 bottom-0 border-x border-white/15" />
+                  <div className="absolute left-2/3 right-1/3 top-0 bottom-0 border-x border-white/15" />
+                  <div className="absolute top-1/3 bottom-2/3 left-0 right-0 border-y border-white/15" />
+                  <div className="absolute top-2/3 bottom-1/3 left-0 right-0 border-y border-white/15" />
+                </div>
+
+                {/* Corner brackets */}
+                <div className="pointer-events-none absolute inset-4">
+                  <div className="absolute top-0 left-0 h-6 w-6 border-t-2 border-l-2 border-[#39ff14]" />
+                  <div className="absolute top-0 right-0 h-6 w-6 border-t-2 border-r-2 border-[#39ff14]" />
+                  <div className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-[#39ff14]" />
+                  <div className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-[#39ff14]" />
+                </div>
+
+                {/* Scanning animation line */}
                 <span className="landing-scan pointer-events-none absolute left-6 right-6 top-1/3 h-0.5 bg-[#64d8ff] shadow-[0_0_18px_rgba(100,216,255,0.9)]" />
-                <div className="absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-2">
-                  {[
-                    ["842", "sq ft"],
-                    ["$3.10", "material"],
-                    ["18%", "margin"],
-                  ].map(item => (
-                    <div
-                      key={item[1]}
-                      className="rounded-lg border border-white/12 bg-[#07100d]/78 px-3 py-2 backdrop-blur"
-                    >
-                      <span className="block text-lg font-black text-white">
-                        {item[0]}
-                      </span>
-                      <span className="text-xs font-bold text-[#9fb1aa]">
-                        {item[1]}
+
+                {/* Live estimate badges - appear on capture */}
+                {showEstimate && (
+                  <>
+                    <div className="absolute top-3 left-3">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#39ff14]/30 bg-black/60 px-2.5 py-1 text-[11px] font-black text-[#d8ffe8] backdrop-blur">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#39ff14]" />
+                        Live Estimate
                       </span>
                     </div>
-                  ))}
+
+                    <div className="absolute bottom-20 left-3 right-3 grid grid-cols-3 gap-1.5">
+                      {[
+                        ["842", "sq ft"],
+                        ["$3.10", "sq ft"],
+                        ["$2,610", "total"],
+                      ].map(item => (
+                        <div
+                          key={item[1]}
+                          className="rounded-lg border border-white/12 bg-black/70 px-2.5 py-1.5 backdrop-blur animate-in fade-in slide-in-from-bottom-2 duration-300"
+                        >
+                          <span className="block text-base font-black text-white leading-tight">
+                            {item[0]}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#9fb1aa]">
+                            {item[1]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Bottom toolbar */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-6 pt-8 pb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">1×</span>
+                    <button
+                      onClick={() => setShowEstimate(true)}
+                      className="h-14 w-14 rounded-full border-4 border-white/80 flex items-center justify-center hover:border-[#39ff14]/80 transition-colors focus:outline-none"
+                    >
+                      <div className="h-11 w-11 rounded-full border-2 border-white/30" />
+                    </button>
+                    <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Auto</span>
+                  </div>
                 </div>
+              </div>
+
+              {/* Bottom bar */}
+              <div className="flex items-center justify-center bg-black px-6 py-2.5">
+                <span className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+                  {showEstimate ? "842 sq ft · $3.10/sq ft · $2,610 total" : "Tap capture to estimate driveway"}
+                </span>
               </div>
             </div>
           </div>
@@ -362,7 +417,7 @@ export default function Home() {
       </header>
 
       {/* ── Live Preview ── */}
-      <section className="border-y border-white/8 bg-[#0a1511] px-4 py-14 sm:px-6 lg:px-8">
+      <section className="border-y border-white/8 bg-[#1f332d] px-4 py-14 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-xl">
             <span className="text-xs font-black uppercase text-[#39ff14]">
@@ -478,7 +533,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-y border-white/8 bg-[#0a1511] px-4 py-4 sm:px-6 lg:px-8">
+      <section className="border-y border-white/8 bg-[#1f332d] px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {trustItems.map(item => {
             const Icon = item.icon;
@@ -516,7 +571,7 @@ export default function Home() {
               return (
                 <li
                   key={step.title}
-                  className="landing-border rounded-lg border border-white/10 bg-[#0c1814] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:bg-[#10231d]"
+                  className="landing-border rounded-lg border border-white/10 bg-[#233833] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:bg-[#2a423c]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-lg bg-white/8 text-[#39ff14]">
@@ -540,7 +595,7 @@ export default function Home() {
       </section>
 
       <section className="px-4 pb-12 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-6 rounded-lg border border-[#39ff14]/24 bg-[#0b1713] p-5 text-white shadow-[0_28px_80px_rgba(0,0,0,0.28)] md:grid-cols-[1fr_1.2fr] md:p-8">
+        <div className="mx-auto grid max-w-7xl gap-6 rounded-lg border border-[#39ff14]/24 bg-[#213631] p-5 text-white shadow-[0_28px_80px_rgba(0,0,0,0.28)] md:grid-cols-[1fr_1.2fr] md:p-8">
           <div>
             <span className="text-xs font-black uppercase text-[#39ff14]">
               Materials
