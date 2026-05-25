@@ -40,7 +40,7 @@ describe("Home landing page", () => {
     const html = renderHome();
     expect(html).toContain("Open Estimator");
     expect(html).toContain("Saved Projects");
-    expect(html).toContain('href="/estimator?start=upload"');
+    expect(html).toContain('href="/estimator?start=camera"');
     expect(html).toContain('href="/dashboard"');
   });
 

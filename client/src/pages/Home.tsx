@@ -32,7 +32,7 @@ type Step = {
   icon: LucideIcon;
 };
 
-const primaryCtaHref = "/estimator?start=upload";
+const primaryCtaHref = "/estimator?start=camera";
 const secondaryCtaHref = "/dashboard";
 
 const featureButtons: FeatureButton[] = [
@@ -254,7 +254,7 @@ export default function Home() {
           </div>
         </nav>
 
-        <section className="relative z-10 mx-auto grid min-h-[60svh] max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 sm:py-14 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
+        <section className="relative z-10 mx-auto grid min-h-0 max-w-7xl items-center gap-6 px-4 py-4 sm:min-h-[60svh] sm:gap-8 sm:px-6 sm:py-14 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
           <div className="landing-rise max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-lg border border-[#39ff14]/25 bg-[#39ff14]/10 px-3 py-2 text-xs font-black uppercase text-[#d8ffe8]">
               <Sparkles className="h-4 w-4 text-[#39ff14]" />

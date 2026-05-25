@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "Driveway Estimator Pro",
   webDir: "dist/public",
   server: {
-    androidScheme: "https",
+    androidScheme: "http",
   },
   android: {
     webContentsDebuggingEnabled: true,

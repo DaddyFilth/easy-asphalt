@@ -12,15 +12,7 @@ function createLocalOpenId() {
   return `local:${randomUUID()}`;
 }
 
-async function requireAuthDatabase() {
-  const database = await db.getDb();
-  if (!database) {
-    throw new TRPCError({
-      code: "SERVICE_UNAVAILABLE",
-      message: "Authentication database is unavailable",
-    });
-  }
-}
+// Not needed — db.ts falls back to in-memory storage when MySQL is unavailable.
 
 async function createSessionForUser(
   ctx: {
@@ -55,8 +47,6 @@ async function createDeviceSession(ctx: {
     ) => void;
   };
 }) {
-  await requireAuthDatabase();
-
   const createdUser = await db.createUser({
     openId: createLocalOpenId(),
     name: "Device Workspace",

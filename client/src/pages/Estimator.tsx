@@ -512,6 +512,29 @@ export default function Estimator() {
       return;
     }
 
+    const capturedPhotoUrl =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem("captured-photo-url")
+        : null;
+    if (capturedPhotoUrl) {
+      window.sessionStorage.removeItem("captured-photo-url");
+      fetch(capturedPhotoUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch captured photo");
+          return res.blob();
+        })
+        .then(blob => {
+          const file = new File([blob], `captured-${Date.now()}.jpg`, {
+            type: blob.type || "image/jpeg",
+          });
+          void handlePhotoCapture(file);
+        })
+        .catch(() => {
+          toast.error("Failed to load captured photo");
+        });
+      return;
+    }
+
     if (routeFeature === "capture") {
       toast.info(
         "Use Take Photo inside the estimator for camera or live view."
