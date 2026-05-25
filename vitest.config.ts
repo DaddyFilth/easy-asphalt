@@ -16,12 +16,13 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "**/*.early.test/**",
-      "agent-client-protocol/**",
-      "cubic/**",
       "easy-asphalt/**",
     ],
     globals: true,
     environment: "node",
+    env: {
+      JWT_SECRET: "test-jwt-secret-with-minimum-32-characters",
+    },
     alias: {
       server: path.resolve(projectRoot, "./server"),
     },

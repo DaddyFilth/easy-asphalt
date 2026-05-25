@@ -41,9 +41,8 @@ type DevicePermissionsPlugin = {
 
 const PHOTO_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const PENDING_ESTIMATOR_ACTION_KEY = "easy-asphalt:pending-estimator-action";
-const DevicePermissions = registerPlugin<DevicePermissionsPlugin>(
-  "DevicePermissions"
-);
+const DevicePermissions =
+  registerPlugin<DevicePermissionsPlugin>("DevicePermissions");
 
 export function isNativeMobileApp() {
   return Capacitor.isNativePlatform();
@@ -115,7 +114,12 @@ export async function checkNativeCameraPermission(): Promise<DevicePermissionRes
       const status = await DevicePermissions.check({ permission: "camera" });
       return status.state === "granted" ? "granted" : null;
     } catch {
-      return null;
+      try {
+        const status = await DeviceCamera.checkPermissions();
+        return isAllowedPermissionState(status.camera) ? "granted" : null;
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -128,7 +132,12 @@ export async function checkNativePhotoPermission(): Promise<DevicePermissionResu
       const status = await DevicePermissions.check({ permission: "photos" });
       return status.state === "granted" ? "granted" : null;
     } catch {
-      return null;
+      try {
+        const status = await DeviceCamera.checkPermissions();
+        return isAllowedPermissionState(status.photos) ? "granted" : null;
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -141,7 +150,15 @@ export async function checkDeviceLocationPermission(): Promise<DevicePermissionR
       const status = await DevicePermissions.check({ permission: "location" });
       return status.state === "granted" ? "granted" : null;
     } catch {
-      return null;
+      try {
+        const status = await Geolocation.checkPermissions();
+        return status.location === "granted" ||
+          status.coarseLocation === "granted"
+          ? "granted"
+          : null;
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -288,7 +305,14 @@ export async function requestNativeCameraPermission(): Promise<DevicePermissionR
     const status = await DevicePermissions.request({ permission: "camera" });
     return status.state === "granted" ? "granted" : "denied";
   } catch {
-    return "denied";
+    try {
+      const status = await DeviceCamera.requestPermissions({
+        permissions: ["camera"],
+      });
+      return isAllowedPermissionState(status.camera) ? "granted" : "denied";
+    } catch {
+      return "denied";
+    }
   }
 }
 
@@ -299,17 +323,34 @@ export async function requestNativePhotoPermission(): Promise<DevicePermissionRe
     const status = await DevicePermissions.request({ permission: "photos" });
     return status.state === "granted" ? "granted" : "denied";
   } catch {
-    return "denied";
+    try {
+      const status = await DeviceCamera.requestPermissions({
+        permissions: ["photos"],
+      });
+      return isAllowedPermissionState(status.photos) ? "granted" : "denied";
+    } catch {
+      return "denied";
+    }
   }
 }
 
 export async function requestDeviceLocationPermission(): Promise<DevicePermissionResult> {
   if (isNativeMobileApp()) {
     try {
-      const status = await DevicePermissions.request({ permission: "location" });
+      const status = await DevicePermissions.request({
+        permission: "location",
+      });
       return status.state === "granted" ? "granted" : "denied";
     } catch {
-      return "denied";
+      try {
+        const status = await Geolocation.requestPermissions();
+        return status.location === "granted" ||
+          status.coarseLocation === "granted"
+          ? "granted"
+          : "denied";
+      } catch {
+        return "denied";
+      }
     }
   }
 
@@ -592,7 +633,9 @@ export async function chooseDrivewayPhotoFromGallery() {
     // the original error to the caller.
     const permission = await requestNativePhotoPermission();
     if (permission !== "granted") {
-      throw new Error("Photo library permission is required to upload an image");
+      throw new Error(
+        "Photo library permission is required to upload an image"
+      );
     }
 
     const media = await DeviceCamera.chooseFromGallery({

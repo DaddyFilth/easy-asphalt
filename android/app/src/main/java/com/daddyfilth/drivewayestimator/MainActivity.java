@@ -2,10 +2,4 @@ package com.daddyfilth.drivewayestimator;
 
 import com.getcapacitor.BridgeActivity;
 
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(android.os.Bundle savedInstanceState) {
-        registerPlugin(DevicePermissionsPlugin.class);
-        super.onCreate(savedInstanceState);
-    }
-}
+public class MainActivity extends BridgeActivity {}

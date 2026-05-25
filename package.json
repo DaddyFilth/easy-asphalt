@@ -15,13 +15,16 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "mobile:build": "pnpm build && pnpm exec cap sync",
-    "mobile:ios": "pnpm mobile:build && pnpm exec cap open ios",
-    "mobile:android": "pnpm mobile:build && pnpm exec cap open android",
-    "mobile:build-ios": "cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release",
-    "mobile:build-android": "cd android && ./gradlew assembleRelease",
-    "mobile:build-android-debug": "cd android && ./gradlew assembleDebug",
-    "mobile:apk": "pnpm mobile:build && pnpm mobile:build-android-debug"
+    "mobile:build": "bash scripts/mobile/mobile-build.sh",
+    "mobile:ios": "corepack pnpm mobile:build && corepack pnpm exec cap open ios",
+    "mobile:android": "corepack pnpm mobile:build && corepack pnpm exec cap open android",
+    "mobile:setup-android": "bash scripts/mobile/bootstrap-android-toolchain.sh",
+    "mobile:setup-android-signing": "bash scripts/mobile/setup-android-signing.sh",
+    "mobile:build-ios": "bash scripts/mobile/ios-build.sh release",
+    "mobile:build-android": "bash scripts/mobile/android-build.sh release",
+    "mobile:build-android-signed": "corepack pnpm mobile:build && bash scripts/mobile/android-build-signed.sh",
+    "mobile:build-android-debug": "bash scripts/mobile/android-build.sh debug",
+    "mobile:apk": "corepack pnpm mobile:build && corepack pnpm mobile:build-android-debug"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
@@ -120,5 +123,10 @@
     "vite": "^8.0.12",
     "vitest": "^4.1.6"
   },
-  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
+  "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
+  "pnpm": {
+    "overrides": {
+      "qs": ">=6.15.2"
+    }
+  }
 }

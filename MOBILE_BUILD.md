@@ -20,7 +20,7 @@ This project uses **Capacitor** to wrap the React web application as native iOS 
 
 ### General Requirements
 
-- Node.js 16+ and pnpm
+- Node.js 22+ and pnpm (Capacitor CLI requirement)
 - Capacitor CLI (installed as dev dependency)
 
 ## Project Structure
@@ -40,15 +40,18 @@ driveway-estimator-pro/
 
 All mobile build commands are defined in `package.json`:
 
-| Script                            | Purpose                                                     |
-| --------------------------------- | ----------------------------------------------------------- |
-| `pnpm mobile:build`               | Build web assets and sync to native projects                |
-| `pnpm mobile:ios`                 | Build web, sync, and open iOS project in Xcode              |
-| `pnpm mobile:android`             | Build web, sync, and open Android project in Android Studio |
-| `pnpm mobile:build-ios`           | Create iOS release build (requires Xcode)                   |
-| `pnpm mobile:build-android`       | Create Android release build (requires Android SDK)         |
-| `pnpm mobile:build-android-debug` | Create installable debug APK for internal sharing           |
-| `pnpm mobile:apk`                 | Build web assets, sync Android, and create a debug APK      |
+| Script                              | Purpose                                                           |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `pnpm mobile:build`                 | Build web assets and sync to native projects                      |
+| `pnpm mobile:setup-android`         | Install local JDK/SDK/Node 22 toolchain under `.mobile-toolchain` |
+| `pnpm mobile:setup-android-signing` | Interactive setup for `android/keystore.properties`               |
+| `pnpm mobile:ios`                   | Build web, sync, and open iOS project in Xcode                    |
+| `pnpm mobile:android`               | Build web, sync, and open Android project in Android Studio       |
+| `pnpm mobile:build-ios`             | Create iOS release build (macOS + Xcode preflight)                |
+| `pnpm mobile:build-android`         | Create Android release build (auto-detects Java/SDK env)          |
+| `pnpm mobile:build-android-signed`  | Build + sync + signed Android release APK                         |
+| `pnpm mobile:build-android-debug`   | Create installable debug APK for internal sharing                 |
+| `pnpm mobile:apk`                   | Build web assets, sync Android, and create a debug APK            |
 
 ## Development Workflow
 
@@ -92,6 +95,9 @@ pnpm mobile:build
 ```bash
 # Install dependencies
 pnpm install
+
+# Install local Android toolchain (JDK + SDK)
+pnpm mobile:setup-android
 
 # Build web assets and sync to Android
 pnpm mobile:android
@@ -156,6 +162,10 @@ The debug APK will be at:
      ```
    - Keep both files private. They are ignored by git and are required to
      publish updates signed with the same certificate.
+   - Quick local setup helper:
+     ```bash
+     pnpm mobile:setup-android-signing
+     ```
 
 2. **Build release APK:**
 
@@ -163,7 +173,17 @@ The debug APK will be at:
    pnpm mobile:build-android
    ```
 
-   The APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
+   Without signing config, output is:
+   `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+
+   To enforce signing and fail fast if signing config is incomplete:
+
+   ```bash
+   pnpm mobile:build-android-signed
+   ```
+
+   Signed output:
+   `android/app/build/outputs/apk/release/app-release.apk`
 
 3. **Build release AAB (for Play Store):**
    ```bash
@@ -196,7 +216,7 @@ The debug APK will be at:
 1. **Build APK:**
 
    ```bash
-   pnpm mobile:build-android
+   pnpm mobile:build-android-signed
    ```
 
 2. **Distribute:**
@@ -236,6 +256,13 @@ These are already configured in the native projects.
 
 ### iOS Issues
 
+**"xcodebuild: not found" / non-macOS host:**
+
+- `pnpm mobile:build-ios` now performs a platform preflight and requires:
+  - macOS host (`darwin`)
+  - Xcode + Command Line Tools (`xcodebuild` in `PATH`)
+- On Linux/Windows, use macOS CI or a Mac build machine for native iOS builds.
+
 **"Pod install failed":**
 
 ```bash
@@ -250,6 +277,32 @@ pod install
 - Update pods: `pod repo update`
 
 ### Android Issues
+
+**"JAVA_HOME is not set" / Java not found:**
+
+- `pnpm mobile:build-android` and `pnpm mobile:build-android-debug` now auto-detect Java from:
+  - local repo toolchain at `.mobile-toolchain/jdk`
+  - `JAVA_HOME`
+  - `javac` / `java` in `PATH`
+  - Android Studio embedded JBR (common macOS/Linux paths)
+- If Java is still not detected, install JDK 21+ or Android Studio.
+
+**"Android SDK not found":**
+
+- Set one of these environment variables:
+  - `.mobile-toolchain/android-sdk` (auto-detected after `pnpm mobile:setup-android`)
+  - `ANDROID_SDK_ROOT=/path/to/Android/Sdk`
+  - `ANDROID_HOME=/path/to/Android/Sdk`
+
+**"Release APK is unsigned":**
+
+- Use `pnpm mobile:build-android-signed` to enforce keystore validation.
+- Ensure `android/keystore.properties` includes:
+  - `storeFile`
+  - `storePassword`
+  - `keyAlias`
+  - `keyPassword`
+- Use `pnpm mobile:setup-android-signing` to generate this file interactively.
 
 **"Gradle sync failed":**
 
@@ -299,6 +352,20 @@ jobs:
       - run: pnpm mobile:build-ios
       - run: pnpm mobile:build-android
 ```
+
+This repository now includes Android CI at:
+`.github/workflows/mobile-android.yml`
+
+- Triggers on pull requests, pushes to `main`, and manual runs
+- Builds:
+  - Android debug (`app-debug.apk`)
+  - Android release (`app-release-unsigned.apk`)
+  - Android signed release (`app-release.apk`) when secrets are configured
+- Required secrets for signed CI release:
+  - `ANDROID_KEYSTORE_BASE64`
+  - `ANDROID_KEYSTORE_PASSWORD`
+  - `ANDROID_KEY_ALIAS`
+  - `ANDROID_KEY_PASSWORD`
 
 ## Resources
 
