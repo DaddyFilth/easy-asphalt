@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 fn session_cookie() -> String {
     std::env::var("SESSION_COOKIE").unwrap_or_default()
