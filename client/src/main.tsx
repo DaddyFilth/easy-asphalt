@@ -8,9 +8,6 @@ import App from "./App";
 import { getApiUrl } from "./const";
 import "./index.css";
 
-// Force dark mode - app is dark-mode only
-document.documentElement.classList.add("dark");
-
 const queryClient = new QueryClient();
 
 const redirectToEstimatorIfUnauthorized = (error: unknown) => {
