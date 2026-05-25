@@ -486,7 +486,7 @@ export default function Estimator() {
     }
 
     let routeFeature: string | null = null;
-    let routeAction: "gallery" | null = null;
+    let routeAction: "gallery" | "camera" | null = null;
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -494,6 +494,7 @@ export default function Estimator() {
       routeFeature = params.get("feature");
 
       if (startAction === "upload") routeAction = "gallery";
+      if (startAction === "camera") routeAction = "camera";
 
       if (routeAction || routeFeature) {
         window.history.replaceState(null, "", window.location.pathname);
@@ -504,6 +505,10 @@ export default function Estimator() {
       routeAction ?? (nativeMobileApp ? consumePendingEstimatorAction() : null);
     if (pendingAction === "gallery") {
       void handleUploadPhoto();
+      return;
+    }
+    if (pendingAction === "camera") {
+      void handleTakePhoto();
       return;
     }
 

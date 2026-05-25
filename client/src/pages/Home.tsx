@@ -39,7 +39,7 @@ const featureButtons: FeatureButton[] = [
   {
     title: "Capture",
     detail: "Camera or upload",
-    href: "/camera",
+    href: "/estimator?start=camera",
     icon: Camera,
     accent: "#39ff14",
   },

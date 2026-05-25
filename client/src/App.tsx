@@ -3,6 +3,7 @@ import { Suspense, lazy } from "react";
 import { Route, Switch } from "wouter";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
+import { Toaster } from "./components/ui/sonner";
 
 const Camera = lazy(() => import("./pages/Camera"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -46,6 +47,7 @@ export default function App() {
           <Route component={NotFound} />
         </Switch>
       </Suspense>
+      <Toaster />
       <Analytics />
     </>
   );

@@ -303,16 +303,29 @@ export async function requestNativeCameraPermission(): Promise<DevicePermissionR
 
   try {
     const status = await DevicePermissions.request({ permission: "camera" });
-    return status.state === "granted" ? "granted" : "denied";
+    if (status.state === "granted") return "granted";
   } catch {
-    try {
-      const status = await DeviceCamera.requestPermissions({
-        permissions: ["camera"],
-      });
-      return isAllowedPermissionState(status.camera) ? "granted" : "denied";
-    } catch {
-      return "denied";
-    }
+    // fall through
+  }
+
+  try {
+    const status = await DeviceCamera.requestPermissions({
+      permissions: ["camera"],
+    });
+    if (isAllowedPermissionState(status.camera)) return "granted";
+  } catch {
+    // fall through
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
+    stream.getTracks().forEach(track => track.stop());
+    return "granted";
+  } catch {
+    return "denied";
   }
 }
 
