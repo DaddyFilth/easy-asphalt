@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     androidScheme: "https",
   },
   android: {
-    webContentsDebuggingEnabled: false,
+    webContentsDebuggingEnabled: true,
   },
 };
 
