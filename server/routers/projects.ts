@@ -785,4 +785,48 @@ export const projectsRouter = router({
         filename: `driveway-estimate-${safePdfSlug(project.projectName)}-${Date.now()}.pdf`,
       };
     }),
+
+  /**
+   * Public: generate a material preview image for the landing page demo
+   */
+  generateLandingPreview: publicProcedure
+    .input(
+      z.object({
+        material: z.enum(MATERIALS),
+        photoUrl: z.string().url().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const photoUrl =
+        input.photoUrl || "https://placehold.co/800x600/1a1a2e/eee?text=Driveway";
+      const prompt = buildMaterialPreviewPrompt(input.material);
+      const result = await generateImage({
+        prompt,
+        originalImages: [{ url: photoUrl, mimeType: "image/jpeg" }],
+      });
+      return { previewUrl: result.url, usedFallback: result.usedFallback ?? false };
+    }),
+
+  /**
+   * Public: get pricing for the landing page demo
+   */
+  getLandingPricing: publicProcedure
+    .input(
+      z.object({
+        material: z.enum(MATERIALS),
+        zipCode: z.string().regex(/^\d{5}$/).default("10001"),
+      })
+    )
+    .query(async ({ input }) => {
+      const pricing = await getMaterialPricingForZip(input.zipCode, input.material);
+      const qty = calculateMaterialQuantity(1000, 4, input.material);
+      const totalCost = calculateTotalCost(qty.quantity, pricing.pricePerTon);
+      return {
+        pricePerSquareFoot: pricing.pricePerSquareFoot,
+        pricePerTon: pricing.pricePerTon,
+        supplier: pricing.supplier,
+        quantityNeeded: qty.quantityStr,
+        totalCost,
+      };
+    }),
 });

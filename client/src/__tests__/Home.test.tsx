@@ -1,6 +1,25 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    projects: {
+      generateLandingPreview: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+      getLandingPricing: {
+        useQuery: () => ({
+          data: null,
+          isLoading: false,
+        }),
+      },
+    },
+  },
+}));
 
 import Home from "../pages/Home";
 

@@ -6,6 +6,7 @@ import {
   Clock,
   DollarSign,
   Image as ImageIcon,
+  Loader2,
   MapPin,
   Ruler,
   Send,
@@ -14,6 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 type FeatureButton = {
   title: string;
@@ -63,6 +66,13 @@ const featureButtons: FeatureButton[] = [
   },
 ];
 
+const materialOptions = [
+  { id: "hotmix", label: "Hot Mix Asphalt", icon: "🛣️", border: "border-zinc-600", bg: "bg-zinc-800", color: "#a8a8a8" },
+  { id: "millings", label: "Asphalt Millings", icon: "♻️", border: "border-zinc-500", bg: "bg-zinc-700", color: "#8a8a8a" },
+  { id: "tar_and_chip", label: "Tar & Chip", icon: "🪨", border: "border-amber-700", bg: "bg-amber-900", color: "#d4a574" },
+  { id: "gravel", label: "Gravel", icon: "⚫", border: "border-stone-500", bg: "bg-stone-700", color: "#b8a88a" },
+];
+
 const steps: Step[] = [
   {
     title: "Capture",
@@ -101,6 +111,30 @@ const trustItems = [
 ];
 
 export default function Home() {
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const generatePreview = trpc.projects.generateLandingPreview.useMutation();
+  const pricingQuery = trpc.projects.getLandingPricing.useQuery(
+    { material: (selectedMaterial ?? "hotmix") as "hotmix" | "millings" | "tar_and_chip" | "gravel", zipCode: "10001" },
+    { enabled: !!selectedMaterial }
+  );
+
+  const handleMaterialSelect = async (material: string) => {
+    setSelectedMaterial(material);
+    try {
+      const result = await generatePreview.mutateAsync({
+        material: material as "hotmix" | "millings" | "tar_and_chip" | "gravel",
+        photoUrl: `${window.location.origin}/landing-driveway-visual.png`,
+      });
+      if (result.previewUrl) setPreviewUrl(result.previewUrl);
+    } catch {
+      // Server may not have Gemini configured; CSS overlay fallback used
+    }
+  };
+
+  const materialOverlay = materialOptions.find(m => m.id === selectedMaterial);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#07100d] text-white">
       <style>{`
@@ -326,6 +360,123 @@ export default function Home() {
           </div>
         </section>
       </header>
+
+      {/* ── Live Preview ── */}
+      <section className="border-y border-white/8 bg-[#0a1511] px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-xl">
+            <span className="text-xs font-black uppercase text-[#39ff14]">
+              Live Preview
+            </span>
+            <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              Try any material. See it instantly.
+            </h2>
+            <p className="mt-3 text-sm font-medium leading-6 text-[#9fb1aa]">
+              Pick a surface type — the preview and pricing update in real time.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+            {/* Preview image */}
+            <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/12 bg-[#06110a]/86 shadow-[0_32px_90px_rgba(0,0,0,0.55)]">
+              {generatePreview.isPending ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#39ff14]" />
+                </div>
+              ) : null}
+              <img
+                src={previewUrl || "/landing-driveway-visual.png"}
+                alt={selectedMaterial ? `${materialOptions.find(m => m.id === selectedMaterial)?.label} preview` : "Driveway preview"}
+                className={`h-full w-full object-cover transition-opacity duration-500 ${generatePreview.isPending ? "opacity-30" : "opacity-100"}`}
+              />
+              {materialOverlay && !generatePreview.isPending && (
+                <div
+                  className="absolute inset-0 mix-blend-multiply pointer-events-none transition-opacity duration-500"
+                  style={{ backgroundColor: materialOverlay.color, opacity: 0.35 }}
+                />
+              )}
+              {selectedMaterial && (
+                <div className="absolute bottom-3 left-3 right-3 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-white/12 bg-[#07100d]/78 px-3 py-2 backdrop-blur">
+                    <span className="block text-lg font-black text-white">
+                      {pricingQuery.data?.pricePerSquareFoot ?? "—"}
+                    </span>
+                    <span className="text-xs font-bold text-[#9fb1aa]">per sq ft</span>
+                  </div>
+                  <div className="rounded-lg border border-white/12 bg-[#07100d]/78 px-3 py-2 backdrop-blur">
+                    <span className="block text-lg font-black text-white">
+                      {pricingQuery.data?.quantityNeeded ?? "—"}
+                    </span>
+                    <span className="text-xs font-bold text-[#9fb1aa]">needed</span>
+                  </div>
+                  <div className="rounded-lg border border-white/12 bg-[#07100d]/78 px-3 py-2 backdrop-blur">
+                    <span className="block text-lg font-black text-[#39ff14]">
+                      {pricingQuery.data?.totalCost ?? "—"}
+                    </span>
+                    <span className="text-xs font-bold text-[#9fb1aa]">total</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Material selector + pricing */}
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-3">
+                {materialOptions.map(m => {
+                  const isActive = selectedMaterial === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => handleMaterialSelect(m.id)}
+                      className={`group rounded-lg border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#39ff14] ${
+                        isActive
+                          ? "border-[#39ff14]/60 bg-[#39ff14]/10 shadow-[0_0_24px_rgba(57,255,20,0.12)]"
+                          : "border-white/10 bg-white/6 hover:border-white/22 hover:bg-white/10"
+                      }`}
+                    >
+                      <span className="block text-2xl">{m.icon}</span>
+                      <span className={`mt-2 block text-sm font-black transition-colors ${isActive ? "text-[#39ff14]" : "text-white"}`}>
+                        {m.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedMaterial && pricingQuery.data && (
+                <div className="rounded-lg border border-white/10 bg-white/6 p-4">
+                  <div className="flex items-center justify-between border-b border-white/8 pb-3">
+                    <span className="text-xs font-semibold text-[#9fb1aa]">Supplied by</span>
+                    <span className="text-sm font-bold text-white">{pricingQuery.data.supplier}</span>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#9fb1aa]">Price per sq ft</span>
+                      <span className="font-bold text-white">{pricingQuery.data.pricePerSquareFoot}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#9fb1aa]">Price per ton</span>
+                      <span className="font-bold text-white">${pricingQuery.data.pricePerTon.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#9fb1aa]">Quantity (1k sq ft)</span>
+                      <span className="font-bold text-white">{pricingQuery.data.quantityNeeded}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <a
+                href="/estimator"
+                className="landing-sheen inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#39ff14]/40 bg-[#0f7c43] px-6 text-base font-black text-white shadow-[0_18px_48px_rgba(57,255,20,0.2)] transition hover:-translate-y-0.5 hover:bg-[#119653] focus:outline-none focus:ring-2 focus:ring-[#d8ffe8]"
+              >
+                Open Estimator
+                <ArrowRight className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="border-y border-white/8 bg-[#0a1511] px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
