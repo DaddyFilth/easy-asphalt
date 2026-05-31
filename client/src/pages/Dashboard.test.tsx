@@ -12,7 +12,7 @@ const mutationState = vi.hoisted(() => ({
   shareMutate: vi.fn(),
 }));
 
-vi.mock("/home/filth/easy-asphalt/client/src/_core/hooks/useAuth.ts", () => ({
+vi.mock("@/_core/hooks/useAuth", () => ({
   useAuth: () => ({
     user: {
       id: 1,
@@ -24,7 +24,7 @@ vi.mock("/home/filth/easy-asphalt/client/src/_core/hooks/useAuth.ts", () => ({
   }),
 }));
 
-vi.mock("/home/filth/easy-asphalt/client/src/lib/trpc.ts", () => ({
+vi.mock("@/lib/trpc", () => ({
   trpc: {
     projects: {
       list: {
