@@ -212,9 +212,10 @@ class MemDb {
   updateProject(projectId: number, updates: Record<string, unknown>): void {
     const p = this.projects.find(p => p.id === projectId);
     if (!p) return;
+    const record = p as unknown as Record<string, unknown>;
     for (const [key, value] of Object.entries(updates)) {
       if (key in p && value !== undefined) {
-        (p as Record<string, unknown>)[key] = value === null ? null : value;
+        record[key] = value === null ? null : value;
       }
     }
     p.updatedAt = new Date();

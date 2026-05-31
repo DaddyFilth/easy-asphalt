@@ -1,4 +1,4 @@
-import { Camera as DeviceCamera, CameraDirection, EncodingType } from "@capacitor/camera";
+import { Camera as DeviceCamera, CameraDirection, CameraResultType } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 import { CameraIcon, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -24,12 +24,12 @@ export default function Camera() {
       .then(() =>
         DeviceCamera.getPhoto({
           quality: 90,
-          targetWidth: 1920,
-          targetHeight: 1920,
+          width: 1920,
+          height: 1920,
           correctOrientation: true,
-          encodingType: EncodingType.JPEG,
+          resultType: CameraResultType.Uri,
           saveToGallery: false,
-          cameraDirection: CameraDirection.Rear,
+          direction: CameraDirection.Rear,
           allowEditing: false,
         })
       )
