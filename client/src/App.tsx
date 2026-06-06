@@ -10,6 +10,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Estimator = lazy(() => import("./pages/Estimator"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const SharedProject = lazy(() => import("./pages/SharedProject"));
+const Compare = lazy(() => import("./pages/Compare"));
+const LiveView = lazy(() => import("./pages/LiveView"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 function PageLoader() {
   return (
@@ -32,11 +35,20 @@ export default function App() {
           <Route path={"/camera"}>
             <Camera />
           </Route>
+          <Route path={"/live"}>
+            <LiveView />
+          </Route>
+          <Route path={"/pricing"}>
+            <Pricing />
+          </Route>
           <Route path={"/estimator"}>
             <Estimator />
           </Route>
           <Route path={"/dashboard"}>
             <Dashboard />
+          </Route>
+          <Route path={"/compare"}>
+            <Compare />
           </Route>
           <Route path={"/project/:projectId"}>
             <ProjectDetail />

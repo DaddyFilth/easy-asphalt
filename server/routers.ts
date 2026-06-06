@@ -7,6 +7,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { projectsRouter } from "./routers/projects";
+import { subscriptionRouter } from "./routers/subscription";
 
 function createLocalOpenId() {
   return `local:${randomUUID()}`;
@@ -79,6 +80,7 @@ export const appRouter = router({
     }),
   }),
   projects: projectsRouter,
+  subscription: subscriptionRouter,
 });
 
 export type AppRouter = typeof appRouter;

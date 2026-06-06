@@ -32,7 +32,7 @@
 - [x] Create projects dashboard page
 - [x] Add touch/pointer event support for mobile corner dragging
 - [x] Recalculate square footage when corners are adjusted
-- [ ] Add permission denied/unavailable error handling for camera
+- [x] Add permission denied/unavailable error handling for camera
 
 ## Phase 4: Frontend - Visualization & Sharing
 
@@ -54,6 +54,37 @@
 - [x] Performance optimization for image processing (S3 storage + lazy loading)
 - [x] Error handling and user feedback for all flows (toast notifications + error boundaries)
 
+<<<<<<< HEAD
+=======
+## Phase 6: Deployment & Polish
+
+- [x] Create final checkpoint
+- [ ] Verify all features working in production
+- [x] Document API endpoints and usage
+- [ ] Prepare for user delivery
+
+## Production Readiness Notes
+
+### Backend Services (Needs Real Integration)
+
+- Pricing Service: Currently uses mockPricingByZip. Replace with real supplier API (e.g., landscape supply vendors, asphalt producers)
+- Email Service: Resend API integration implemented with fallback to mock emails when API key not configured
+- Geolocation: Google Maps API reverse geocoding implemented with Zippopotam.us fallback
+
+### Frontend Enhancements
+
+- Mobile Touch Support: Pointer events implemented for corner dragging on mobile devices
+- Corner Adjustment: Square footage recalculation implemented with dynamic corner adjustment
+- Error Handling: Camera permission error handling implemented with DevicePermissionGate component
+- LiDAR Integration: Add depth sensor support for iPhone Pro devices (requires Capacitor)
+
+### Testing
+
+- Unit tests for all backend procedures using vitest
+- Integration tests for photo upload, edge detection, and pricing flows
+- End-to-end tests for complete project creation and sharing workflow
+
+>>>>>>> 9e7b7ce9 (fixed features added subscription)
 ## Phase 6: Mobile Conversion & GitHub
 
 - [x] Install and configure Capacitor

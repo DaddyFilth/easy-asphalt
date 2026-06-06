@@ -7,6 +7,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerMobileCors } from "./cors";
 import { serveStatic } from "./static";
+import path from "path";
+import fs from "fs";
+import { LOCAL_STORAGE_DIR, LOCAL_STORAGE_URL_PREFIX } from "../storage";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -48,6 +51,10 @@ async function startServer() {
     const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
+    // Serve local-storage for uploaded files
+    if (fs.existsSync(LOCAL_STORAGE_DIR)) {
+      app.use(LOCAL_STORAGE_URL_PREFIX, express.static(LOCAL_STORAGE_DIR));
+    }
     serveStatic(app);
   }
 

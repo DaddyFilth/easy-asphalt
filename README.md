@@ -324,10 +324,10 @@ For issues, questions, or feature requests:
 ## Roadmap
 
 - [ ] Real supplier API integration for live pricing
-- [ ] SendGrid email integration for notifications
-- [ ] Reverse geocoding for automatic location detection
+- [x] Email integration for notifications (Resend API with fallback)
+- [x] Reverse geocoding for automatic location detection (Google Maps + Zippopotam.us fallback)
 - [ ] Capacitor LiDAR support for depth sensing
-- [ ] Touch/pointer event support for mobile corner dragging
+- [x] Touch/pointer event support for mobile corner dragging
 - [ ] Offline mode for field use without connectivity
 - [ ] Contractor dashboard for viewing shared projects
 - [ ] Payment integration for booking contractors

@@ -4,6 +4,7 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  Crown,
   DollarSign,
   Image as ImageIcon,
   Loader2,
@@ -51,9 +52,9 @@ const featureButtons: FeatureButton[] = [
     accent: "#64d8ff",
   },
   {
-    title: "Preview",
-    detail: "Live or static view",
-    href: "/estimator?feature=preview",
+    title: "Live View",
+    detail: "Real-time overlay",
+    href: "/live",
     icon: ImageIcon,
     accent: "#ffb84c",
   },
@@ -237,6 +238,13 @@ export default function Home() {
             </a>
 
             <div className="flex items-center gap-2">
+              <a
+                href="/pricing"
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-purple-500/40 bg-purple-500/10 px-3 text-sm font-bold text-purple-300 transition hover:bg-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Premium
+              </a>
               <a
                 href={secondaryCtaHref}
                 className="inline-flex h-10 items-center justify-center rounded-lg border border-white/12 bg-white/8 px-3 text-sm font-bold text-white transition hover:bg-white/14 focus:outline-none focus:ring-2 focus:ring-[#64d8ff]"

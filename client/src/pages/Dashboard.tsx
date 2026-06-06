@@ -6,15 +6,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
-import { Trash2, Share2, Eye, Loader2 } from "lucide-react";
+import { Trash2, Share2, Eye, Loader2, GitCompare, Camera, Crown } from "lucide-react";
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useSubscription } from "@/_core/hooks/useSubscription";
 
 export default function Dashboard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<number>>(
+    new Set()
+  );
+  const { isPremium } = useSubscription();
 
   const projectsQuery = trpc.projects.list.useQuery();
   const deleteProjectMutation = trpc.projects.delete.useMutation({
@@ -48,6 +55,33 @@ export default function Dashboard() {
     createShareLinkMutation.mutate({ projectId });
   };
 
+  const handleToggleSelect = (projectId: number) => {
+    setSelectedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        if (next.size >= 4) {
+          toast.error("You can compare up to 4 projects at a time");
+          return prev;
+        }
+        next.add(projectId);
+      }
+      return next;
+    });
+  };
+
+  const handleCompare = () => {
+    if (selectedProjectIds.size < 2) {
+      toast.error("Select at least 2 projects to compare");
+      return;
+    }
+    const params = Array.from(selectedProjectIds)
+      .map((id: number) => `id=${id}`)
+      .join("&");
+    window.location.href = `/compare?${params}`;
+  };
+
   const materials: Record<string, { name: string; icon: string }> = {
     hotmix: { name: "Hot Mix Asphalt", icon: "🛣️" },
     millings: { name: "Asphalt Millings", icon: "♻️" },
@@ -61,17 +95,49 @@ export default function Dashboard() {
         <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
-              My Projects
-            </h1>
-            <p className="text-slate-300">
-              Manage your driveway estimates and share with contractors
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
+                My Projects
+              </h1>
+              <p className="text-slate-300">
+                Manage your driveway estimates and share with contractors
+              </p>
+            </div>
+            {!isPremium && (
+              <Badge
+                onClick={() => (window.location.href = "/pricing")}
+                className="bg-purple-500/20 text-purple-300 border-purple-500/30 cursor-pointer hover:bg-purple-500/30"
+              >
+                <Crown className="w-3 h-3 mr-1" />
+                Upgrade to Premium
+              </Badge>
+            )}
           </div>
-          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-            <a href="/estimator">New Estimate</a>
-          </Button>
+          <div className="flex gap-2">
+            {selectedProjectIds.size >= 2 && (
+              <Button
+                onClick={handleCompare}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <GitCompare className="w-4 h-4 mr-2" />
+                Compare ({selectedProjectIds.size})
+              </Button>
+            )}
+            <Button
+              asChild
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <a href="/live">
+                <Camera className="w-4 h-4 mr-2" />
+                Live Preview
+              </a>
+            </Button>
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+              <a href="/estimator">New Estimate</a>
+            </Button>
+          </div>
         </div>
 
         {shareLink && (
@@ -123,15 +189,28 @@ export default function Dashboard() {
             {projectsQuery.data?.map(project => (
               <Card
                 key={project.id}
-                className="bg-slate-800 border-slate-700 hover:border-blue-500 transition"
+                className={`bg-slate-800 border-slate-700 hover:border-blue-500 transition ${
+                  selectedProjectIds.has(project.id)
+                    ? "border-purple-500 ring-2 ring-purple-500/30"
+                    : ""
+                }`}
               >
                 <CardHeader>
-                  <CardTitle className="text-white">
-                    {project.projectName}
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    {new Date(project.createdAt).toLocaleDateString()}
-                  </CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-white">
+                        {project.projectName}
+                      </CardTitle>
+                      <CardDescription className="text-slate-400">
+                        {new Date(project.createdAt).toLocaleDateString()}
+                      </CardDescription>
+                    </div>
+                    <Checkbox
+                      checked={selectedProjectIds.has(project.id)}
+                      onCheckedChange={() => handleToggleSelect(project.id)}
+                      className="mt-1"
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Project Thumbnail */}

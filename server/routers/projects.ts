@@ -209,7 +209,25 @@ async function uploadPhotoAndDetectEdgesForOwner(
     photoMimeType
   );
 
-  const edgeDetection = await detectDrivewayEdges(toAbsoluteUrl(req, photoUrl));
+  let edgeDetection: {
+    corners: Array<{ x: number; y: number }>;
+    confidence: number;
+    description: string;
+  };
+  try {
+    edgeDetection = await detectDrivewayEdges(toAbsoluteUrl(req, photoUrl));
+  } catch {
+    edgeDetection = {
+      corners: [
+        { x: 15, y: 15 },
+        { x: 85, y: 15 },
+        { x: 85, y: 85 },
+        { x: 15, y: 85 },
+      ],
+      confidence: 0.5,
+      description: "Estimated driveway boundary (AI edge detection unavailable)",
+    };
+  }
   const squareFeet = calculateSquareFeetFromCorners(
     edgeDetection.corners,
     input.imageWidth,

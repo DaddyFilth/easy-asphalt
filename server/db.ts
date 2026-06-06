@@ -215,7 +215,11 @@ class MemDb {
     const record = p as unknown as Record<string, unknown>;
     for (const [key, value] of Object.entries(updates)) {
       if (key in p && value !== undefined) {
+<<<<<<< HEAD
         record[key] = value === null ? null : value;
+=======
+        (p as unknown as Record<string, unknown>)[key] = value === null ? null : value;
+>>>>>>> 9e7b7ce9 (fixed features added subscription)
       }
     }
     p.updatedAt = new Date();
