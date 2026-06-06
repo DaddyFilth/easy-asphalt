@@ -1,6 +1,6 @@
 # Driveway Estimator Pro
 
-A professional-grade mobile application that allows homeowners and contractors to capture driveway photos, automatically measure square footage using AI vision, visualize different materials, get real-time local pricing, and share estimates with contractors.
+A professional-grade mobile application that allows homeowners and contractors to capture driveway photos, automatically measure square footage using AI vision, visualize different materials, get real-time pricing, and generate shareable estimates.
 
 ## Features
 
@@ -55,7 +55,7 @@ A professional-grade mobile application that allows homeowners and contractors t
 ## Project Structure
 
 ```
-driveway-estimator-pro/
+easy-asphalt/
 ├── client/                 # React web app
 │   ├── src/
 │   │   ├── pages/         # Page components
@@ -87,8 +87,8 @@ driveway-estimator-pro/
 
 ```bash
 # Clone the repository
-git clone https://github.com/DaddyFilth/driveway-estimator-pro.git
-cd driveway-estimator-pro
+git clone https://github.com/DaddyFilth/easy-asphalt.git
+cd easy-asphalt
 
 # Install dependencies
 pnpm install
