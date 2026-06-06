@@ -190,6 +190,17 @@ function buildMaterialPreviewPrompt(
   return promptSections.join(" ");
 }
 
+/**
+ * Upload photo and detect driveway edges for project creation.
+ * 
+ * IMPORTANT: This function stores photos to the database/storage system.
+ * - Photos are stored using storagePut() and assigned a photoUrl and photoKey
+ * - These stored photos become part of the project record in the database
+ * - Only photos uploaded through this function are stored as project photos
+ * 
+ * This ensures that all project photos are properly stored and retrievable,
+ * while the LiveView component remains for preview purposes only.
+ */
 async function uploadPhotoAndDetectEdgesForOwner(
   req: Request,
   ownerKey: string,
@@ -462,7 +473,14 @@ export const projectsRouter = router({
     }),
 
   /**
-   * Create a new project
+   * Create a new project.
+   * 
+   * IMPORTANT: This mutation stores project photos in the database.
+   * - photoUrl and photoKey are stored in the projects table for the main photo
+   * - previewImageUrl and previewImageKey are stored for AI-generated material previews
+   * - All project photos are persisted and retrievable via the database
+   * 
+   * This ensures that all actual project photos (not LiveView previews) are properly stored.
    */
   create: protectedProcedure
     .input(
@@ -805,7 +823,12 @@ export const projectsRouter = router({
     }),
 
   /**
-   * Public: generate a material preview image for the landing page demo
+   * Public: generate a material preview image for the landing page demo.
+   * 
+   * IMPORTANT: This is for DEMO ONLY and does NOT store photos in the database.
+   * - This generates temporary previews for the landing page demonstration
+   * - No photos are stored in the database from this function
+   * - Only the actual project creation (create mutation) stores photos
    */
   generateLandingPreview: publicProcedure
     .input(

@@ -18,7 +18,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 
 type FeatureButton = {
   title: string;
@@ -113,7 +112,6 @@ const trustItems = [
 ];
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showEstimate, setShowEstimate] = useState(false);
@@ -247,39 +245,19 @@ export default function Home() {
                 <Crown className="w-4 h-4 mr-2" />
                 Premium
               </a>
-              {isAuthenticated ? (
-                <>
-                  <a
-                    href={secondaryCtaHref}
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-white/12 bg-white/8 px-3 text-sm font-bold text-white transition hover:bg-white/14 focus:outline-none focus:ring-2 focus:ring-[#64d8ff]"
-                  >
-                    Saved Projects
-                  </a>
-                  <a
-                    href={primaryCtaHref}
-                    className="landing-sheen hidden h-10 items-center justify-center gap-2 rounded-lg border border-[#39ff14]/40 bg-[#0f7c43] px-4 text-sm font-black text-white shadow-[0_10px_32px_rgba(57,255,20,0.22)] transition hover:-translate-y-0.5 hover:bg-[#119653] focus:outline-none focus:ring-2 focus:ring-[#d8ffe8] sm:inline-flex"
-                  >
-                    Open Estimator
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </>
-              ) : (
-                <>
-                  <a
-                    href="/login"
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-white/12 bg-white/8 px-3 text-sm font-bold text-white transition hover:bg-white/14 focus:outline-none focus:ring-2 focus:ring-[#64d8ff]"
-                  >
-                    Sign In
-                  </a>
-                  <a
-                    href="/signup"
-                    className="landing-sheen hidden h-10 items-center justify-center gap-2 rounded-lg border border-[#39ff14]/40 bg-[#0f7c43] px-4 text-sm font-black text-white shadow-[0_10px_32px_rgba(57,255,20,0.22)] transition hover:-translate-y-0.5 hover:bg-[#119653] focus:outline-none focus:ring-2 focus:ring-[#d8ffe8] sm:inline-flex"
-                  >
-                    Get Started
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </>
-              )}
+              <a
+                href={secondaryCtaHref}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-white/12 bg-white/8 px-3 text-sm font-bold text-white transition hover:bg-white/14 focus:outline-none focus:ring-2 focus:ring-[#64d8ff]"
+              >
+                Saved Projects
+              </a>
+              <a
+                href={primaryCtaHref}
+                className="landing-sheen hidden h-10 items-center justify-center gap-2 rounded-lg border border-[#39ff14]/40 bg-[#0f7c43] px-4 text-sm font-black text-white shadow-[0_10px_32px_rgba(57,255,20,0.22)] transition hover:-translate-y-0.5 hover:bg-[#119653] focus:outline-none focus:ring-2 focus:ring-[#d8ffe8] sm:inline-flex"
+              >
+                Open Estimator
+                <ArrowRight className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </nav>

@@ -116,6 +116,7 @@ class MemDb {
     if (existing) {
       if (user.name !== undefined) existing.name = user.name ?? null;
       if (user.email !== undefined) existing.email = user.email ?? null;
+      if (user.password !== undefined) existing.password = user.password ?? null;
       if (user.lastSignedIn !== undefined) existing.lastSignedIn = user.lastSignedIn;
       if (user.role !== undefined) existing.role = user.role;
       existing.updatedAt = now;
@@ -126,6 +127,7 @@ class MemDb {
       openId: user.openId,
       name: user.name ?? null,
       email: user.email ?? null,
+      password: user.password ?? null,
       role: user.role ?? (user.openId === ENV.ownerOpenId ? "admin" : "user"),
       createdAt: now,
       updatedAt: now,
@@ -152,6 +154,7 @@ class MemDb {
       openId: user.openId,
       name: user.name ?? null,
       email: user.email ?? null,
+      password: user.password ?? null,
       role: user.role ?? "user",
       createdAt: now,
       updatedAt: now,
@@ -159,6 +162,30 @@ class MemDb {
     };
     this.users.push(newUser);
     return this.clone(newUser);
+  }
+
+  findUser(filter: { openId?: string; email?: string }): MemUser | null {
+    if (filter.email) {
+      const u = this.users.find(u => u.email === filter.email);
+      return u ? this.clone(u) : null;
+    }
+    if (filter.openId) {
+      const u = this.users.find(u => u.openId === filter.openId);
+      return u ? this.clone(u) : null;
+    }
+    return null;
+  }
+
+  updateUser(userId: number, updates: Record<string, unknown>): void {
+    const u = this.users.find(u => u.id === userId);
+    if (!u) return;
+    const record = u as unknown as Record<string, unknown>;
+    for (const [key, value] of Object.entries(updates)) {
+      if (key in u && value !== undefined) {
+        record[key] = value === null ? null : value;
+      }
+    }
+    u.updatedAt = new Date();
   }
 
   getUserProjects(userId: number): MemProject[] {
@@ -215,11 +242,7 @@ class MemDb {
     const record = p as unknown as Record<string, unknown>;
     for (const [key, value] of Object.entries(updates)) {
       if (key in p && value !== undefined) {
-<<<<<<< HEAD
         record[key] = value === null ? null : value;
-=======
-        (p as unknown as Record<string, unknown>)[key] = value === null ? null : value;
->>>>>>> 9e7b7ce9 (fixed features added subscription)
       }
     }
     p.updatedAt = new Date();
@@ -353,6 +376,41 @@ export async function getUserByOpenId(openId: string) {
   }
 
   return getMemDb().getUserByOpenId(openId);
+}
+
+export async function findUser(filter: { openId?: string; email?: string }): Promise<User | null> {
+  const db = await getDb();
+  if (db) {
+    const { users } = await import("../drizzle/schema");
+    if (filter.email) {
+      const result = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, filter.email))
+        .limit(1);
+      return result.length > 0 ? result[0] : null;
+    }
+    if (filter.openId) {
+      const result = await db
+        .select()
+        .from(users)
+        .where(eq(users.openId, filter.openId))
+        .limit(1);
+      return result.length > 0 ? result[0] : null;
+    }
+    return null;
+  }
+  return getMemDb().findUser(filter);
+}
+
+export async function updateUser(userId: number, updates: Record<string, unknown>): Promise<void> {
+  const db = await getDb();
+  if (db) {
+    const { users } = await import("../drizzle/schema");
+    await db.update(users).set(updates).where(eq(users.id, userId));
+    return;
+  }
+  return getMemDb().updateUser(userId, updates);
 }
 
 export async function getUserById(userId: number) {

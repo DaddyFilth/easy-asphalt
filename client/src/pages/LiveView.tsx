@@ -17,6 +17,17 @@ import {
 import { Camera, Loader2, RefreshCw, Home, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * Live Material Preview Component
+ * 
+ * IMPORTANT: This component is for PREVIEW ONLY and does NOT store any photos in the database.
+ * - Live camera feed is for real-time material visualization
+ * - No photos are saved or stored from this view
+ * - For project photo storage, users should use the Camera page or photo upload in the Estimator
+ * 
+ * This ensures the database only contains actual project photos, not temporary preview frames.
+ */
+
 type LiveStatus = "idle" | "starting" | "ready" | "error" | "unsupported";
 
 export default function LiveView() {
