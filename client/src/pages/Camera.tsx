@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { Camera as DeviceCamera, CameraDirection, CameraResultType } from "@capacitor/camera";
-=======
-import { Camera as DeviceCamera, CameraResultType } from "@capacitor/camera";
->>>>>>> 9e7b7ce9 (fixed features added subscription)
 import { Capacitor } from "@capacitor/core";
 import { CameraIcon, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -28,7 +24,6 @@ export default function Camera() {
       .then(() =>
         DeviceCamera.getPhoto({
           quality: 90,
-<<<<<<< HEAD
           width: 1920,
           height: 1920,
           correctOrientation: true,
@@ -36,10 +31,6 @@ export default function Camera() {
           saveToGallery: false,
           direction: CameraDirection.Rear,
           allowEditing: false,
-=======
-          saveToGallery: false,
-          resultType: CameraResultType.Uri,
->>>>>>> 9e7b7ce9 (fixed features added subscription)
         })
       )
       .then(result => {

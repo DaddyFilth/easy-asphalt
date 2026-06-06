@@ -13,6 +13,8 @@ const SharedProject = lazy(() => import("./pages/SharedProject"));
 const Compare = lazy(() => import("./pages/Compare"));
 const LiveView = lazy(() => import("./pages/LiveView"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
 
 function PageLoader() {
   return (
@@ -40,6 +42,12 @@ export default function App() {
           </Route>
           <Route path={"/pricing"}>
             <Pricing />
+          </Route>
+          <Route path={"/login"}>
+            <Login />
+          </Route>
+          <Route path={"/signup"}>
+            <Signup />
           </Route>
           <Route path={"/estimator"}>
             <Estimator />
