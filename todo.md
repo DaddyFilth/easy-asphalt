@@ -54,43 +54,129 @@
 - [x] Performance optimization for image processing (S3 storage + lazy loading)
 - [x] Error handling and user feedback for all flows (toast notifications + error boundaries)
 
-## Phase 6: Deployment & Polish
-
-- [x] Create final checkpoint
-- [ ] Verify all features working in production
-- [x] Document API endpoints and usage
-- [ ] Prepare for user delivery
-
-## Production Readiness Notes
-
-### Backend Services (Needs Real Integration)
-
-- Pricing Service: Currently uses mockPricingByZip. Replace with real supplier API (e.g., landscape supply vendors, asphalt producers)
-- Email Service: Currently logs to console. Integrate with SendGrid, AWS SES, or Postmark for production
-- Geolocation: Currently defaults to ZIP 10001. Implement reverse geocoding to convert lat/lng to ZIP code
-
-### Frontend Enhancements
-
-- Mobile Touch Support: Add touch/pointer events for corner dragging on mobile devices
-- Corner Adjustment: Recalculate square footage dynamically when corners are adjusted
-- Error Handling: Add permission denied/unavailable states for camera access
-- LiDAR Integration: Add depth sensor support for iPhone Pro devices (requires Capacitor)
-
-### Testing
-
-- Unit tests for all backend procedures using vitest
-- Integration tests for photo upload, edge detection, and pricing flows
-- End-to-end tests for complete project creation and sharing workflow
-
 ## Phase 6: Mobile Conversion & GitHub
 
 - [x] Install and configure Capacitor
 - [x] Configure iOS native app
 - [x] Configure Android native app
 - [x] Set up camera permissions for mobile (configured in native projects)
-- [ ] Test mobile app on iOS simulator
-- [ ] Test mobile app on Android emulator
+- [ ] Test mobile app on iOS simulator (build: `pnpm mobile:ios`)
+- [ ] Test mobile app on Android emulator (build: `pnpm mobile:android`)
 - [x] Create GitHub repository
 - [x] Push code to GitHub
 - [x] Create build scripts for internal distribution (5 scripts added)
 - [x] Document mobile setup and build instructions (MOBILE_BUILD.md created)
+
+## Phase 7: Production Readiness (🔴 CRITICAL - Blocking Release)
+
+### Backend Services (Required for Production)
+
+- [ ] **Pricing Service**: Replace mockPricingByZip with real supplier API
+  - Location: `server/services/pricing.ts`
+  - Current: Uses hardcoded mock data (lines 19-22)
+  - Action: Integrate with landscape supply vendors or asphalt producers
+  - Add: Dynamic price updates based on market data
+  - Add: Fallback to default pricing if API unavailable
+
+- [ ] **Email Service**: Replace console logging with production email provider
+  - Location: `server/services/email.ts`
+  - Current: Logs to console instead of sending emails
+  - Action: Integrate with SendGrid, AWS SES, or Postmark
+  - Add: Email templates for estimate and contractor notifications
+  - Add: Bounce and complaint handling
+
+- [ ] **Geolocation**: Implement proper reverse geocoding
+  - Location: `server/services/geolocation.ts`
+  - Current: Defaults to ZIP 10001 hardcoded (line 300 in README)
+  - Action: Integrate with Google Maps API or similar service
+  - Add: Convert latitude/longitude to ZIP code + city + state
+  - Add: Caching for frequently accessed coordinates
+
+### Frontend Enhancements
+
+- [ ] **Mobile Touch Support**: Add full touch/pointer events for corner dragging
+  - Location: `client/src/pages/Estimator.tsx` lines 595-619
+  - Current: Uses pointer events but may not work correctly on all touch devices
+  - Action: Verify and enhance touch event handlers
+  - Add: Multi-touch support if needed
+  - Test: On iOS and Android simulators/devices
+
+- [ ] **Corner Adjustment**: Recalculate square footage dynamically when corners are adjusted
+  - Location: `client/src/pages/Estimator.tsx` lines 563-593
+  - Current: Already implemented but verify real-time updates work smoothly
+  - Action: Optimize performance for smooth dragging
+  - Add: Visual feedback showing area changes in real-time
+
+- [ ] **Error Handling**: Add permission denied/unavailable states for camera access
+  - Location: `client/src/pages/Estimator.tsx` lines 1148-1189
+  - Current: Has basic permission denied alerts
+  - Action: Add graceful fallbacks for all permission states
+  - Add: Clear user guidance for enabling permissions in device settings
+
+- [ ] **LiDAR Integration**: Add depth sensor support for iPhone Pro devices
+  - Location: `client/src/lib/deviceMedia.ts`
+  - Current: Not implemented
+  - Action: Requires Capacitor integration with native iOS code
+  - Add: Use LiDAR for more accurate depth measurement
+  - Add: Fallback to manual depth input if not available
+
+### Testing & Validation
+
+- [ ] **Mobile Simulator Testing**: Complete iOS simulator testing
+  - Build: `pnpm mobile:ios`
+  - Test: All features on iOS simulator
+  - Verify: Touch interactions work correctly
+  - Verify: Camera functionality with simulator mock
+  - Verify: Geolocation on simulator
+
+- [ ] **Mobile Emulator Testing**: Complete Android emulator testing
+  - Build: `pnpm mobile:android`
+  - Test: All features on Android emulator
+  - Verify: Touch interactions and gestures
+  - Verify: Camera and geolocation on Android
+  - Verify: Responsive UI on various screen sizes
+
+- [ ] **Unit Tests**: Verify all backend procedures using vitest
+  - Run: `pnpm test`
+  - Ensure: All services have 90%+ coverage
+
+- [ ] **Integration Tests**: Test photo upload, edge detection, and pricing flows
+  - Run: `pnpm test`
+  - Ensure: End-to-end workflows pass
+
+- [ ] **End-to-End Tests**: Complete project creation and sharing workflow
+  - Run: `pnpm test`
+  - Manual: Test on actual devices before production
+
+## Phase 8: Launch (🔵 Post-Production Readiness)
+
+- [ ] User acceptance testing (UAT)
+- [ ] Performance monitoring setup (New Relic, Sentry, etc.)
+- [ ] Analytics implementation (Vercel Analytics configured)
+- [ ] Documentation for end users
+- [ ] Support/feedback channel setup
+- [ ] Public release announcement
+
+## Production Readiness Summary
+
+⚠️ **The following items MUST be completed before production deployment:**
+
+| Item | Status | Blocker | Details |
+|------|--------|---------|---------|
+| Real Pricing API | ❌ | YES | Currently mock data only |
+| Real Email Service | ❌ | YES | Currently logs to console |
+| Reverse Geocoding | ❌ | YES | Defaults to ZIP 10001 |
+| Mobile Simulator Testing | ❌ | NO | Recommended before launch |
+| Mobile Emulator Testing | ❌ | NO | Recommended before launch |
+| Touch Support Verification | ⚠️ | NO | Already implemented, needs verification |
+| Camera Error Handling | ⚠️ | NO | Basic implementation, needs enhancement |
+| LiDAR Support | ❌ | NO | Optional enhancement for iPhone Pro |
+
+## Future Enhancements (Post-Launch)
+
+- [ ] Offline mode for field use without connectivity
+- [ ] Contractor dashboard for viewing and accepting shared projects
+- [ ] Payment integration for booking contractors
+- [ ] Multi-language support
+- [ ] Dark mode toggle
+- [ ] Advanced analytics and reporting
