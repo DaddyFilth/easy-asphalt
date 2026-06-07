@@ -24,7 +24,8 @@
     "mobile:build-android": "bash scripts/mobile/android-build.sh release",
     "mobile:build-android-signed": "corepack pnpm mobile:build && bash scripts/mobile/android-build-signed.sh",
     "mobile:build-android-debug": "bash scripts/mobile/android-build.sh debug",
-    "mobile:apk": "corepack pnpm mobile:build && corepack pnpm mobile:build-android-debug"
+    "mobile:apk": "corepack pnpm mobile:build && corepack pnpm mobile:build-android-debug",
+    "mobile:wireless-adb": "bash scripts/wireless-adb.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",

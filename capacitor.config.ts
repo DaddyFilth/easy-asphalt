@@ -6,8 +6,6 @@ const config: CapacitorConfig = {
   webDir: "dist/public",
   server: {
     androidScheme: "http",
-    // Security: Disable webContentsDebuggingEnabled in production
-    webContentsDebuggingEnabled: process.env.NODE_ENV !== "production",
   },
   android: {
     // Security: Disable webContentsDebuggingEnabled in production
