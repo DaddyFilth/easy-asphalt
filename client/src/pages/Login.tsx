@@ -114,14 +114,7 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <a
-                  href="/forgot-password"
-                  className="text-purple-400 hover:text-purple-300"
-                >
-                  Forgot password?
-                </a>
-              </div>
+
             </CardContent>
 
             <CardFooter className="space-y-4">
