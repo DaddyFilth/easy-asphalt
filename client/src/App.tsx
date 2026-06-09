@@ -1,9 +1,10 @@
 import { Analytics } from "@vercel/analytics/react";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Route, Switch } from "wouter";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import { Toaster } from "./components/ui/sonner";
+import { initSentry } from "./lib/sentry";
 
 const Camera = lazy(() => import("./pages/Camera"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -27,6 +28,10 @@ function PageLoader() {
 }
 
 export default function App() {
+  useEffect(() => {
+    initSentry();
+  }, []);
+
   return (
     <>
       <Suspense fallback={<PageLoader />}>

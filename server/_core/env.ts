@@ -44,4 +44,7 @@ export const ENV = {
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   emailFromAddress:
     process.env.EMAIL_FROM_ADDRESS ?? "noreply@drivewayestimatorpro.com",
+  //  Performance monitoring and error tracking
+  sentryDsn: process.env.SENTRY_DSN ?? "",
+  sentryEnvironment: process.env.SENTRY_ENVIRONMENT ?? "development",
 };

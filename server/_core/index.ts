@@ -10,6 +10,7 @@ import { serveStatic } from "./static";
 import path from "path";
 import fs from "fs";
 import { LOCAL_STORAGE_DIR, LOCAL_STORAGE_URL_PREFIX } from "../storage";
+import { initSentry } from "./sentry";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,6 +32,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize Sentry for error tracking and performance monitoring
+  initSentry();
+  
   const app = express();
   const server = createServer(app);
   registerMobileCors(app);

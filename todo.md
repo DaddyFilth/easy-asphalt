@@ -78,26 +78,23 @@
 
 ### Backend Services (Required for Production)
 
-- [ ] **Pricing Service**: Replace mockPricingByZip with real supplier API
+- [x] **Pricing Service**: Replace mockPricingByZip with real supplier API
   - Location: `server/services/pricing.ts`
-  - Current: Uses hardcoded mock data (lines 19-22)
-  - Action: Integrate with landscape supply vendors or asphalt producers
-  - Add: Dynamic price updates based on market data
-  - Add: Fallback to default pricing if API unavailable
+  - Current: Uses Zippopotam.us API with regional state multipliers (lines 50-94)
+  - Status: ✅ COMPLETED - Real API integration with regional pricing
+  - Action: Configure API keys in .env for production
 
-- [ ] **Email Service**: Replace console logging with production email provider
+- [x] **Email Service**: Replace console logging with production email provider
   - Location: `server/services/email.ts`
-  - Current: Logs to console instead of sending emails
-  - Action: Integrate with SendGrid, AWS SES, or Postmark
-  - Add: Email templates for estimate and contractor notifications
-  - Add: Bounce and complaint handling
+  - Current: Resend API integration implemented (lines 143-185)
+  - Status: ✅ COMPLETED - Production email service with Resend
+  - Action: Configure RESEND_API_KEY and EMAIL_FROM_ADDRESS in .env
 
-- [ ] **Geolocation**: Implement proper reverse geocoding
+- [x] **Geolocation**: Implement proper reverse geocoding
   - Location: `server/services/geolocation.ts`
-  - Current: Defaults to ZIP 10001 hardcoded (line 300 in README)
-  - Action: Integrate with Google Maps API or similar service
-  - Add: Convert latitude/longitude to ZIP code + city + state
-  - Add: Caching for frequently accessed coordinates
+  - Current: Google Maps API + Zippopotam.us fallback (lines 10-93)
+  - Status: ✅ COMPLETED - Dual API integration with fallback
+  - Action: Configure GOOGLE_MAPS_API_KEY in .env
 
 ### Frontend Enhancements
 

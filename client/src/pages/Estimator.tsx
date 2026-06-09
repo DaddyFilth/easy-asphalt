@@ -2,6 +2,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useCallback,
   type ChangeEvent,
   type DragEvent,
   type PointerEvent,
@@ -110,6 +111,8 @@ export default function Estimator() {
   const [savedProjectId, setSavedProjectId] = useState<number | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [galleryPermissionDenied, setGalleryPermissionDenied] = useState(false);
+  const [cameraPermissionError, setCameraPermissionError] = useState<string | null>(null);
+  const [galleryPermissionError, setGalleryPermissionError] = useState<string | null>(null);
   const [additionalCosts, setAdditionalCosts] = useState<AdditionalCostItem[]>([
     createAdditionalCostItem(),
   ]);
@@ -435,11 +438,23 @@ export default function Estimator() {
     }
 
     setCameraPermissionDenied(false);
+    setCameraPermissionError(null);
 
     const permission = await requestNativeCameraPermission();
-    if (permission !== "granted") {
+    if (permission === "denied") {
       setCameraPermissionDenied(true);
+      setCameraPermissionError("Camera permission was denied. Please enable camera access in your device settings.");
       toast.error("Camera permission denied. Enable camera access in your device settings to take photos.");
+      return;
+    } else if (permission === "restricted") {
+      setCameraPermissionDenied(true);
+      setCameraPermissionError("Camera access is restricted by parental controls or corporate policies.");
+      toast.error("Camera access is restricted. Please check your device settings.");
+      return;
+    } else if (permission === "unavailable") {
+      setCameraPermissionDenied(true);
+      setCameraPermissionError("Camera is not available on this device. You can upload an existing photo instead.");
+      toast.error("Camera not available. You can upload an existing photo instead.");
       return;
     }
 
@@ -448,7 +463,9 @@ export default function Estimator() {
       if (file) await handlePhotoCapture(file);
     } catch (error) {
       if (isMediaSelectionCanceled(error)) return;
+      const errorMessage = error instanceof Error ? error.message : "Unknown camera error";
       setCameraPermissionDenied(true);
+      setCameraPermissionError(`Camera error: ${errorMessage}. Please try again or upload an existing photo.`);
       toast.error("Camera access is required to take a driveway photo");
       console.error(error);
     }
@@ -461,11 +478,23 @@ export default function Estimator() {
     }
 
     setGalleryPermissionDenied(false);
+    setGalleryPermissionError(null);
 
     const permission = await requestNativePhotoPermission();
-    if (permission !== "granted") {
+    if (permission === "denied") {
       setGalleryPermissionDenied(true);
+      setGalleryPermissionError("Photo library permission was denied. Please enable photo library access in your device settings.");
       toast.error("Photo library permission denied. Enable access in your device settings to upload images.");
+      return;
+    } else if (permission === "restricted") {
+      setGalleryPermissionDenied(true);
+      setGalleryPermissionError("Photo library access is restricted by parental controls or corporate policies.");
+      toast.error("Photo library access is restricted. Please check your device settings.");
+      return;
+    } else if (permission === "unavailable") {
+      setGalleryPermissionDenied(true);
+      setGalleryPermissionError("Photo library is not available on this device. You can take a new photo instead.");
+      toast.error("Photo library not available. You can take a new photo instead.");
       return;
     }
 
@@ -474,7 +503,9 @@ export default function Estimator() {
       if (file) await handlePhotoCapture(file);
     } catch (error) {
       if (isMediaSelectionCanceled(error)) return;
+      const errorMessage = error instanceof Error ? error.message : "Unknown gallery error";
       setGalleryPermissionDenied(true);
+      setGalleryPermissionError(`Photo library error: ${errorMessage}. Please try again or take a new photo.`);
       toast.error("Photo library access is required to upload an image");
       console.error(error);
     }
@@ -560,7 +591,7 @@ export default function Estimator() {
     if (file) void handlePhotoCapture(file);
   };
 
-  const updateCornerFromPointer = (
+  const updateCornerFromPointer = useCallback((
     clientX: number,
     clientY: number,
     cornerIndex: number
@@ -590,9 +621,9 @@ export default function Estimator() {
 
       return { ...prev, corners: newCorners, squareFeet };
     });
-  };
+  }, [state.photoUrl]);
 
-  const handleCornerPointerDown = (
+  const handleCornerPointerDown = useCallback((
     event: PointerEvent<HTMLButtonElement>,
     index: number
   ) => {
@@ -600,23 +631,28 @@ export default function Estimator() {
     event.currentTarget.setPointerCapture(event.pointerId);
     setDraggingCorner(index);
     updateCornerFromPointer(event.clientX, event.clientY, index);
-  };
+    
+    // Add haptic feedback on supported devices
+    if ('vibrate' in navigator && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  }, [updateCornerFromPointer]);
 
-  const handleCornerPointerMove = (
+  const handleCornerPointerMove = useCallback((
     event: PointerEvent<HTMLButtonElement>,
     index: number
   ) => {
     if (draggingCorner !== index) return;
     event.preventDefault();
     updateCornerFromPointer(event.clientX, event.clientY, index);
-  };
+  }, [draggingCorner, updateCornerFromPointer]);
 
-  const handleCornerPointerEnd = (event: PointerEvent<HTMLButtonElement>) => {
+  const handleCornerPointerEnd = useCallback((event: PointerEvent<HTMLButtonElement>) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setDraggingCorner(null);
-  };
+  }, []);
 
   const handleMaterialSelect = (material: Material) => {
     setState(prev => {
@@ -1152,18 +1188,35 @@ export default function Estimator() {
                 >
                   <p className="font-semibold text-red-50">Camera permission denied</p>
                   <p className="mt-1 leading-6">
-                    Enable camera access in your device settings, then try again.
-                    You can also upload an existing photo instead.
+                    {cameraPermissionError || "Enable camera access in your device settings, then try again. You can also upload an existing photo instead."}
                   </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 border-red-500/40 text-red-200 hover:bg-red-950/50"
-                    onClick={() => setCameraPermissionDenied(false)}
-                  >
-                    Dismiss
-                  </Button>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-red-500/40 text-red-200 hover:bg-red-950/50"
+                      onClick={() => setCameraPermissionDenied(false)}
+                    >
+                      Dismiss
+                    </Button>
+                    {nativeMobileApp && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-blue-500/40 text-blue-200 hover:bg-blue-950/50"
+                        onClick={() => {
+                          // Try to open app settings on mobile
+                          if (window.open && typeof window.open === 'function') {
+                            window.open('app-settings:', '_blank');
+                          }
+                        }}
+                      >
+                        Open Settings
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1174,17 +1227,35 @@ export default function Estimator() {
                 >
                   <p className="font-semibold text-red-50">Photo library permission denied</p>
                   <p className="mt-1 leading-6">
-                    Enable photo library access in your device settings, then try again.
+                    {galleryPermissionError || "Enable photo library access in your device settings, then try again."}
                   </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 border-red-500/40 text-red-200 hover:bg-red-950/50"
-                    onClick={() => setGalleryPermissionDenied(false)}
-                  >
-                    Dismiss
-                  </Button>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-red-500/40 text-red-200 hover:bg-red-950/50"
+                      onClick={() => setGalleryPermissionDenied(false)}
+                    >
+                      Dismiss
+                    </Button>
+                    {nativeMobileApp && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-blue-500/40 text-blue-200 hover:bg-blue-950/50"
+                        onClick={() => {
+                          // Try to open app settings on mobile
+                          if (window.open && typeof window.open === 'function') {
+                            window.open('app-settings:', '_blank');
+                          }
+                        }}
+                      >
+                        Open Settings
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1317,8 +1388,16 @@ export default function Estimator() {
                     onPointerUp={handleCornerPointerEnd}
                     onPointerCancel={handleCornerPointerEnd}
                     onLostPointerCapture={() => setDraggingCorner(null)}
-                    className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white bg-blue-500 shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300"
-                    style={{ left: `${corner.x}%`, top: `${corner.y}%` }}
+                    className={`absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-white shadow-lg shadow-black/30 outline-none ring-offset-2 ring-offset-slate-900 transition-all duration-150 ${
+                      draggingCorner === i 
+                        ? 'bg-blue-400 scale-110 active:bg-blue-300' 
+                        : 'bg-blue-500 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-300 active:bg-blue-400'
+                    }`}
+                    style={{ 
+                      left: `${corner.x}%`, 
+                      top: `${corner.y}%`,
+                      touchAction: 'none'
+                    }}
                   />
                 ))}
               </div>
