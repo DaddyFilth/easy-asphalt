@@ -20,7 +20,7 @@ Effective support and feedback channels are essential for user satisfaction and 
 ### Primary Support Email
 
 **Configuration:**
-- **Email**: support@drivewayestimatorpro.com
+- **Email**: support@easy-asphalt-driveway.store
 - **Purpose**: Technical support, account issues, bug reports
 - **Tools**: Gmail for Business, Zendesk, or Intercom recommended
 
@@ -29,9 +29,9 @@ Effective support and feedback channels are essential for user satisfaction and 
 #### Using Gmail for Business
 
 1. **Create Google Workspace account**
-   - Register domain: drivewayestimatorpro.com
+   - Register domain: easy-asphalt-driveway.store
    - Create admin account
-   - Set up support@drivewayestimatorpro.com
+   - Set up support@easy-asphalt-driveway.store
 
 2. **Configure email forwarding (if using external support tool)**
    - Go to Gmail settings → Forwarding
@@ -66,7 +66,7 @@ Effective support and feedback channels are essential for user satisfaction and 
 
 2. **Configure email channel**
    - Settings → Email channels
-   - Add support@drivewayestimatorpro.com
+   - Add support@easy-asphalt-driveway.store
    - Set up automated routing
 
 3. **Create canned responses**
@@ -84,8 +84,8 @@ Thank you for contacting Driveway Estimator Pro support!
 
 Your ticket #[TICKET_NUMBER] has been received. Our team typically responds within 24 hours.
 
-For immediate help, check our FAQ: https://drivewayestimatorpro.com/faq
-User guide: https://drivewayestimatorpro.com/user-guide
+For immediate help, check our FAQ: https://easy-asphalt-driveway.store/faq
+User guide: https://easy-asphalt-driveway.store/user-guide
 
 If you need immediate assistance, please include:
 - Your account email

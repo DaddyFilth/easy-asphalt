@@ -10,6 +10,9 @@ export function initSentry() {
     Sentry.init({
       dsn: ENV.sentryDsn,
       environment: ENV.sentryEnvironment,
+      // Organization and project info
+      release: `easy-asphalt@${process.env.npm_package_version || '1.0.0'}`,
+      serverName: 'easy-asphalt-driveway.store',
       // Performance monitoring
       tracesSampleRate: ENV.isProduction ? 0.1 : 1.0, // 10% in production, 100% in development
       // Session replay

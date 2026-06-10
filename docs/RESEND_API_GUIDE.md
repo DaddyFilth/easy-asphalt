@@ -235,7 +235,7 @@ For production use, authenticate your domain:
 
 In Resend dashboard:
 1. Go to Domains
-2. Add your domain (e.g., drivewayestimatorpro.com)
+2. Add your domain (e.g., easy-asphalt-driveway.store)
 3. Add DNS records:
    - **SPF Record**: For sender verification
    - **DKIM Record**: For email authentication
@@ -244,7 +244,7 @@ In Resend dashboard:
 ### 2. Update From Address
 
 ```env
-EMAIL_FROM_ADDRESS=noreply@drivewayestimatorpro.com
+EMAIL_FROM_ADDRESS=noreply@easy-asphalt-driveway.store
 ```
 
 ## Monitoring and Analytics

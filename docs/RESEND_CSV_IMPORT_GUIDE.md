@@ -51,7 +51,7 @@ Total keys: 5
 1. Production Key
    ID: key_123
    Token: re_xxxxxxxxxxxxxxxx...
-   Domain: drivewayestimatorpro.com
+   Domain: easy-asphalt-driveway.store
    Permissions: full
    Created: 2024-01-15T10:30:00.000Z
    Creator: admin

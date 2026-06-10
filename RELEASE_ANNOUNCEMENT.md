@@ -73,7 +73,7 @@ Driveway Estimator Pro is built with cutting-edge technology:
 ## Availability
 
 Driveway Estimator Pro is available immediately at:
-- **Web**: https://drivewayestimatorpro.com
+- **Web**: https://easy-asphalt-driveway.store
 - **iOS App Store**: Coming soon
 - **Google Play Store**: Coming soon
 
@@ -102,9 +102,9 @@ Driveway Estimator Pro is a technology company focused on modernizing the constr
 
 **[Contact Name]**
 **[Title]**
-**[Email]**: press@drivewayestimatorpro.com
+**[Email]**: press@easy-asphalt-driveway.store
 **[Phone]**: [Phone Number]
-**[Website]**: https://drivewayestimatorpro.com
+**[Website]**: https://easy-asphalt-driveway.store
 
 ## Social Media
 
@@ -122,7 +122,7 @@ Additional resources available at:
 - Founder bios and photos
 - Feature deep-dive articles
 
-Access press kit at: https://drivewayestimatorpro.com/press
+Access press kit at: https://easy-asphalt-driveway.store/press
 
 ---
 
@@ -176,7 +176,7 @@ Traditional driveway estimation has been plagued by:
 **Technology Stack:**
 Built with React 19, TypeScript, Capacitor for mobile, and advanced AI computer vision for measurement accuracy.
 
-**Available Now:** https://drivewayestimatorpro.com
+**Available Now:** https://easy-asphalt-driveway.store
 
 **What's Next:**
 We're already working on offline mode, contractor dashboards, and payment integration.
@@ -210,7 +210,7 @@ We're thrilled to announce the launch of Driveway Estimator Pro - the app that m
 - PDF export and contractor sharing
 - Mobile apps for iOS and Android
 
-**Try It Free:** https://drivewayestimatorpro.com
+**Try It Free:** https://easy-asphalt-driveway.store
 
 Have you ever struggled with getting accurate estimates for home projects? Share your experience in the comments!
 
@@ -368,7 +368,7 @@ We're just getting started. Our roadmap includes:
 
 **Get Started Today**
 
-Driveway Estimator Pro is available now for free at https://drivewayestimatorpro.com. Whether you're a homeowner planning your first driveway project or a contractor looking to streamline your workflow, we invite you to try it out.
+Driveway Estimator Pro is available now for free at https://easy-asphalt-driveway.store. Whether you're a homeowner planning your first driveway project or a contractor looking to streamline your workflow, we invite you to try it out.
 
 **Join Our Community**
 

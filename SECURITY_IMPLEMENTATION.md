@@ -250,7 +250,7 @@ This document outlines the security enhancements implemented in the Easy Asphalt
 5. Lessons Learned - Update security measures
 
 ### Contact Information
-- Security Team: security@drivewayestimatorpro.com
+- Security Team: security@easy-asphalt-driveway.store
 - Emergency Contact: See security.txt
 - Bug Bounty: See security policy
 
@@ -274,4 +274,4 @@ This document outlines the security enhancements implemented in the Easy Asphalt
 
 This security implementation provides comprehensive protection against common web application vulnerabilities and attacks. The multi-layered approach ensures that even if one security measure fails, others provide backup protection.
 
-For questions or concerns about security implementation, contact the security team at security@drivewayestimatorpro.com.
+For questions or concerns about security implementation, contact the security team at security@easy-asphalt-driveway.store.

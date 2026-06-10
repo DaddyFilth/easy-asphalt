@@ -8,6 +8,7 @@ export default withSentryConfig(nextConfig, {
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
   org: "easy-asphalt",
+
   project: "javascript-nextjs",
 
   // Only print logs for uploading source maps in CI

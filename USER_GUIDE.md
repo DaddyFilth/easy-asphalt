@@ -373,7 +373,7 @@ A: Yes, native apps are available for both platforms.
 
 ### Support Resources
 
-- **Email Support**: support@drivewayestimatorpro.com
+- **Email Support**: support@easy-asphalt-driveway.store
 - **Documentation**: Check our help articles
 - **Community**: Join our user community
 - **Bug Reports**: Report issues via GitHub
@@ -386,7 +386,7 @@ We value your feedback! Let us know:
 - User experience improvements
 - General comments
 
-Contact us at feedback@drivewayestimatorpro.com
+Contact us at feedback@easy-asphalt-driveway.store
 
 ---
 

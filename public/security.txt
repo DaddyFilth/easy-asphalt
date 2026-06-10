@@ -1,0 +1,24 @@
+# Security Policy for Easy Asphalt (Driveway Estimator Pro)
+
+# Contact Information
+Contact: mailto:security@easy-asphalt-driveway.store
+
+# Security Policy
+Policy: https://easy-asphalt-driveway.store/security-policy
+
+# Disclosure Policy (90-day disclosure)
+Disclosure: 90-day
+
+# Encryption
+Encryption: https://easy-asphalt-driveway.store/pgp-key.txt
+
+# Acknowledgments
+Acknowledgments: https://easy-asphalt-driveway.store/security-hall-of-fame
+
+# Preferred Languages
+Preferred-Languages: en, es
+
+# Security Policy Summary
+# We take security seriously and welcome responsible disclosure of vulnerabilities.
+# Please do not exploit any vulnerabilities found for malicious purposes.
+# We will work with you to address and fix any reported issues.
