@@ -28,7 +28,8 @@
     "mobile:wireless-adb": "bash scripts/wireless-adb.sh",
     "resend:keys:list": "tsx server/scripts/manage-resend-keys.ts list",
     "resend:keys:create": "tsx server/scripts/manage-resend-keys.ts create",
-    "resend:keys:delete": "tsx server/scripts/manage-resend-keys.ts delete"
+    "resend:keys:delete": "tsx server/scripts/manage-resend-keys.ts delete",
+    "resend:csv:import": "tsx server/scripts/import-resend-keys.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
