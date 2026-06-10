@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/node";
 import { ENV } from "./env";
 
+// Import integrations for newer Sentry versions
+import { httpIntegration } from "@sentry/node";
+import { expressIntegration } from "@sentry/node";
+import { nodeContextIntegration } from "@sentry/node";
+
 /**
  * Initialize Sentry for error tracking and performance monitoring
  * Only initializes in production or when SENTRY_DSN is configured
@@ -21,11 +26,11 @@ export function initSentry() {
       // Integrations
       integrations: [
         // HTTP requests tracing
-        new Sentry.Integrations.Http({ tracing: true }),
+        httpIntegration({ tracing: true }),
         // Express integration
-        new Sentry.Integrations.Express({}),
+        expressIntegration(),
         // Node.js performance monitoring
-        new Sentry.Integrations.Node(),
+        nodeContextIntegration(),
       ],
       // Before send hook for additional filtering
       beforeSend(event, hint) {
