@@ -19,6 +19,7 @@ import {
 } from "./services/mfa";
 import { validateTurnstileToken } from "./services/turnstile";
 import { ENV } from "./_core/env";
+import { captureException } from "./_core/sentry";
 import { z } from "zod";
 
 function createLocalOpenId() {
@@ -504,6 +505,14 @@ export const appRouter = router({
   }),
   projects: projectsRouter,
   subscription: subscriptionRouter,
+  sentryTest: router({
+    triggerError: publicProcedure.mutation(() => {
+      // Trigger a test error to verify Sentry is working
+      const testError = new Error("Sentry test error - verification successful!");
+      captureException(testError);
+      throw testError;
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
