@@ -12,6 +12,9 @@ export function initSentry() {
     Sentry.init({
       dsn: sentryDsn,
       environment,
+      // Organization and project info
+      release: `easy-asphalt@${import.meta.env.VITE_APP_VERSION || '1.0.0'}`,
+      serverName: 'easy-asphalt-driveway.store',
       // Performance monitoring
       tracesSampleRate: environment === "production" ? 0.1 : 1.0,
       // Session replay
