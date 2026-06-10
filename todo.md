@@ -165,16 +165,16 @@
 
 ⚠️ **The following items MUST be completed before production deployment:**
 
-| Item | Status | Blocker | Details |
-|------|--------|---------|---------|
-| Real Pricing API | ❌ | YES | Currently mock data only |
-| Real Email Service | ❌ | YES | Currently logs to console |
-| Reverse Geocoding | ❌ | YES | Defaults to ZIP 10001 |
-| Mobile Simulator Testing | ❌ | NO | Recommended before launch |
-| Mobile Emulator Testing | ❌ | NO | Recommended before launch |
-| Touch Support Verification | ⚠️ | NO | Already implemented, needs verification |
-| Camera Error Handling | ⚠️ | NO | Basic implementation, needs enhancement |
-| LiDAR Support | ❌ | NO | Optional enhancement for iPhone Pro |
+| Item                       | Status | Blocker | Details                                                   |
+| -------------------------- | ------ | ------- | --------------------------------------------------------- |
+| Real Pricing API           | ✅     | NO      | Implemented with Zippopotam.us API + regional multipliers |
+| Real Email Service         | ⚠️     | YES     | Resend API integrated but domain verification needed      |
+| Reverse Geocoding          | ⚠️     | NO      | Google Maps API + fallback implemented, needs API key     |
+| Mobile Simulator Testing   | ❌     | NO      | Recommended before launch                                 |
+| Mobile Emulator Testing    | ❌     | NO      | Recommended before launch                                 |
+| Touch Support Verification | ⚠️     | NO      | Already implemented, needs verification                   |
+| Camera Error Handling      | ⚠️     | NO      | Basic implementation, needs enhancement                   |
+| LiDAR Support              | ❌     | NO      | Optional enhancement for iPhone Pro                       |
 
 ## Future Enhancements (Post-Launch)
 

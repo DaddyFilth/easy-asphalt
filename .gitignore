@@ -147,3 +147,6 @@ android/keystore.properties
 *.early.test/
 .vercel
 .env*.local
+
+# Sentry Config File
+.env.sentry-build-plugin

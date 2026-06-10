@@ -173,6 +173,17 @@ async function sendEmail(
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
       console.error("[Email] Resend API error:", response.status, errorBody);
+
+      // If domain verification fails, provide helpful guidance
+      if (
+        response.status === 403 &&
+        errorBody.includes("domain is not verified")
+      ) {
+        console.warn(
+          "[Email] Domain not verified in Resend. Please verify the domain in Resend dashboard or use a verified sender address."
+        );
+      }
+
       return { success: false };
     }
 
