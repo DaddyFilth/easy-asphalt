@@ -1,4 +1,4 @@
-import { OTPAuth } from 'otpauth';
+import { TOTP } from 'otpauth';
 import crypto from 'crypto';
 
 /**
@@ -45,7 +45,7 @@ export function setupTOTP(userEmail: string): TOTPSetupResult {
   const secret = generateSecret();
   const backupCodes = generateBackupCodes();
 
-  const totp = new OTPAuth({
+  const totp = new TOTP({
     issuer: TOTP_ISSUER,
     label: userEmail,
     algorithm: 'SHA1',
@@ -68,7 +68,7 @@ export function setupTOTP(userEmail: string): TOTPSetupResult {
  */
 export function verifyTOTP(secret: string, token: string): boolean {
   try {
-    const totp = new OTPAuth({
+    const totp = new TOTP({
       issuer: TOTP_ISSUER,
       algorithm: 'SHA1',
       digits: 6,
