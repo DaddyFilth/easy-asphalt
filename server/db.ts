@@ -46,6 +46,10 @@ export async function getDb() {
 
 interface MemUser extends User {
   id: number;
+  mfaEnabled: number;
+  totpSecret: string | null;
+  backupCodes: string | null;
+  mfaVerifiedAt: Date | null;
 }
 interface MemProject {
   id: number;
@@ -119,6 +123,11 @@ class MemDb {
       if (user.password !== undefined) existing.password = user.password ?? null;
       if (user.lastSignedIn !== undefined) existing.lastSignedIn = user.lastSignedIn;
       if (user.role !== undefined) existing.role = user.role;
+      // Handle MFA fields
+      if (user.mfaEnabled !== undefined) existing.mfaEnabled = user.mfaEnabled;
+      if (user.totpSecret !== undefined) existing.totpSecret = user.totpSecret;
+      if (user.backupCodes !== undefined) existing.backupCodes = user.backupCodes;
+      if (user.mfaVerifiedAt !== undefined) existing.mfaVerifiedAt = user.mfaVerifiedAt;
       existing.updatedAt = now;
       return this.clone(existing);
     }
@@ -129,6 +138,10 @@ class MemDb {
       email: user.email ?? null,
       password: user.password ?? null,
       role: user.role ?? (user.openId === ENV.ownerOpenId ? "admin" : "user"),
+      mfaEnabled: user.mfaEnabled ?? 0,
+      totpSecret: user.totpSecret ?? null,
+      backupCodes: user.backupCodes ?? null,
+      mfaVerifiedAt: user.mfaVerifiedAt ?? null,
       createdAt: now,
       updatedAt: now,
       lastSignedIn: user.lastSignedIn ?? now,
@@ -156,6 +169,10 @@ class MemDb {
       email: user.email ?? null,
       password: user.password ?? null,
       role: user.role ?? "user",
+      mfaEnabled: user.mfaEnabled ?? 0,
+      totpSecret: user.totpSecret ?? null,
+      backupCodes: user.backupCodes ?? null,
+      mfaVerifiedAt: user.mfaVerifiedAt ?? null,
       createdAt: now,
       updatedAt: now,
       lastSignedIn: user.lastSignedIn ?? now,

@@ -7,6 +7,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { registerMobileCors } from "./cors";
 import { serveStatic } from "./static";
+import { authRateLimit, apiRateLimit } from "./rateLimit";
 import path from "path";
 import fs from "fs";
 import { LOCAL_STORAGE_DIR, LOCAL_STORAGE_URL_PREFIX } from "../storage";
@@ -42,6 +43,12 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
+  
+  // Apply rate limiting
+  app.use("/api/trpc", apiRateLimit);
+  app.use("/api/trpc/auth.login", authRateLimit);
+  app.use("/api/trpc/auth.signup", authRateLimit);
+  
   // tRPC API
   app.use(
     "/api/trpc",

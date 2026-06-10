@@ -25,6 +25,14 @@ export const users = mysqlTable("users", {
   /** Password hash for email/password authentication. Optional for OAuth users. */
   password: varchar("password", { length: 255 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  /** MFA enabled flag */
+  mfaEnabled: int("mfaEnabled").default(0).notNull(),
+  /** TOTP secret for MFA (encrypted) */
+  totpSecret: varchar("totpSecret", { length: 255 }),
+  /** Backup codes for MFA recovery (JSON array of encrypted strings) */
+  backupCodes: text("backupCodes"),
+  /** MFA verification timestamp - last successful MFA verification */
+  mfaVerifiedAt: timestamp("mfaVerifiedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

@@ -4,11 +4,21 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import * as db from "./db";
 import { projectsRouter } from "./routers/projects";
 import { subscriptionRouter } from "./routers/subscription";
 import { hashPassword, verifyPassword, validatePasswordStrength, validateEmail } from "./_core/password";
+import {
+  setupTOTP,
+  verifyTOTP,
+  verifyBackupCode,
+  removeBackupCode,
+  encryptData,
+  decryptData,
+} from "./services/mfa";
+import { validateTurnstileToken } from "./services/turnstile";
+import { ENV } from "./_core/env";
 import { z } from "zod";
 
 function createLocalOpenId() {
@@ -85,8 +95,29 @@ export const appRouter = router({
         email: z.string().email(),
         password: z.string().min(8),
         name: z.string().min(2).optional(),
+        turnstileToken: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Validate Turnstile token if provided
+        if (input.turnstileToken) {
+          const clientIp = ctx.req.headers['x-forwarded-for'] as string || 
+                           ctx.req.headers['x-real-ip'] as string || 
+                           ctx.req.socket.remoteAddress;
+          const turnstileResult = await validateTurnstileToken(input.turnstileToken, clientIp);
+          
+          if (!turnstileResult.success) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `CAPTCHA validation failed: ${turnstileResult.error}`,
+            });
+          }
+        } else if (process.env.TURNSTILE_SECRET_KEY) {
+          // If Turnstile is configured but no token provided
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "CAPTCHA validation required",
+          });
+        }
         // Validate email format
         if (!validateEmail(input.email)) {
           throw new TRPCError({
@@ -135,8 +166,29 @@ export const appRouter = router({
       .input(z.object({
         email: z.string().email(),
         password: z.string().min(1),
+        turnstileToken: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Validate Turnstile token if provided
+        if (input.turnstileToken) {
+          const clientIp = ctx.req.headers['x-forwarded-for'] as string || 
+                           ctx.req.headers['x-real-ip'] as string || 
+                           ctx.req.socket.remoteAddress;
+          const turnstileResult = await validateTurnstileToken(input.turnstileToken, clientIp);
+          
+          if (!turnstileResult.success) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `CAPTCHA validation failed: ${turnstileResult.error}`,
+            });
+          }
+        } else if (process.env.TURNSTILE_SECRET_KEY) {
+          // If Turnstile is configured but no token provided
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "CAPTCHA validation required",
+          });
+        }
         // Validate email format
         if (!validateEmail(input.email)) {
           throw new TRPCError({
@@ -170,6 +222,284 @@ export const appRouter = router({
         await createSessionForUser(ctx, user);
 
         return user;
+      }),
+    // MFA procedures
+    setupMFA: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = ctx.user;
+      const MFA_ENCRYPTION_KEY = ENV.cookieSecret;
+
+      // Check if MFA is already enabled
+      if (user.mfaEnabled === 1) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "MFA is already enabled for this account",
+        });
+      }
+
+      const userEmail = user.email || user.name;
+      const setupResult = setupTOTP(userEmail);
+
+      // Encrypt the secret before storing
+      const encryptedSecret = encryptData(setupResult.secret, MFA_ENCRYPTION_KEY);
+      const encryptedBackupCodes = encryptData(
+        JSON.stringify(setupResult.backupCodes),
+        MFA_ENCRYPTION_KEY
+      );
+
+      // Update user with MFA setup data (but don't enable yet)
+      await db.updateUser(user.id, {
+        totpSecret: encryptedSecret,
+        backupCodes: encryptedBackupCodes,
+        mfaEnabled: 0, // Not enabled until verified
+      });
+
+      return {
+        qrCodeUrl: setupResult.qrCodeUrl,
+        backupCodes: setupResult.backupCodes, // Show these only during setup
+      };
+    }),
+
+    verifyAndEnableMFA: protectedProcedure
+      .input(
+        z.object({
+          token: z.string().length(6),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = ctx.user;
+        const MFA_ENCRYPTION_KEY = ENV.cookieSecret;
+
+        if (!user.totpSecret) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA setup not initiated. Please start MFA setup first.",
+          });
+        }
+
+        if (user.mfaEnabled === 1) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA is already enabled for this account",
+          });
+        }
+
+        // Decrypt the secret
+        const decryptedSecret = decryptData(user.totpSecret, MFA_ENCRYPTION_KEY);
+
+        // Verify the token
+        const isValid = verifyTOTP(decryptedSecret, input.token);
+
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid verification code",
+          });
+        }
+
+        // Enable MFA
+        await db.updateUser(user.id, {
+          mfaEnabled: 1,
+          mfaVerifiedAt: new Date(),
+        });
+
+        return {
+          success: true,
+          message: "MFA has been enabled successfully",
+        };
+      }),
+
+    disableMFA: protectedProcedure
+      .input(
+        z.object({
+          token: z.string().length(6),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = ctx.user;
+        const MFA_ENCRYPTION_KEY = ENV.cookieSecret;
+
+        if (user.mfaEnabled !== 1) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA is not enabled for this account",
+          });
+        }
+
+        if (!user.totpSecret) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA data not found",
+          });
+        }
+
+        // Decrypt the secret
+        const decryptedSecret = decryptData(user.totpSecret, MFA_ENCRYPTION_KEY);
+
+        // Verify the token before disabling
+        const isValid = verifyTOTP(decryptedSecret, input.token);
+
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid verification code",
+          });
+        }
+
+        // Disable MFA
+        await db.updateUser(user.id, {
+          mfaEnabled: 0,
+          totpSecret: null,
+          backupCodes: null,
+          mfaVerifiedAt: null,
+        });
+
+        return {
+          success: true,
+          message: "MFA has been disabled successfully",
+        };
+      }),
+
+    verifyMFA: protectedProcedure
+      .input(
+        z.object({
+          token: z.string().length(6),
+          isBackupCode: z.boolean().default(false),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = ctx.user;
+        const MFA_ENCRYPTION_KEY = ENV.cookieSecret;
+
+        if (user.mfaEnabled !== 1) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA is not enabled for this account",
+          });
+        }
+
+        if (!user.totpSecret || !user.backupCodes) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA data not found",
+          });
+        }
+
+        if (input.isBackupCode) {
+          // Verify backup code
+          const decryptedBackupCodes = JSON.parse(
+            decryptData(user.backupCodes, MFA_ENCRYPTION_KEY)
+          );
+          const verification = verifyBackupCode(decryptedBackupCodes, input.token);
+
+          if (!verification.valid) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Invalid backup code",
+            });
+          }
+
+          // Remove used backup code
+          const remainingCodes = removeBackupCode(
+            decryptedBackupCodes,
+            verification.usedCode!
+          );
+
+          await db.updateUser(user.id, {
+            backupCodes: encryptData(
+              JSON.stringify(remainingCodes),
+              MFA_ENCRYPTION_KEY
+            ),
+            mfaVerifiedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            backupCodeUsed: true,
+            remainingBackupCodes: remainingCodes.length,
+          };
+        } else {
+          // Verify TOTP token
+          const decryptedSecret = decryptData(user.totpSecret, MFA_ENCRYPTION_KEY);
+          const isValid = verifyTOTP(decryptedSecret, input.token);
+
+          if (!isValid) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Invalid verification code",
+            });
+          }
+
+          await db.updateUser(user.id, {
+            mfaVerifiedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            backupCodeUsed: false,
+          };
+        }
+      }),
+
+    getMFAStatus: protectedProcedure.query(async ({ ctx }) => {
+      const user = ctx.user;
+
+      return {
+        enabled: user.mfaEnabled === 1,
+        hasBackupCodes: !!user.backupCodes,
+      };
+    }),
+
+    regenerateBackupCodes: protectedProcedure
+      .input(
+        z.object({
+          token: z.string().length(6),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = ctx.user;
+        const MFA_ENCRYPTION_KEY = ENV.cookieSecret;
+
+        if (user.mfaEnabled !== 1) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA is not enabled for this account",
+          });
+        }
+
+        if (!user.totpSecret) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA data not found",
+          });
+        }
+
+        // Verify current TOTP before regenerating
+        const decryptedSecret = decryptData(user.totpSecret, MFA_ENCRYPTION_KEY);
+        const isValid = verifyTOTP(decryptedSecret, input.token);
+
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid verification code",
+          });
+        }
+
+        // Generate new backup codes
+        const newBackupCodes = Array.from({ length: 10 }, () =>
+          require('crypto').randomBytes(4).toString('hex').toUpperCase()
+        );
+
+        await db.updateUser(user.id, {
+          backupCodes: encryptData(
+            JSON.stringify(newBackupCodes),
+            MFA_ENCRYPTION_KEY
+          ),
+        });
+
+        return {
+          backupCodes: newBackupCodes,
+          message: "New backup codes generated. Save them securely.",
+        };
       }),
   }),
   projects: projectsRouter,
