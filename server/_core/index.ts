@@ -41,10 +41,54 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   registerMobileCors(app);
+  
+  // Compression middleware for better performance
+  if (process.env.NODE_ENV === "production") {
+    app.use(compression());
+  }
+  
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
+  // Request logging middleware (production only)
+  if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      const start = Date.now();
+      res.on('finish', () => {
+        const duration = Date.now() - start;
+        const logData = {
+          method: req.method,
+          url: req.url,
+          status: res.statusCode,
+          duration: `${duration}ms`,
+          ip: req.ip || req.socket.remoteAddress,
+        };
+        console.log(JSON.stringify(logData));
+        
+        // Log slow requests to Sentry
+        if (duration > 1000) {
+          captureMessage(`Slow request detected`, {
+            level: 'warning',
+            extra: logData,
+          });
+        }
+      });
+      next();
+    });
+  }
+  
   registerStorageProxy(app);
+  
+  // Health check endpoint for load balancers and monitoring
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+    });
+  });
   
   // Apply rate limiting
   app.use("/api/trpc", apiRateLimit);
@@ -84,6 +128,24 @@ async function startServer() {
   server.listen(port, host, () => {
     console.log(`Server running on http://${host}:${port}/`);
   });
+  
+  // Graceful shutdown handlers
+  const shutdown = (signal: string) => {
+    console.log(`${signal} received, shutting down gracefully...`);
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+    
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+      console.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  };
+  
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 startServer().catch(console.error);
