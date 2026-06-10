@@ -41,6 +41,7 @@ export const ENV = {
   llmThinkingEnabled: process.env.LLM_THINKING_ENABLED === "true",
   llmThinkingBudget: parseInt(process.env.LLM_THINKING_BUDGET ?? "128", 10),
   //  CRIT-02: Resend email config
+  resendMasterApiKey: process.env.RESEND_MASTER_API_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   emailFromAddress:
     process.env.EMAIL_FROM_ADDRESS ?? "noreply@drivewayestimatorpro.com",

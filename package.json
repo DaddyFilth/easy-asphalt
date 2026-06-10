@@ -25,7 +25,10 @@
     "mobile:build-android-signed": "corepack pnpm mobile:build && bash scripts/mobile/android-build-signed.sh",
     "mobile:build-android-debug": "bash scripts/mobile/android-build.sh debug",
     "mobile:apk": "corepack pnpm mobile:build && corepack pnpm mobile:build-android-debug",
-    "mobile:wireless-adb": "bash scripts/wireless-adb.sh"
+    "mobile:wireless-adb": "bash scripts/wireless-adb.sh",
+    "resend:keys:list": "tsx server/scripts/manage-resend-keys.ts list",
+    "resend:keys:create": "tsx server/scripts/manage-resend-keys.ts create",
+    "resend:keys:delete": "tsx server/scripts/manage-resend-keys.ts delete"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
@@ -92,6 +95,7 @@
     "react-hook-form": "^7.75.0",
     "react-resizable-panels": "^3.0.6",
     "recharts": "^2.15.4",
+    "resend": "^6.12.4",
     "sonner": "^2.0.7",
     "streamdown": "^2.5.0",
     "superjson": "^1.13.3",
