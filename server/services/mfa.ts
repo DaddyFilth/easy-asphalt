@@ -41,7 +41,7 @@ function generateBackupCodes(count: number = 10): string[] {
 /**
  * Setup TOTP for a user
  */
-export function setupTOTP userEmail: string): TOTPSetupResult {
+export function setupTOTP(userEmail: string): TOTPSetupResult {
   const secret = generateSecret();
   const backupCodes = generateBackupCodes();
 
