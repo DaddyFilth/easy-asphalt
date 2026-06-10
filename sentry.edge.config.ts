@@ -7,7 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   // Get your DSN from: https://sentry.io/projects/easy-asphalt/javascript-nextjs/settings/keys/
-  dsn: process.env.SENTRY_DSN || "https://57f4e66333a9611af04d56f203acad1c@o4511361067974656.ingest.us.sentry.io/4511361068236800",
+  dsn: "https://57f4e66333a9611af04d56f203acad1c@o4511361067974656.ingest.us.sentry.io/4511361068236800",
   
   // Organization: easy-asphalt
   // Project: javascript-nextjs
@@ -23,6 +23,6 @@ Sentry.init({
   sendDefaultPii: true,
   
   // Set release and environment
-  release: `easy-asphalt@${process.env.npm_package_version || '1.0.0'}`,
+  release: `easy-asphalt@1.0.0`,
   environment: process.env.SENTRY_ENVIRONMENT || 'development',
 });

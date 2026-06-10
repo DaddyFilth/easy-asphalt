@@ -27,3 +27,13 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+android {
+    defaultConfig {
+        // Change this string slightly so Android treats it as a fresh app
+        applicationId "com.daddyfilth.drivewayestimatorpro" 
+        
+        // Bump both numbers to ensure it overwrites any existing fragments
+        versionCode 2
+        versionName "1.0.1"
+    }
+}
