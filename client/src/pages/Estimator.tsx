@@ -68,7 +68,6 @@ import {
 import { toast } from "sonner";
 import {
   ArrowRight,
-  Bot,
   Camera,
   CheckCircle2,
   FileText,
@@ -103,11 +102,6 @@ export default function Estimator() {
   const [estimateDecisionMode, setEstimateDecisionMode] = useState<
     "decision" | "accepted"
   >("decision");
-  const [robotGuideOpen, setRobotGuideOpen] = useState(true);
-  const [robotCommand, setRobotCommand] = useState("");
-  const [robotResponse, setRobotResponse] = useState(
-    "Tell me what to do inside the estimator."
-  );
   const [savedProjectId, setSavedProjectId] = useState<number | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [galleryPermissionDenied, setGalleryPermissionDenied] = useState(false);

@@ -70,7 +70,7 @@ export type ResponseFormat =
   | { type: "json_object" }
   | { type: "json_schema"; json_schema: JsonSchema };
 
-function toGeminiParts(content: MessageContent | MessageContent[]): Part[] {
+async function toGeminiParts(content: MessageContent | MessageContent[]): Promise<Part[]> {
   const parts: Part[] = [];
   const items = Array.isArray(content) ? content : [content];
   for (const item of items) {
@@ -79,7 +79,26 @@ function toGeminiParts(content: MessageContent | MessageContent[]): Part[] {
     } else if (item.type === "text") {
       parts.push({ text: item.text });
     } else if (item.type === "image_url") {
-      parts.push({ text: `[Image: ${item.image_url.url}]` });
+      // Fetch the image and convert to base64 for Gemini
+      try {
+        const response = await fetch(item.image_url.url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+        
+        parts.push({
+          inlineData: {
+            mimeType,
+            data: base64
+          }
+        });
+      } catch (error) {
+        console.error('[LLM] Failed to process image:', error);
+        parts.push({ text: `[Image: ${item.image_url.url}]` });
+      }
     } else if (item.type === "file_url") {
       parts.push({ text: `[File: ${item.file_url.url}]` });
     }
