@@ -12,6 +12,8 @@ import path from "path";
 import fs from "fs";
 import { LOCAL_STORAGE_DIR, LOCAL_STORAGE_URL_PREFIX } from "../storage";
 import { initSentry } from "./sentry";
+import compression from "compression";
+import { captureMessage } from "@sentry/node";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
