@@ -107,7 +107,7 @@ importers:
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@sentry/nextjs':
         specifier: ^10.57.0
-        version: 10.57.0(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16))
+        version: 10.57.0(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23))
       '@sentry/node':
         specifier: ^10.56.0
         version: 10.56.0
@@ -184,8 +184,8 @@ importers:
         specifier: ^3.22.3
         version: 3.22.3(@types/node@24.12.4)
       nanoid:
-        specifier: ^5.1.11
-        version: 5.1.11
+        specifier: ^5.1.16
+        version: 5.1.16
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -267,7 +267,7 @@ importers:
         version: 0.5.19(tailwindcss@4.3.0)
       '@tailwindcss/vite':
         specifier: ^4.3.0
-        version: 4.3.0(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.3.0(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))
       '@types/express':
         specifier: 4.17.21
         version: 4.17.21
@@ -285,10 +285,10 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 6.0.1(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))
       autoprefixer:
         specifier: ^10.5.0
-        version: 10.5.0(postcss@8.5.16)
+        version: 10.5.0(postcss@8.5.23)
       drizzle-kit:
         specifier: ^0.18.1
         version: 0.18.1
@@ -296,8 +296,8 @@ importers:
         specifier: ^0.28.1
         version: 0.28.1
       postcss:
-        specifier: ^8.5.16
-        version: 8.5.16
+        specifier: ^8.5.23
+        version: 8.5.23
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -315,10 +315,10 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^8.0.16
-        version: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
+        version: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.6
-        version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))
 
 packages:
 
@@ -631,8 +631,8 @@ packages:
   '@emnapi/runtime@1.10.0':
     resolution: {integrity: sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA==}
 
-  '@emnapi/runtime@1.11.2':
-    resolution: {integrity: sha512-kyOl3X0DuTiT1h2ft8r2fYO8JYtU9a9Xis/zBSiGArNaagCOWx90N1k2wxp18czFDH+OgcWGb5ZP/XMt3dcyPA==}
+  '@emnapi/runtime@1.11.3':
+    resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
 
   '@emnapi/wasi-threads@1.2.1':
     resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
@@ -2905,6 +2905,7 @@ packages:
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -2932,8 +2933,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  acorn@8.17.0:
-    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+  acorn@8.18.0:
+    resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -3023,8 +3024,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  baseline-browser-mapping@2.10.42:
-    resolution: {integrity: sha512-c/jurFrDLyui7o1J86yLkRu4LMsTYcBohveus7/I2Hzdn9KIP2bdJPTue/lR1KH46enoPbD77GKeSYNdyPoD3Q==}
+  baseline-browser-mapping@2.11.20:
+    resolution: {integrity: sha512-H0ulySigv6icDJ1F7SjtdCD6PrhTpdYCmP0CactWy1+ekh0AFd0o1Wn5T8b+hnTmdBx19u9yhL6wvCylXMY7zw==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -3080,8 +3081,8 @@ packages:
   caniuse-lite@1.0.30001792:
     resolution: {integrity: sha512-hVLMUZFgR4JJ6ACt1uEESvQN1/dBVqPAKY0hgrV70eN3391K6juAfTjKZLKvOMsx8PxA7gsY1/tLMMTcfFLLpw==}
 
-  caniuse-lite@1.0.30001803:
-    resolution: {integrity: sha512-g/uHREV2ZpK9qMalCsWaxmA6ol+DX8GYhuf3T40RKoP+oL7vhRJh8LNt73PCjpnR6l14FzfPrB5Yux4PKm2meg==}
+  caniuse-lite@1.0.30001810:
+    resolution: {integrity: sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==}
 
   canvg@3.0.11:
     resolution: {integrity: sha512-5ON+q7jCTgMp9cjpu4Jo6XbvfYwSB2Ow3kzHKfIyJfaCAOHLbdKPQqGKgfED/R5B+3TFFfe8pegYA+b423SRyA==}
@@ -3614,8 +3615,8 @@ packages:
     resolution: {integrity: sha512-QyL119InA+XXEkNLNTPCXPugSvOfhwv0JOlGNzvxs0hZaiHLNvXSpudUWsOlsXGWJh8G6ckCScEkVHfX3kw/2Q==}
     engines: {node: '>=10.13.0'}
 
-  enhanced-resolve@5.24.2:
-    resolution: {integrity: sha512-rpsZEGT1jFuve6QlpyRp9ckQ+kN61hvF9BzCPyMdaKTm8UJce96KBn3sorXOFXlzjPrs3Vc4T1NsSroZ3PxlFw==}
+  enhanced-resolve@5.24.5:
+    resolution: {integrity: sha512-L1l8TNvomm6UVW5B253AGxQagSQr+vGwhMlrrfRS2qmhx46AMpMVJKQYLvWYbysTMY8VoicOvzHzoHMbyzB+4A==}
     engines: {node: '>=10.13.0'}
 
   entities@6.0.1:
@@ -3637,8 +3638,8 @@ packages:
   es-module-lexer@2.1.0:
     resolution: {integrity: sha512-n27zTYMjYu1aj4MjCWzSP7G9r75utsaoc8m61weK+W8JMBGGQybd43GstCXZ3WNmSFtGT9wi59qQTW6mhTR5LQ==}
 
-  es-module-lexer@2.3.0:
-    resolution: {integrity: sha512-KLdwQm2NvGLDkQDCGvmiQrhkd0JbMzXthwQAUgWjQuQdBLFa3eiBP5arXZyA+f8x+x7OXgud6bq2rxjGtHV2tw==}
+  es-module-lexer@2.3.2:
+    resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
 
   es-object-atoms@1.1.1:
     resolution: {integrity: sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA==}
@@ -3760,8 +3761,8 @@ packages:
   fast-sha256@1.3.0:
     resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
-  fast-uri@3.1.3:
-    resolution: {integrity: sha512-i70LwGWUduXqzicKXWshooq+sWL1K3WUU5rKZNG/0i3a1OSoX3HqhH5WbWwTmqWfor4urUakGPiRQcleRZTwOg==}
+  fast-uri@3.1.6:
+    resolution: {integrity: sha512-7Ical1vFEMr0onbVzEDIreM22I4khW+fzyQPwvAFWBp1iwdshSZRsL4jjRvPG9JP1uiqMHRto+YU6R2/CzDz5Q==}
 
   fast-xml-builder@1.2.0:
     resolution: {integrity: sha512-00aAWieqff+ZJhsXA4g1g7M8k+7AYoMUUHF+/zFb5U6Uv/P0Vl4QZo84/IcufzYalLuEj9928bXN9PbbFzMF0Q==}
@@ -4485,13 +4486,13 @@ packages:
     resolution: {integrity: sha512-Tz09sEL2EEuv5fFowm419c1+a/jSMiBjI9gHxVLrVdbUkkNUUfjsVYs9pVZu5oCon/kmRh9TfLEObFtkVxmY0w==}
     engines: {node: '>=8.0.0'}
 
-  nanoid@3.3.15:
-    resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
+  nanoid@3.3.18:
+    resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  nanoid@5.1.11:
-    resolution: {integrity: sha512-v+KEsUv2ps74PaSKv0gHTxTCgMXOIfBEbaqa6w6ISIGC7ZsvHN4N9oJ8d4cmf0n5oTzQz2SLmThbQWhjd/8eKg==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -4688,8 +4689,8 @@ packages:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.16:
-    resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
+  postcss@8.5.23:
+    resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
     engines: {node: ^10 || ^12 || >=14}
 
   prettier@3.8.3:
@@ -5159,8 +5160,8 @@ packages:
       uglify-js:
         optional: true
 
-  terser@5.49.0:
-    resolution: {integrity: sha512-SNiDnXyHSrxVcIOtVbULzcTmniUiwcV7Nwdyj1twVubeTmbjoa8p69KKDpfkdoOavuM4/GRm1+ykI8qqnavHoA==}
+  terser@5.51.2:
+    resolution: {integrity: sha512-bWnjSNscmuI+GJze6ZupnHP8G/cTcsJF+bXCeQknk2SHQsgbNJnLrqiH9jZ2W4STPVXH2mDKKRX3iwPhc9Cn/Q==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -6198,7 +6199,7 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/runtime@1.11.2':
+  '@emnapi/runtime@1.11.3':
     dependencies:
       tslib: 2.8.1
     optional: true
@@ -6403,7 +6404,7 @@ snapshots:
 
   '@img/sharp-wasm32@0.34.5':
     dependencies:
-      '@emnapi/runtime': 1.11.2
+      '@emnapi/runtime': 1.11.3
     optional: true
 
   '@img/sharp-win32-arm64@0.34.5':
@@ -7573,7 +7574,7 @@ snapshots:
 
   '@sentry/core@10.57.0': {}
 
-  '@sentry/nextjs@10.57.0(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16))':
+  '@sentry/nextjs@10.57.0(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/semantic-conventions': 1.41.1
@@ -7585,7 +7586,7 @@ snapshots:
       '@sentry/opentelemetry': 10.57.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.7.1(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.41.1)
       '@sentry/react': 10.57.0(react@19.2.6)
       '@sentry/vercel-edge': 10.57.0
-      '@sentry/webpack-plugin': 5.3.0(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16))
+      '@sentry/webpack-plugin': 5.3.0(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23))
       next: 16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       rollup: 4.61.1
       stacktrace-parser: 0.1.11
@@ -7688,10 +7689,10 @@ snapshots:
       '@opentelemetry/resources': 2.7.1(@opentelemetry/api@1.9.1)
       '@sentry/core': 10.57.0
 
-  '@sentry/webpack-plugin@5.3.0(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16))':
+  '@sentry/webpack-plugin@5.3.0(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23))':
     dependencies:
       '@sentry/bundler-plugin-core': 5.3.0
-      webpack: 5.107.2(esbuild@0.28.1)(postcss@8.5.16)
+      webpack: 5.107.2(esbuild@0.28.1)(postcss@8.5.23)
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -7993,12 +7994,12 @@ snapshots:
       postcss-selector-parser: 6.0.10
       tailwindcss: 4.3.0
 
-  '@tailwindcss/vite@4.3.0(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))':
+  '@tailwindcss/vite@4.3.0(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
       tailwindcss: 4.3.0
-      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
 
   '@tanstack/query-core@5.100.10': {}
 
@@ -8265,10 +8266,10 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vitejs/plugin-react@6.0.1(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))':
+  '@vitejs/plugin-react@6.0.1(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-rc.7
-      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/expect@4.1.6':
     dependencies:
@@ -8279,13 +8280,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.6(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.6(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.6
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.6':
     dependencies:
@@ -8402,13 +8403,13 @@ snapshots:
     dependencies:
       acorn: 8.16.0
 
-  acorn-import-phases@1.0.4(acorn@8.17.0):
+  acorn-import-phases@1.0.4(acorn@8.18.0):
     dependencies:
-      acorn: 8.17.0
+      acorn: 8.18.0
 
   acorn@8.16.0: {}
 
-  acorn@8.17.0: {}
+  acorn@8.18.0: {}
 
   agent-base@6.0.2:
     dependencies:
@@ -8436,7 +8437,7 @@ snapshots:
   ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 3.1.3
+      fast-uri: 3.1.6
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -8458,13 +8459,13 @@ snapshots:
 
   at-least-node@1.0.0: {}
 
-  autoprefixer@10.5.0(postcss@8.5.16):
+  autoprefixer@10.5.0(postcss@8.5.23):
     dependencies:
       browserslist: 4.28.2
       caniuse-lite: 1.0.30001792
       fraction.js: 5.3.4
       picocolors: 1.1.1
-      postcss: 8.5.16
+      postcss: 8.5.23
       postcss-value-parser: 4.2.0
 
   aws-ssl-profiles@1.1.2: {}
@@ -8482,7 +8483,7 @@ snapshots:
 
   baseline-browser-mapping@2.10.29: {}
 
-  baseline-browser-mapping@2.10.42: {}
+  baseline-browser-mapping@2.11.20: {}
 
   big-integer@1.6.52: {}
 
@@ -8545,7 +8546,7 @@ snapshots:
 
   caniuse-lite@1.0.30001792: {}
 
-  caniuse-lite@1.0.30001803: {}
+  caniuse-lite@1.0.30001810: {}
 
   canvg@3.0.11:
     dependencies:
@@ -9007,7 +9008,7 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.3.3
 
-  enhanced-resolve@5.24.2:
+  enhanced-resolve@5.24.5:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -9022,7 +9023,7 @@ snapshots:
 
   es-module-lexer@2.1.0: {}
 
-  es-module-lexer@2.3.0: {}
+  es-module-lexer@2.3.2: {}
 
   es-object-atoms@1.1.1:
     dependencies:
@@ -9198,7 +9199,7 @@ snapshots:
 
   fast-sha256@1.3.0: {}
 
-  fast-uri@3.1.3: {}
+  fast-uri@3.1.6: {}
 
   fast-xml-builder@1.2.0:
     dependencies:
@@ -10154,9 +10155,9 @@ snapshots:
     dependencies:
       lru.min: 1.1.4
 
-  nanoid@3.3.15: {}
+  nanoid@3.3.18: {}
 
-  nanoid@5.1.11: {}
+  nanoid@5.1.16: {}
 
   native-run@2.0.3:
     dependencies:
@@ -10193,8 +10194,8 @@ snapshots:
     dependencies:
       '@next/env': 16.2.9
       '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.10.42
-      caniuse-lite: 1.0.30001803
+      baseline-browser-mapping: 2.11.20
+      caniuse-lite: 1.0.30001810
       postcss: 8.4.31
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
@@ -10343,13 +10344,13 @@ snapshots:
 
   postcss@8.4.31:
     dependencies:
-      nanoid: 3.3.15
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.16:
+  postcss@8.5.23:
     dependencies:
-      nanoid: 3.3.15
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -10894,21 +10895,21 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  terser-webpack-plugin@5.6.1(esbuild@0.28.1)(postcss@8.5.16)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16)):
+  terser-webpack-plugin@5.6.1(esbuild@0.28.1)(postcss@8.5.23)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
-      terser: 5.49.0
-      webpack: 5.107.2(esbuild@0.28.1)(postcss@8.5.16)
+      terser: 5.51.2
+      webpack: 5.107.2(esbuild@0.28.1)(postcss@8.5.23)
     optionalDependencies:
       esbuild: 0.28.1
-      postcss: 8.5.16
+      postcss: 8.5.23
 
-  terser@5.49.0:
+  terser@5.51.2:
     dependencies:
       '@jridgewell/source-map': 0.3.11
-      acorn: 8.17.0
+      acorn: 8.18.0
       commander: 2.20.3
       source-map-support: 0.5.21
 
@@ -11104,11 +11105,11 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0):
+  vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.5
-      postcss: 8.5.16
+      postcss: 8.5.23
       rolldown: 1.0.3
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -11116,14 +11117,14 @@ snapshots:
       esbuild: 0.28.1
       fsevents: 2.3.3
       jiti: 2.7.0
-      terser: 5.49.0
+      terser: 5.51.2
       tsx: 4.21.0
       yaml: 2.9.0
 
-  vitest@4.1.6(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)):
+  vitest@4.1.6(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.6
-      '@vitest/mocker': 4.1.6(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.6(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.6
       '@vitest/runner': 4.1.6
       '@vitest/snapshot': 4.1.6
@@ -11140,7 +11141,7 @@ snapshots:
       tinyexec: 1.1.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite: 8.0.16(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
@@ -11158,19 +11159,19 @@ snapshots:
 
   webpack-sources@3.5.1: {}
 
-  webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16):
+  webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23):
     dependencies:
       '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
       '@webassemblyjs/wasm-parser': 1.14.1
-      acorn: 8.17.0
-      acorn-import-phases: 1.0.4(acorn@8.17.0)
+      acorn: 8.18.0
+      acorn-import-phases: 1.0.4(acorn@8.18.0)
       browserslist: 4.28.2
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.24.2
-      es-module-lexer: 2.3.0
+      enhanced-resolve: 5.24.5
+      es-module-lexer: 2.3.2
       eslint-scope: 5.1.1
       events: 3.3.0
       glob-to-regexp: 0.4.1
@@ -11180,7 +11181,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(esbuild@0.28.1)(postcss@8.5.16)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.16))
+      terser-webpack-plugin: 5.6.1(esbuild@0.28.1)(postcss@8.5.23)(webpack@5.107.2(esbuild@0.28.1)(postcss@8.5.23))
       watchpack: 2.5.2
       webpack-sources: 3.5.1
     transitivePeerDependencies:
